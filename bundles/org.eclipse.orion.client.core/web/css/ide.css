@@ -158,7 +158,17 @@ h2 {
 .parameterPopup {
 	min-width: 15em;
 	max-width: 100em;
+	color: #333;
 }
+
+.parameterPopup > label{
+	color: #333;
+}
+
+.parameterPopup > input{
+	color: #333;
+}
+
 
 .navTableHeading {
 	color: #404040;
@@ -631,14 +641,6 @@ h2 {
 	padding: 0;
 }
 
-.lightTreeTableRow > td {
-	border-bottom: 1px solid whiteSmoke;
-}
-
-.darkTreeTableRow > td {
-	border-bottom: 1px solid whiteSmoke;
-}
-
 .testNavTreetable {
 	min-width: 150px;
 }
@@ -726,7 +728,7 @@ input {
 	text-indent: none;
 	text-indent: 0px;
 	text-shadow: none;
-	border: none;
+	border: solid 1px #555;
 	border-radius: 2px;
 	color: #333;
 	font-size: 9pt;
@@ -844,9 +846,18 @@ input {
 
 }
 
+#folderNameparameterCollector{
+	color:#333;
+}
+
+#urlparameterCollector{
+	color:#333;
+}
+
+
 .setting-control {
 	display: inline-block;
-	width: 200px;
+	width: 130px;
 	padding: 4px;
 	margin: 10px;
 	outline: none;

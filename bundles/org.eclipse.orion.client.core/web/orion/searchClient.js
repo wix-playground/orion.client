@@ -13,8 +13,8 @@
 /*global define window document */
 /*jslint devel:true*/
 
-define(['i18n!orion/search/nls/messages', 'require', 'dojo', 'dijit', 'orion/searchUtils', 'orion/crawler/searchCrawler', 'dijit/form/Button', 'dijit/layout/BorderContainer', 'dijit/layout/ContentPane' ], 
-function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
+define(['i18n!orion/search/nls/messages', 'require', 'orion/webui/littlelib', 'orion/i18nUtil', 'orion/searchUtils', 'orion/crawler/searchCrawler'], 
+function(messages, require, lib, i18nUtil, mSearchUtils, mSearchCrawler){
 
 	/**
 	 * Creates a new search client.
@@ -35,13 +35,11 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 		/**
 		 * Runs a search and displays the results under the given DOM node.
 		 * @public
-		 * @param {String} query URI of the query to run.
+		 * @param {Object} searchParams The search parameters.
 		 * @param {String} [excludeFile] URI of a file to exclude from the result listing.
 		 * @param {Function(JSONObject)} Callback function that receives the results of the query.
-		 * @param {Boolean} [keyWordSearch] If true, do keyword search. Otherwise do name search.
 		 */
-		search: function(query, excludeFile, renderer, keyWordSearch) {
-			var qObj = mSearchUtils.parseQueryStr(query);
+		search: function(searchParams, excludeFile, renderer) {
 			var transform = function(jsonData) {
 				var transformed = [];
 				for (var i=0; i < jsonData.response.docs.length; i++) {
@@ -54,18 +52,18 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 				}
 				return transformed;
 			};
-			if(this._crawler && !keyWordSearch){ //$NON-NLS-0$
-				this._crawler.searchName(query, function(jsonData){renderer(transform(jsonData), null);});
+			if(this._crawler && searchParams.nameSearch){
+				this._crawler.searchName(searchParams, function(jsonData){renderer(transform(jsonData), null);});
 			} else {
 				try {
-					this._fileService.search(qObj.location, query).then(function(jsonData) {
+					this._fileService.search(searchParams).then(function(jsonData) {
 						/**
 						 * transforms the jsonData so that the result conforms to the same
 						 * format as the favourites list. This way renderer implementation can
 						 * be reused for both.
 						 * jsonData.response.docs{ Name, Location, Directory, LineNumber }
 						 */
-						var token = qObj.searchStr;//jsonData.responseHeader.params.q;
+						var token = searchParams.keyword;//jsonData.responseHeader.params.q;
 						token= token.substring(token.indexOf("}")+1); //$NON-NLS-0$
 						//remove field name if present
 						token= token.substring(token.indexOf(":")+1); //$NON-NLS-0$
@@ -76,9 +74,9 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 				}
 				catch(error){
 					if(typeof(error) === "string" && error.indexOf("search") > -1 && this._crawler){ //$NON-NLS-0$
-						this._crawler.searchName(query, function(jsonData){renderer(transform(jsonData), null);});
-					} else if(typeof(error) === "string" && error.indexOf("search") > -1 && keyWordSearch){ //$NON-NLS-0${
-						var crawler = new mSearchCrawler.SearchCrawler(this.registry, this._fileService, query, {childrenLocation: this.getChildrenLocation()});
+						this._crawler.searchName(searchParams, function(jsonData){renderer(transform(jsonData), null);});
+					} else if(typeof(error) === "string" && error.indexOf("search") > -1 && !searchParams.nameSearch){ //$NON-NLS-0${
+						var crawler = new mSearchCrawler.SearchCrawler(this.registry, this._fileService, searchParams, {childrenLocation: this.getChildrenLocation()});
 						crawler.search(function(jsonData){renderer(transform(jsonData), null);});
 					} else {
 						this.registry.getService("orion.page.message").setErrorMessage(error);	 //$NON-NLS-0$
@@ -94,8 +92,8 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 		},
 		handleError: function(response, resultsNode) {
 			console.error(response);
-			var errorText = document.createTextNode(response);
-			dojo.place(errorText, resultsNode, "only"); //$NON-NLS-0$
+			lib.empty(resultsNode);
+			resultsNode.appendChild(document.createTextNode(response));
 			return response;
 		},
 		setLocationByMetaData: function(meta, useParentLocation){
@@ -120,18 +118,18 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 				locationName = this._fileService.fileServiceName(meta.Location);
 				this._childrenLocation = meta.ChildrenLocation;
 			}
-			var searchInputDom = dojo.byId("search"); //$NON-NLS-0$
+			var searchInputDom = lib.node("search"); //$NON-NLS-0$
 			if(!locationName){
 				locationName = "";
 			}
 			if(searchInputDom && searchInputDom.placeholder){
 				searchInputDom.value = "";
-				var placeHolder = dojo.string.substitute(messages["Search ${0}"], [locationName]);
+				var placeHolder = i18nUtil.formatMessage(messages["Search ${0}"], locationName);
 				
 				if(placeHolder.length > 30){
 					searchInputDom.placeholder = placeHolder.substring(0, 27) + "..."; //$NON-NLS-1$
 				} else {
-					searchInputDom.placeholder = dojo.string.substitute(messages["Search ${0}"], [locationName]);
+					searchInputDom.placeholder = i18nUtil.formatMessage(messages["Search ${0}"], locationName);
 				}
 			}
 			if(searchInputDom && searchInputDom.title){
@@ -157,52 +155,33 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 			return this._childrenLocation;
 		},
 		/**
-		 * Returns a query URL for a search.
-		 * @param {String} query The text to search for, or null when searching purely on file name
-		 * @param {String} [nameQuery] The name of a file to search for
-		 * @param {String} [sort] The field to sort search results on. By default results will sort by path
+		 * Returns a query object for search. The return value has the propertyies of resource and parameters.
+		 * @param {String} keyword The text to search for, or null when searching purely on file name
+		 * @param {Boolean} [nameSearch] The name of a file to search for
 		 * @param {Boolean} [useRoot] If true, do not use the location property of the searcher. Use the root url of the file system instead.
 		 */
-		createSearchQuery: function(query, nameQuery, sort, useRoot, searchPrefix, advancedOptions)  {
-			if (!sort) {
-				sort = "Path"; //$NON-NLS-0$
-			}
-			sort += " asc";//ascending sort order //$NON-NLS-0$
-			if (nameQuery) {
+		createSearchParams: function(keyword, nameSearch, useRoot, advancedOptions)  {
+			if (nameSearch) {
 				//assume implicit trailing wildcard if there isn't one already
-				var wildcard= (/\*$/.test(nameQuery) ? "" : "*"); //$NON-NLS-0$
-				return  mSearchUtils.generateSearchQuery({sort: sort,
+				//var wildcard= (/\*$/.test(keyword) ? "" : "*"); //$NON-NLS-0$
+				return {
+					resource: useRoot ? this._searchRootLocation: this._searchLocation,
+					sort: "NameLower asc",
 					rows: 100,
 					start: 0,
-					location: useRoot ? this._searchRootLocation: this._searchLocation,
-					searchStr: searchPrefix + this._luceneEscape(nameQuery, true) + wildcard}); //$NON-NLS-0$
+					nameSearch: true,
+					keyword: keyword
+				};
 			}
-			var useRegularExpresion = advancedOptions ? advancedOptions.regEx : true;
-			return  mSearchUtils.generateSearchQuery({sort: sort, advOptions: advancedOptions,
+			return {
+				resource: useRoot ? this._searchRootLocation: this._searchLocation,
+				sort: "Path asc",
 				rows: 40,
 				start: 0,
-				searchStr: (useRegularExpresion ? query : this._luceneEscape(query, true)),
-				location: useRoot ? this._searchRootLocation: this._searchLocation});
-		},
-		/**
-		 * Escapes all characters in the string that require escaping in Lucene queries.
-		 * See http://lucene.apache.org/java/2_4_0/queryparsersyntax.html#Escaping%20Special%20Characters
-		 * The following characters need to be escaped in lucene queries: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
-		 * @param {String} input The string to perform escaping on
-		 * @param {Boolean} [omitWildcards=false] If true, the * and ? characters will not be escaped.
-		 * @private
-		 */
-		_luceneEscape: function(input, omitWildcards) {
-			var output = "",
-			    specialChars = "+-&|!(){}[]^\"~:\\" + (!omitWildcards ? "*?" : ""); //$NON-NLS-1$ //$NON-NLS-0$
-			for (var i = 0; i < input.length; i++) {
-				var c = input.charAt(i);
-				if (specialChars.indexOf(c) >= 0) {
-					output += '\\'; //$NON-NLS-0$
-				}
-				output += c;
-			}
-			return output;
+				regEx: advancedOptions ? advancedOptions.regEx : undefined,
+				fileType: advancedOptions ? advancedOptions.type : undefined,
+				keyword: keyword
+			};
 		},
 
 		//default search renderer until we factor this out completely
@@ -240,7 +219,10 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 				 */
 				function render(resources, queryName, error) {
 					if (error) {
-						dojo.place("<div>"+messages["Search failed."]+"</div>", resultsNode, "only"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-0$
+						lib.empty(resultsNode);
+						var message = document.createElement("div"); //$NON-NLS-0$
+						message.appendChild(document.createTextNode(messages["Search failed."]));
+						resultsNode.appendChild(message);
 						if (typeof(onResultReady) === "function") { //$NON-NLS-0$
 							onResultReady(resultsNode);
 						}
@@ -283,7 +265,7 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 					}()); //End of appendPath function
 		
 					var foundValidHit = false;
-					dojo.empty(resultsNode);
+					lib.empty(resultsNode);
 					if (resources && resources.length > 0) {
 						var table = document.createElement('table'); //$NON-NLS-0$
 						table.setAttribute('role', 'presentation'); //$NON-NLS-1$ //$NON-NLS-0$
@@ -306,9 +288,9 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 								decorator(col);
 							}
 							var resourceLink = document.createElement('a'); //$NON-NLS-0$
-							dojo.place(document.createTextNode(resource.name), resourceLink);
+							resourceLink.appendChild(document.createTextNode(resource.name));
 							if (resource.LineNumber) { // FIXME LineNumber === 0 
-								dojo.place(document.createTextNode(' (Line ' + resource.LineNumber + ')'), resourceLink); //$NON-NLS-1$ //$NON-NLS-0$
+								resourceLink.appendChild(document.createTextNode(' (Line ' + resource.LineNumber + ')')); //$NON-NLS-1$ //$NON-NLS-0$
 							}
 							var loc = resource.location;
 							if (resource.isExternalResource) {
@@ -328,11 +310,11 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 							}
 							resourceLink.setAttribute('href', loc); //$NON-NLS-0$
 							resourceLink.setAttribute('aria-describedby', (resource.folderName ? resource.folderName : resource.path).replace(/[^a-zA-Z0-9_\.:\-]/g,'')); //$NON-NLS-0$
-							dojo.style(resourceLink, "verticalAlign", "middle"); //$NON-NLS-1$ //$NON-NLS-0$
+							resourceLink.style.verticalAlign = "middle"; //$NON-NLS-0$
 							col.appendChild(resourceLink);
 							appendPath(col, resource);
 						}
-						dojo.place(table, resultsNode, "last"); //$NON-NLS-0$
+						resultsNode.appendChild(table);
 						if (typeof(onResultReady) === "function") { //$NON-NLS-0$
 							onResultReady(resultsNode);
 						}
@@ -340,8 +322,9 @@ function(messages, require, dojo, dijit, mSearchUtils, mSearchCrawler){
 					if (!foundValidHit) {
 						// only display no matches found if we have a proper name
 						if (queryName) {
-							var errorStr = dojo.string.substitute(messages["No matches found for ${0}"], [queryName]); 
-							dojo.place(document.createTextNode(errorStr), resultsNode, "only"); //$NON-NLS-0$
+							var errorStr = i18nUtil.formatMessage(messages["No matches found for ${0}"], queryName); 
+							lib.empty(resultsNode);
+							resultsNode.appendChild(document.createTextNode(errorStr)); 
 							if (typeof(onResultReady) === "function") { //$NON-NLS-0$
 								onResultReady(resultsNode);
 							}

@@ -16,7 +16,7 @@
 	if (typeof window.URL === "function" && new window.URL("http://www.w3.org").protocol === "http:") {
 		return;
 	}
-	
+
 	var _USERNAME_PASSWORD_RE = /([^:]*):?(.*)/;
 
 	function _createMapIterator(entries, kind) {
@@ -41,76 +41,53 @@
 		};
 	}
 
+	function _parseSearch(search) {
+		var entries = [];
+		if (search) {
+			var pairs = search.slice(1).split("&");
+			pairs.forEach(function(pair) {
+				var parsed = /([^=]*)(?:=?)(.*)/.exec(pair);
+				var key = parsed[1] ? decodeURIComponent(parsed[1]) : "";
+				var value = parsed[2] ? decodeURIComponent(parsed[2]) : "";
+				entries.push([key, value]);
+			}, this);
+		}
+		return entries;
+	}
+
+	function _stringifySearch(entries) {
+		if (entries.length === 0) {
+			return "";
+		}
+		return "?" + entries.map(function(entry) {
+			var pair = encodeURIComponent(entry[0]);
+			if (entry[1]) {
+				pair += "=" + encodeURIComponent(entry[1]);
+			}
+			return pair;
+		}).join("&");
+	}
+
 	function _checkString(txt) {
 		if (typeof txt !== "string") {
 			throw new TypeError();
 		}
 	}
 
-	function _checkValue(value) {
-		if (typeof value !== "string" && value !== null) {
-			if (typeof value === "undefined") {
-				value = null;
-			} else {
-				throw new TypeError();
-			}
-		}
-		return value;
-	}
-
 	// See http://url.spec.whatwg.org/#interface-urlquery
-	function URLQuery() {
-		Object.defineProperty(this, "_entries", {
-			value: [] // array of [key,value]
-		});
-		Object.defineProperty(this, "_dirty", {
-			value: false,
-			writable: true
+	function URLQuery(anchor) {
+		Object.defineProperty(this, "_anchor", {
+			value: anchor
 		});
 	}
 
 	Object.defineProperties(URLQuery.prototype, {
-		_parseSearch: {
-			value: function(search) {
-				this.clear();
-				this._dirty = false;
-				if (search) {
-					_checkString(search);
-					var pairs = search.slice(1).split("&");
-					for (var i = 0; i < pairs.length; i++) {
-						var pair = pairs[i];
-						var parsed = /([^=]*)(=?)(.*)/.exec(pair);
-						var name = decodeURIComponent(parsed[1] || "");
-						var hasEquals = !!parsed[2];
-						var value = hasEquals ? decodeURIComponent(parsed[3] || "") : null;
-						this.append(name, value);
-					}
-				}
-			}
-		},
-		_updateSearch: {
-			value: function(anchor) {
-				if (this._dirty) {
-					this._dirty = false;
-					if (this.size === 0) {
-						anchor.search = "";
-					} else {
-						anchor.search = "?" + this._entries.map(function(entry) {
-							var pair = encodeURIComponent(entry[0]);
-							if (entry[1] !== null) {
-								pair += "=" + encodeURIComponent(entry[1]);
-							}
-							return pair;
-						}).join("&");
-					}
-				}
-			}
-		},
 		get: {
 			value: function(key) {
 				_checkString(key);
 				var result;
-				this._entries.some(function(entry) {
+				var entries = _parseSearch(this._anchor.search);
+				entries.some(function(entry) {
 					if (entry[0] === key) {
 						result = entry[1];
 						return true;
@@ -123,65 +100,58 @@
 		set: {
 			value: function(key, value) {
 				_checkString(key);
-				value = _checkValue(value);
-				var found = false;
-				this._dirty = true;
-				this._entries.some(function(entry) {
+				_checkString(value);
+				var entries = _parseSearch(this._anchor.search);
+				var found = entries.some(function(entry) {
 					if (entry[0] === key) {
-						found = true;
 						entry[1] = value;
 						return true;
 					}
 				});
 				if (!found) {
-					this._entries.push([key, value]);
+					entries.push([key, value]);
 				}
+				this._anchor.search = _stringifySearch(entries);
 			},
 			enumerable: true
 		},
 		has: {
 			value: function(key) {
 				_checkString(key);
-				var found = false;
-				this._entries.some(function(entry) {
+				var entries = _parseSearch(this._anchor.search);
+				return entries.some(function(entry) {
 					if (entry[0] === key) {
-						found = true;
 						return true;
 					}
 				});
-				return found;
 			},
 			enumerable: true
 		},
-		'delete': {
+		"delete": {
 			value: function(key) {
 				_checkString(key);
-				var found = false;
-				for (var i = this._entries.length - 1; i > -1; i--) {
-					var entry = this._entries[i];
-					if (entry[0] === key) {
-						this._dirty = true;
-						found = true;
-						this._entries.splice(i, 1);
-					}
+				var entries = _parseSearch(this._anchor.search);
+				var filtered = entries.filter(function(entry) {
+					return entry[0] !== key;
+				});
+				if (filtered.length !== entries.length) {
+					this._anchor.search = _stringifySearch(filtered);
+					return true;
 				}
-				return found;
+				return false;
 			},
 			enumerable: true
 		},
 		clear: {
 			value: function() {
-				if (this._entries.length !== 0) {
-					this._entries.length = 0;
-					this._dirty = true;
-				}
+				this._anchor.search = "";
 			},
 			enumerable: true
 		},
 		forEach: {
 			value: function(callback, thisArg) {
 				var thisMap = this;
-				this._entries.forEach(function(entry) {
+				_parseSearch(this._anchor.search).forEach(function(entry) {
 					callback.call(thisArg, entry[1], entry[0], thisMap);
 				});
 			},
@@ -189,51 +159,49 @@
 		},
 		keys: {
 			value: function() {
-				return _createMapIterator(this._entries, "keys");
+				return _createMapIterator(_parseSearch(this._anchor.search), "keys");
 			},
 			enumerable: true
 		},
 		values: {
 			value: function() {
-				return _createMapIterator(this._entries, "values");
+				return _createMapIterator(_parseSearch(this._anchor.search), "values");
 			},
 			enumerable: true
 		},
 		items: {
 			value: function() {
-				return _createMapIterator(this._entries, "keys+values");
+				return _createMapIterator(_parseSearch(this._anchor.search), "keys+values");
 			}
 		},
 		size: {
 			get: function() {
-				return this._entries.length;
+				return _parseSearch(this._anchor.search).length;
 			},
 			enumerable: true
 		},
 		getAll: {
 			value: function(key) {
 				_checkString(key);
-				var result = [];
-				this._entries.forEach(function(entry) {
-					if (entry[0] === key) {
-						result.push(entry[1]);
-					}
+				var entries = _parseSearch(this._anchor.search);
+				return entries.filter(function(entry) {
+					return entry[0] === key;
 				});
-				return result;
 			},
 			enumerable: true
 		},
 		append: {
 			value: function(key, value) {
 				_checkString(key);
-				value = _checkValue(value);
-				this._entries.push([key, value]);
-				this._dirty = true;
+				_checkString(value);
+				var entries = _parseSearch(this._anchor.search);
+				entries.push([key, value]);
+				this._anchor.search = _stringifySearch(entries);
 			},
 			enumerable: true
 		}
 	});
-	
+
 	// See http://url.spec.whatwg.org/#api
 	function URL(url, base) {
 		url = url || "";
@@ -265,7 +233,7 @@
 			value: urlAnchor
 		});
 		Object.defineProperty(this, "query", {
-			value: new URLQuery(urlAnchor.search),
+			value: new URLQuery(urlAnchor),
 			enumerable: true
 		});
 	}
@@ -273,13 +241,11 @@
 	Object.defineProperties(URL.prototype, {
 		href: {
 			get: function() {
-				this.query._updateSearch(this._urlAnchor);
 				return this._urlAnchor.href;
 			},
 			set: function(value) {
 				_checkString(value);
 				this._urlAnchor.href = value;
-				this.query._parseSearch(this._urlAnchor.search);
 			},
 			enumerable: true
 		},
@@ -311,7 +277,6 @@
 			},
 			set: function(value) {
 				_checkString(value);
-				this.query._updateSearch(this._urlAnchor);
 				var re = new RegExp("^" + this._urlAnchor.protocol + "(\\/\\/)(?:([^@]*)?@)?" + this._urlAnchor.host);
 				var replacement = this._urlAnchor.protocol + "//" + (value ? value + "@" : "") + this._urlAnchor.host;
 				this._urlAnchor.href = this._urlAnchor.href.replace(re, replacement);
@@ -393,13 +358,11 @@
 		},
 		search: {
 			get: function() {
-				this.query._updateSearch(this._urlAnchor);
 				return this._urlAnchor.search;
 			},
 			set: function(value) {
 				_checkString(value);
 				this._urlAnchor.search = value;
-				this.query._parseSearch(this._urlAnchor.search);
 			},
 			enumerable: true
 		},
@@ -415,7 +378,7 @@
 		}
 	});
 
-	if (window.URL.createObjectURL) {
+	if (window.URL && window.URL.createObjectURL) {
 		Object.defineProperty(URL, "createObjectURL", {
 			value: window.URL.createObjectURL.bind(window.URL),
 			enumerable: false

@@ -61,8 +61,6 @@ define(['require', 'orion/webui/littlelib'], function(require, lib) {
 						lib.stop(event);
 					}
 				}, false);
-				lib.addAutoDismiss([self._node], function() {self.hide(0);});
-
 			} else {
 				this._showDelay = options.showDelay || 1000;
 				var leave = ["mouseout", "click"];  //$NON-NLS-1$ //$NON-NLS-0$
@@ -96,6 +94,8 @@ define(['require', 'orion/webui/littlelib'], function(require, lib) {
 				}
 				this._tip.appendChild(this._tipInner);
 				document.body.appendChild(this._tip);
+				var self = this;
+				lib.addAutoDismiss([this._tip, this._node], function() {self.destroy();});
 			}
 			return this._tip;
 		},
@@ -245,6 +245,9 @@ define(['require', 'orion/webui/littlelib'], function(require, lib) {
 			if (this._tip) {
 				document.body.removeChild(this._tip);
 				this._tip = null;
+				this._tipInner = null;
+				this._tail = null;
+				this._tailBorder = null;
 			}
 		}
 	};
