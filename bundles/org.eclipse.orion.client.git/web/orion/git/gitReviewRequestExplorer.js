@@ -87,7 +87,7 @@ define(['i18n!git/nls/gitmessages', 'require', 'dojo','dijit', 'orion/section', 
 						slideout: true,
 						canHide: true,
 						preferenceService: that.registry.getService("orion.core.preference"),
-						content: '<div id="commitNode" class="mainPadding"></list>' //$NON-NLS-0$
+						content: '<div id="commitNode" class="mainPadding"></div>' //$NON-NLS-0$
 					});
 					
 					var titleWrapper2 = new mSection.Section(dojo.byId("fetchDiv"), {
@@ -96,13 +96,13 @@ define(['i18n!git/nls/gitmessages', 'require', 'dojo','dijit', 'orion/section', 
 						slideout: true,
 						canHide: true,
 						preferenceService: that.registry.getService("orion.core.preference"),
-						content: '<div id="fetchNode" class="mainPadding"></list>' //$NON-NLS-0$
+						content: '<div id="fetchNode" class="mainPadding"></div>' //$NON-NLS-0$
 					});
 					
 					var titleWrapper3 = new mSection.Section(tableNode, {
 						id: "create new clone", //$NON-NLS-0$
 						title: messages["Create new repository"], //$NON-NLS-0$
-						content: '<div id="cloneNode" class="mainPadding"></list>' //$NON-NLS-0$
+						content: '<div id="cloneNode" class="mainPadding"></div>' //$NON-NLS-0$
 					});
 					
 					var titleWrapper4 = new mSection.Section(dojo.byId("remoteDiv"), {
@@ -111,7 +111,7 @@ define(['i18n!git/nls/gitmessages', 'require', 'dojo','dijit', 'orion/section', 
 						slideout: true,
 						canHide: true,
 						hidden: true,
-						content: '<div id="remoteNode" class="mainPadding"></list>' //$NON-NLS-0$
+						content: '<div id="remoteNode" class="mainPadding"></div>' //$NON-NLS-0$
 					});
 					
 					dojo.byId("commitDiv").style.display = " none ";
@@ -161,8 +161,8 @@ define(['i18n!git/nls/gitmessages', 'require', 'dojo','dijit', 'orion/section', 
 				if (deferred === null)
 					deferred = new dojo.Deferred();
 				if (repositories.length > 0) {
-					that.registry.getService("orion.git.provider").doGitLog( //$NON-NLS-0$
-						"/gitapi/commit/" + sha + repositories[0].Location + "?page=1&pageSize=1", null, null, messages['Looking for the commit']).then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+					that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").doGitLog( //$NON-NLS-0$
+						"/gitapi/commit/" + sha + repositories[0].Location + "?page=1&pageSize=1", null, null, messages['Looking for the commit']), "Looking for commit " + sha).then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 						function(resp){
 							that.currentCommit = resp;
 							deferred.callback(resp.Children[0].Location);
@@ -188,10 +188,10 @@ define(['i18n!git/nls/gitmessages', 'require', 'dojo','dijit', 'orion/section', 
 				path += repositories[0].Name;
 				repositories[0].Content.Path = path;
 				
-				that.registry.getService("orion.git.provider").getGitClone(repositories[0].Git.CloneLocation).then(
+				that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getGitClone(repositories[0].Git.CloneLocation), "Getting repository properties " + repositories[0].Name).then(
 					function(resp){
 						resp.Children[0].Id = repositories[0].Id;
-						that.registry.getService("orion.git.provider").getGitRemote("/gitapi/remote" + repositories[0].Location).then(
+						that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getGitRemote("/gitapi/remote" + repositories[0].Location), "Getting remotes for " + repositories[0].Name).then(
 							function(remotes){
 								var foundRemote = false;
 								for(var i=0;i<remotes.Children.length;i++){

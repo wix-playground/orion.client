@@ -196,6 +196,10 @@ a.currentLocation:hover {
 	border: 1px solid #808080;
 }
 
+.commandButton.disabled {
+	color: #cdcdcd;
+}
+
 .commandImage {
 	border: 1px solid transparent;
     border-radius: 2px;
@@ -520,4 +524,12 @@ a.currentLocation:hover {
 }
 
 .dialogButtons {
+	float: right;
+	margin: 2px 8px 4px;
+}
+
+.modalBackdrop {
+	opacity: 0.5;
+	-webkit-transition: opacity 0.2s ease-in;
+	transition: opacity 0.2s ease-in;
 }

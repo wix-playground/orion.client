@@ -186,18 +186,18 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 
 			var loadingDeferred = new dojo.Deferred();
 			progressService.showWhile(loadingDeferred, messages['Loading...']);
-			this.registry.getService("orion.git.provider").getGitStatus(location).then( //$NON-NLS-0$
+			this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitStatus(location), "Getting status").then( //$NON-NLS-0$
 				function(resp){
 					if (resp.Type === "Status") { //$NON-NLS-0$
 						var status = resp;
 						that._model = new GitStatusModel();
 						that._model.init(status);
 						
-						that.registry.getService("orion.git.provider").getGitClone(status.CloneLocation).then( //$NON-NLS-0$
+						that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getGitClone(status.CloneLocation), "Getting repository information").then( //$NON-NLS-0$
 							function(resp){
 								var repositories = resp.Children;
 								
-								that.registry.getService("orion.git.provider").getGitCloneConfig(repositories[0].ConfigLocation).then( //$NON-NLS-0$
+								that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getGitCloneConfig(repositories[0].ConfigLocation), "Getting repository configuration ", repositories[0].Name).then( //$NON-NLS-0$
 									function(resp){
 										loadingDeferred.callback();
 										var config = resp.Children;
@@ -705,7 +705,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 			var titleWrapper = new mSection.Section(tableNode, {
 				id: "commitSection", //$NON-NLS-0$
 				title: messages['Commits'],
-				content: '<list id="commitNode" class="mainPadding"></list>', //$NON-NLS-0$
+				content: '<div id="commitNode" class="mainPadding"></div>', //$NON-NLS-0$
 				slideout: true,
 				canHide: true,
 				preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
@@ -714,7 +714,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 			var progress = titleWrapper.createProgressMonitor();
 			
 			progress.begin(messages['Getting current branch']);
-			this.registry.getService("orion.git.provider").getGitBranch(repository.BranchLocation).then( //$NON-NLS-0$
+			this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(repository.BranchLocation), "Getting current branch " + repository.Name).then( //$NON-NLS-0$
 				function(resp){
 					var branches = resp.Children;
 					var currentBranch;
@@ -752,7 +752,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 					
 					progress.worked(dojo.string.substitute(messages['Getting commits for \"${0}\" branch'],  [currentBranch.Name]));
 					if (tracksRemoteBranch && currentBranch.RemoteLocation[0].Children[0].CommitLocation){
-						that.registry.getService("orion.git.provider").getLog(currentBranch.RemoteLocation[0].Children[0].CommitLocation + "?page=1&pageSize=20", "HEAD").then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(currentBranch.RemoteLocation[0].Children[0].CommitLocation + "?page=1&pageSize=20", "HEAD"), dojo.string.substitute(messages['Getting commits for \"${0}\" branch'],  [currentBranch.Name])).then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 							function(resp){
 								progress.worked(messages['Rendering commits']);
 								
@@ -763,7 +763,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 								}
 								
 								progress.worked(messages['Getting outgoing commits']);
-								that.registry.getService("orion.git.provider").getLog(currentBranch.CommitLocation + "?page=1&pageSize=20", currentBranch.RemoteLocation[0].Children[0].Id).then(  //$NON-NLS-1$ //$NON-NLS-0$
+								that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(currentBranch.CommitLocation + "?page=1&pageSize=20", currentBranch.RemoteLocation[0].Children[0].Id), messages['Getting outgoing commits']).then(  //$NON-NLS-1$ //$NON-NLS-0$
 									function(resp){	
 										progress.worked(messages['Rendering commits']);
 										for (var i=0; i<resp.Children.length; i++){
@@ -788,7 +788,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 							}
 						);
 					} else {
-						that.registry.getService("orion.git.provider").doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20").then(  //$NON-NLS-1$ //$NON-NLS-0$
+						that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20"), dojo.string.substitute(messages['Getting commits for \"${0}\" branch'],  [currentBranch.Name])).then(  //$NON-NLS-1$ //$NON-NLS-0$
 							function(resp){	
 								progress.worked(messages['Rendering commits']);
 								for (var i=0; i<resp.Children.length; i++){
@@ -824,21 +824,20 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/explorers/explorer', 'orion/s
 		};
 			
 		GitStatusExplorer.prototype.renderCommit = function(commit, outgoing, index){
-			var extensionListItem = dojo.create( "div", { "class":"sectionTableItem " + ((index % 2) ? "darkTreeTableRow" : "lightTreeTableRow") }, dojo.byId("commitNode") ); //$NON-NLS-5$ //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			var horizontalBox = dojo.create( "div", null, extensionListItem ); //$NON-NLS-0$
+			var extensionListItem = dojo.create( "div", { "class" : "sectionTableItem lightTreeTableRow" }, dojo.byId("commitNode") ); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			var horizontalBox = dojo.create( "div", {"style" : "overflow:hidden"}, extensionListItem ); //$NON-NLS-0$
 			
 			var imgSpriteName = (outgoing ? "git-sprite-outgoing_commit" : "git-sprite-incoming_commit"); //$NON-NLS-1$ //$NON-NLS-0$
 			
 			dojo.create( "span", { "class":"sectionIcon gitImageSprite " + imgSpriteName}, horizontalBox ); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 			
 			if (commit.AuthorImage) {
-				var authorImage = dojo.create("span", {"class":"git-author-icon"}, horizontalBox); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				var authorImage = dojo.create("span", {"style":"float:left"}, horizontalBox); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				
 				var image = new Image();
 				image.src = commit.AuthorImage;
 				image.name = commit.AuthorName;
-				image.width = 30;
-				image.height = 30;
+				image.className = "git-author-icon";
 				dojo.place(image, authorImage, "first"); //$NON-NLS-0$
 			}
 			

@@ -15,7 +15,26 @@
 define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'], 
 		function(messages, require, lib) {
 	/**
-	 * Usage: Not instantiated by clients.  The prototype is used elsewhere.
+	 * Dialog is used to implement common dialog behavior in Orion.
+	 * Clients use the Dialog prototype and implement the following behavior:
+	 *    1.  Ensure that the HTML template for the dialog content is defined in the prototype TEMPLATE variable
+	 *        prior to calling the _initialize() function. Set the following fields in the dialog prior to calling the 
+	 *        _initialize() function if applicable.
+	 *
+	 *        messages - If i18n message bindings are used in the template, set the messages field to the messages object that
+	 *            should be used to bind strings.
+	 *        title - If the dialog should display a title, set the title field.
+	 *        buttons - If the dialog should show buttons along the bottom, set an array of button objects.  Each button should
+	 *            have a text property that labels the button and a calback property that is called when the button is pushed.
+	 *        modal - Set this field to true if modal behavior is desired.
+	 * 
+	 *    2.  To hook event listeners to elements in the dialog, implement the _bindToDOM function.  DOM elements
+	 *        in the template will be bound to variable names prefixed by a '$' character.  For example, the
+	 *        element with id "myElement" can be referenced with this.$myElement
+	 *
+	 *    3.  Implement any of _beforeShowing, _afterShowing, _beforeHiding, _afterHiding to perform initialization and cleanup work.
+	 *
+	 * Usage: Not instantiated by clients.  The prototype is used by the application dialog instance.
 	 * 
 	 * @name orion.webui.Dialog
 	 */
@@ -23,6 +42,10 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 	}
 
 	Dialog.prototype = /** @lends orion.webui.Dialog.prototype */ {
+	
+		DISABLED: "disabled", //$NON-NLS-0$
+	
+		/* Not used by clients */
 		CONTAINERTEMPLATE:		
 		'<div class="dialog">' + //$NON-NLS-0$
 			'<div class="dialogTitle layoutBlock"><span id="title" class="dialogTitleText layoutLeft"></span><span tabindex="0" role="button" aria-label="Close" class="dialogDismiss layoutRight core-sprite-close imageSprite" id="closeDialog"></span></div>' + //$NON-NLS-0$
@@ -31,16 +54,20 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 			'<div id="buttons" class="dialogButtons"></div>' + //$NON-NLS-1$ //$NON-NLS-0$
 		'</div>', //$NON-NLS-0$
 
-		
-		_initialize: function(parent) {
-			parent = parent || document.body;
+		/* 
+		 * Called by clients once the dialog template has been bound to the TEMPLATE variable, and any additional options (title, buttons,
+		 * messages, modal) have been set.
+		 */
+		_initialize: function() {
+			var parent = document.body;
+			this.$frameParent = parent;
 			var range = document.createRange();
 			range.selectNode(parent);
 			var frameFragment = range.createContextualFragment(this.CONTAINERTEMPLATE);
 			parent.appendChild(frameFragment);
 			this.$frame = lib.$(".dialog", parent); //$NON-NLS-0$
-			if (this._title) {
-				lib.$("#title", this.$frame).appendChild(document.createTextNode(this._title)); //$NON-NLS-0$
+			if (this.title) {
+				lib.$("#title", this.$frame).appendChild(document.createTextNode(this.title)); //$NON-NLS-0$
 			}
 			this.$close = lib.$("#closeDialog", this.$frame);//$NON-NLS-0$
 			var self = this;
@@ -63,11 +90,100 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 			range = document.createRange();
 			range.selectNode(this.$parent);
 			var contentFragment = range.createContextualFragment(this.TEMPLATE);
+			if (this.messages) {
+				lib.processTextNodes(contentFragment, messages);
+			}
 			this.$parent.appendChild(contentFragment);
+			this.$buttonContainer = lib.$(".dialogButtons", parent); //$NON-NLS-0$
+			this._makeButtons();
 			this._bindElements(this.$parent);
-			this._bindToDom(this.$parent);
+			if (typeof this._bindToDom === "function") { //$NON-NLS-0$
+				this._bindToDom(this.$parent);
+			}
+			if (this.modal) {
+				this._makeModal();
+			}
 		},
 		
+		/*
+		 * Internal.  Generates any specified buttons.
+		 */
+		_makeButtons: function() {
+			if (this.$buttonContainer && Array.isArray(this.buttons)) {
+				var self = this;
+				this.buttons.forEach(function(buttonDefinition) {
+					var button = document.createElement("span"); //$NON-NLS-0$
+					button.role = "button"; //$NON-NLS-0$
+					button.tabIndex = 0; 
+					if (buttonDefinition.id) {
+						button.id = buttonDefinition.id;
+						this['$'+ button.id] = button; //$NON-NLS-0$					
+					}
+					button.appendChild(document.createTextNode(buttonDefinition.text));
+					button.className = "commandButton commandMargins"; //$NON-NLS-0$
+					var callback = buttonDefinition.callback;
+					button.addEventListener("click", function(e) { //$NON-NLS-0$
+						callback();
+						lib.stop(e);
+					}, false);
+					button.addEventListener("keydown", function(e) { //$NON-NLS-0$
+						if (e.keyCode === lib.KEY.ENTER || e.charCode === lib.KEY.SPACE) {						
+							callback();
+							lib.stop(e);
+						}				
+					}, false);
+					self.$buttonContainer.appendChild(button);
+				});
+			}
+		},
+		
+		/*
+		 * Internal.  Makes modal behavior by immediately returning focus to the dialog when user leaves the dialog, and by
+		 * styling the background to look faded.
+		 */
+		_makeModal: function(parent) {
+			var self = this;
+			this.$frame.addEventListener("blur", function(e) { //$NON-NLS-0$
+				self.$lastFocusedElement = e.target;
+			}, true);
+			this.$$modalExclusions = this.$$modalExclusions || [];
+			this._modalListener = function(e) { //$NON-NLS-0$
+				var preventFocus =	!lib.contains(self.$frame, e.target);
+				if (preventFocus) {
+					for (var i = 0; i<self.$$modalExclusions.length; i++) {
+						if (lib.contains(self.$$modalExclusions[i], e.target)) {
+							preventFocus = false;
+							break;
+						}
+					}
+				}
+				if (preventFocus) {
+					window.setTimeout(function() {
+						(self.$lastFocusedElement || self.$parent).focus();
+					}, 0);
+					lib.stop(e);
+				}
+			};
+			this.$frameParent.addEventListener("focus", this._modalListener, true);  //$NON-NLS-0$
+			this.$frameParent.addEventListener("click", this._modalListener, true);  //$NON-NLS-0$
+			var children = this.$frameParent.childNodes;
+			var exclude = false;
+			for (var i=0; i<children.length; i++) {
+				for (var j=0; j<this.$$modalExclusions.length; j++) {
+					if (lib.contains(this.$$modalExclusions[j], children[i])) {
+						exclude = true;
+						break;
+					}
+				}
+				if (!exclude && children[i] !== self.$frame && children[i].classList && !children[i].classList.contains("tooltipContainer")) { //$NON-NLS-0$
+					children[i].classList.add("modalBackdrop"); //$NON-NLS-0$
+				}
+			}
+		},
+		
+		/*
+		 * Internal.  Binds any child nodes with id's to the matching field variables.
+		 */
 		_bindElements: function(node) {
 			for (var i=0; i<node.childNodes.length; i++) {
 				var child = node.childNodes[i];
@@ -78,13 +194,34 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 			}
 		},
 		
-		_hideDialog: function() {
+		/*
+		 * Internal.  Hides the dialog.  Clients should use the before and after
+		 * hooks (_beforeHiding, _afterHiding) to do any work related to hiding the dialog, such
+		 * as destroying resources.
+		 */
+		hide: function() {
+			if (typeof this._beforeHiding === "function") { //$NON-NLS-0$
+				this._beforeHiding();
+			}
 			this.$frame.classList.remove("dialogShowing"); //$NON-NLS-0$
+			if (typeof this._afterHiding === "function") { //$NON-NLS-0$
+				this._afterHiding();
+			}
 			var self = this;
-			window.setTimeout(function() { self.destroy(); }, 0);
+			if (!this.keepAlive) {
+				window.setTimeout(function() { self.destroy(); }, 0);
+			}
 		}, 
 		
-		_showDialog: function(near) {
+		/*
+		 * Internal.  Shows the dialog.  Clients should use the before and after
+		 * hooks (_beforeShowing, _afterShowing) to do any work related to showing the dialog,
+		 * such as setting initial focus.
+		 */
+		show: function(near) {
+			if (typeof this._beforeShowing === "function") { //$NON-NLS-0$
+				this._beforeShowing();
+			}
 			var rect = lib.bounds(this.$frame);
 			var totalRect = lib.bounds(document.documentElement);
 			var left, top;
@@ -106,10 +243,25 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 			this.$frame.style.top = top + "px"; //$NON-NLS-0$
 			this.$frame.style.left = left + "px"; //$NON-NLS-0$ 
 			this.$frame.classList.add("dialogShowing"); //$NON-NLS-0$
+			if (typeof this._afterShowing === "function") { //$NON-NLS-0$
+				this._afterShowing();
+			}
+			this.$lastFocusedElement = document.activeElement;
+
 		},
 		
+		/*
+		 * Internal.  Cleanup and remove dom nodes.
+		 */
 		destroy: function() {
-			document.body.removeChild(this.$frame);
+			if (this.modal) {
+				lib.$$array(".modalBackdrop").forEach(function(node) { //$NON-NLS-0$
+					node.classList.remove("modalBackdrop"); //$NON-NLS-0$
+				});
+			}
+			this.$frameParent.removeEventListener("focus", this._modalListener, true); //$NON-NLS-0$
+			this.$frameParent.removeEventListener("click", this._modalListener, true); //$NON-NLS-0$
+			this.$frameParent.removeChild(this.$frame);
 			this.$frame = undefined;
 			this.$parent = undefined;
 		}

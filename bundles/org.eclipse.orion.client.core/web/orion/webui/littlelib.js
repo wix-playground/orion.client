@@ -60,6 +60,23 @@ define(['require'], function(require) {
 		}
 	}
 	
+	var variableRegEx = /\$\{([^\}]+)\}/;
+	
+	function processTextNodes(node, messages) {
+		if (node.nodeType === 3) { // TEXT_NODE
+			var matches = variableRegEx.exec(node.nodeValue);
+			if (matches && matches.length > 1) {
+				var replaceText = messages[matches[1]] || matches[1];
+				node.parentNode.replaceChild(document.createTextNode(replaceText), node);
+			}
+		}
+		if (node.hasChildNodes()) {
+			for (var i=0; i<node.childNodes.length; i++) {
+				processTextNodes(node.childNodes[i], messages);
+			}
+		}
+	}
+	
 	var autoDismissNodes = [];
 	
 	function addAutoDismiss(excludeNodes, dismissFunction) {
@@ -125,6 +142,7 @@ define(['require'], function(require) {
 		bounds: bounds,
 		empty: empty,
 		stop: stop,
+		processTextNodes: processTextNodes,
 		addAutoDismiss: addAutoDismiss,
 		KEY: KEY
 	};

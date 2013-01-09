@@ -77,7 +77,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/section', 'orion/explorers/ex
 
 			var loadingDeferred = new dojo.Deferred();
 			progressService.showWhile(loadingDeferred, messages["Loading..."]);
-			this.registry.getService("orion.git.provider").getGitClone(location).then( //$NON-NLS-0$
+			this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitClone(location), "Getting repository details").then( //$NON-NLS-0$
 				function(resp){					
 					if (resp.Children.length === 0) {
 						loadingDeferred.callback();
@@ -86,7 +86,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/section', 'orion/explorers/ex
 					} else if (resp.Children.length === 1 && resp.Children[0].Type === "Commit") { //$NON-NLS-0$
 						var commits = resp.Children;
 						
-						that.registry.getService("orion.git.provider").getGitClone(resp.CloneLocation).then( //$NON-NLS-0$
+						that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getGitClone(resp.CloneLocation), "Getting repository details " + resp.Name).then( //$NON-NLS-0$
 							function(resp){
 								loadingDeferred.callback();
 								var repositories = resp.Children;
@@ -155,7 +155,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/section', 'orion/explorers/ex
 			}
 
 			var contentParent = dojo.create("div", {"role": "region", "class":"sectionTable"}, tableNode, "last");
-			contentParent.appendChild(dojo.create("list", {id: "commitNode", className: "mainPadding"})); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			contentParent.appendChild(dojo.create("div", {id: "commitNode", className: "mainPadding"})); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 		    var list = dojo.byId( "commitNode" );		 //$NON-NLS-0$
 			
@@ -192,12 +192,11 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/section', 'orion/explorers/ex
 			dojo.create( "div", {"style":"padding-top:15px"}, detailsView ); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 			
 			if (commit.AuthorImage) {
-				var authorImage = dojo.create("span", {"class":"git-author-icon-small"}, detailsView); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				var authorImage = dojo.create("span", { "style" : "float:left"}, detailsView); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				var image = new Image();
 				image.src = commit.AuthorImage;
 				image.name = commit.AuthorName;
-				image.width = 35;
-				image.height = 35;
+				image.className = "git-author-icon-small";
 				dojo.place(image, authorImage, "first"); //$NON-NLS-0$
 			}
 			
@@ -244,7 +243,7 @@ define(['i18n!git/nls/gitmessages', 'dojo', 'orion/section', 'orion/explorers/ex
 				title: ((tags && tags.length > 0) ? messages["Tags:"] : messages["No Tags"]),
 				iconClass: ["gitImageSprite", "git-sprite-tag"], //$NON-NLS-1$ //$NON-NLS-0$
 				slideout: true,
-				content: '<list id="tagNode"></list>', //$NON-NLS-0$
+				content: '<div id="tagNode"></div>', //$NON-NLS-0$
 				canHide: true,
 				preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 			}); 

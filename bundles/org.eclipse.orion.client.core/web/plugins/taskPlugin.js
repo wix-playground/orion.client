@@ -10,7 +10,7 @@
  ******************************************************************************/
 /*global define eclipse window parent document*/
 
-define(["orion/xhr", "orion/plugin", "domReady!"], function(xhr, PluginProvider) {
+define(["orion/xhr", "orion/plugin", "orion/operation", "orion/Deferred", "domReady!"], function(xhr, PluginProvider, operation, Deferred) {
 	var temp = document.createElement('a');
 	temp.href = "../mixloginstatic/LoginWindow.html";
 	var login = temp.href;
@@ -33,9 +33,28 @@ define(["orion/xhr", "orion/plugin", "domReady!"], function(xhr, PluginProvider)
 		}
 		return location;
 	}
+	
+	function makeAbsolute(location) {
+		temp.href = location;
+		return temp.href;
+	}
 
 	temp.href = "../task";
 	var base = makeParentRelative(temp.href);
+	
+	function _normalizeLocations(data) {
+		if (data && typeof data === "object") {
+			Object.keys(data).forEach(function(key) {
+				var value = data[key];
+				if (key.indexOf("Location") !== -1) {
+					data[key] = makeAbsolute(value);
+				} else {
+					_normalizeLocations(value);
+				}
+			});
+		}
+		return data;
+	}
 
 	// testing that command service handles image-less actions properly
 	provider.registerService("orion.core.operation", {
@@ -47,18 +66,13 @@ define(["orion/xhr", "orion/plugin", "domReady!"], function(xhr, PluginProvider)
 				query: options,
 				timeout: options.Longpolling ? 70000 : 15000
 			}).then(function(result) {
-				return result.response ? JSON.parse(result.response) : null;
+				result = result.response ? JSON.parse(result.response) : null;
+				_normalizeLocations(result);
+				return result;
 			});
 		},
 		getOperation: function(taskLocation) {
-			return xhr("GET", taskLocation, {
-				headers: {
-					"Orion-Version": "1"
-				},
-				timeout: 15000
-			}).then(function(result) {
-				return result.response ? JSON.parse(result.response) : null;
-			});
+			return operation.handle(taskLocation);
 		},
 		removeCompletedOperations: function() {
 			return xhr("DELETE", base, {
@@ -67,31 +81,38 @@ define(["orion/xhr", "orion/plugin", "domReady!"], function(xhr, PluginProvider)
 				},
 				timeout: 15000
 			}).then(function(result) {
-				return result.response ? JSON.parse(result.response) : null;
+				result = result.response ? JSON.parse(result.response) : null;
+				_normalizeLocations(result);
+				return result;
 			});
 		},
 		removeOperation: function(taskLocation) {
-			return xhr("DELETE", taskLocation, {
+			var clientDeferred = new Deferred();
+			xhr("DELETE", taskLocation, {
 				headers: {
 					"Orion-Version": "1"
 				},
 				timeout: 15000
 			}).then(function(result) {
-				return result.response ? JSON.parse(result.response) : null;
+				result = result.response ? JSON.parse(result.response) : null;		
+				_normalizeLocations(result);
+				clientDeferred.resolve(result);
+			}, function(error){
+				var errorMessage = error;
+				if(error.responseText){
+					errorMessage = error.responseText;
+					try{
+						errorMessage = JSON.parse(error.responseText);
+					}catch(e){
+						//ignore
+					}
+				}
+				if(errorMessage.Message)
+					clientDeferred.reject(errorMessage);
+				else
+					clientDeferred.reject({Severity: "Error", Message: errorMessage});
 			});
-		},
-		cancelOperation: function(taskLocation) {
-			return xhr("PUT", taskLocation, {
-				data: JSON.stringify({
-					Cancel: true
-				}),
-				headers: {
-					"Orion-Version": "1"
-				},
-				timeout: 15000
-			}).then(function(result) {
-				return result.response ? JSON.parse(result.response) : null;
-			});
+			return clientDeferred;
 		}
 	}, {
 		name: "Tasks",
