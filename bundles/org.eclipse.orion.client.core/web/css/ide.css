@@ -4,6 +4,8 @@
 
 @import "./theme.css";
 
+@import "../jazzui/css/theme.css";
+
 html {
   overflow-x: hidden; /* workaround to get rid of horizontal scrollbar */
   cursor: default;
@@ -61,7 +63,7 @@ h2 {
 	outline: #AAA 2px dotted !important;
 }
 
-.logo {
+.logo2 {
 	background-image: url(../images/core_sprites.png);
 	background-repeat: no-repeat;
 	background-position: 0 -517px; 
@@ -132,16 +134,12 @@ h2 {
 	border: 1px solid #808080;
 }
 
-label.parameterInput{
-	color:silver;
-}
-
 .parameterInput {
 	margin-right: 16px;
 	margin-bottom: 8px;
 	font-weight: normal;
 	vertical-align: baseline;
-	color:#333;
+	color:silver;
 }
 
 .parameterInputurl {

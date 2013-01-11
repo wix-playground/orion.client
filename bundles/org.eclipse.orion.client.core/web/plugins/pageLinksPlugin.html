@@ -9,7 +9,14 @@
 	  baseUrl: '..',
 
 	  // set the paths to our library packages
-	  packages: [],
+	  packages: [
+	    {
+	      name: 'dojo',
+	      location: 'org.dojotoolkit/dojo',
+	      main: 'lib/main-browser',
+	      lib: '.'
+	    }		    
+	  ],
 	  paths: {
 		  text: 'requirejs/text',
 		  i18n: 'requirejs/i18n',
@@ -28,16 +35,55 @@
 			version: "1.0",
 			description: "This plugin provides the top-level page links for Orion."
 		};
-
+	
 		var provider = new PluginProvider(headers);
 		
 		// Primary navigation links
-		
+		provider.registerService("orion.page.link", serviceImpl, {
+			nameKey: "Navigator",
+			id: "orion.navigator",
+			nls: "orion/nls/messages",
+			uriTemplate: "{OrionHome}/navigate/table.html#"
+		});
 		provider.registerService("orion.page.link", serviceImpl, {
 			nameKey: "Sites",
 			id: "orion.sites",
 			nls: "orion/nls/messages",
 			uriTemplate: "{OrionHome}/sites/sites.html"
+		});
+		provider.registerService("orion.page.link", serviceImpl, {
+			nameKey: "Shell",
+			id: "orion.shell",
+			nls: "orion/nls/messages",
+			uriTemplate: "{OrionHome}/shell/shellPage.html"
+		});
+		
+		provider.registerService("orion.page.link.related", null, {
+			id: "orion.navigateFromMetadata",
+			nameKey: "Navigator",
+			nls: "orion/nls/messages",
+			tooltip: "Go to the navigator",
+			validationProperties: [{
+				source: "ChildrenLocation|ContentLocation",
+				variableName: "NavigatorLocation",
+				replacements: [{pattern: "\\?depth=1$", replacement: ""}]  /* strip off depth=1 if it is there because we always add it back */
+			}],
+				uriTemplate: "{OrionHome}/navigate/table.html#{NavigatorLocation}?depth=1"
+		});
+
+		provider.registerService("orion.page.link.user", null, {
+			id: "orion.help",
+			nameKey: "Help",
+			nls: "orion/widgets/nls/messages",
+			uriTemplate: require.toUrl("help/index.jsp"),
+			category: 0
+		});
+		provider.registerService("orion.page.link.user", null, {
+			id: "orion.settings",
+			nameKey: "Settings",
+			nls: "orion/widgets/nls/messages",
+			uriTemplate: "{OrionHome}/settings/settings.html",
+			category: 1
 		});
 
 		var htmlHelloWorld = document.createElement('a');
@@ -45,18 +91,40 @@
 		var pluginHelloWorld = document.createElement('a');
 		pluginHelloWorld.href = "./contentTemplates/pluginHelloWorld.zip";
 
-		provider.registerService("orion.core.content", null, {
-			id: "orion.content.html5",
+		provider.registerService("orion.navigate.content", null, {
+			id: "orion.content.fromURL",
 			name: "Sample HTML5 Site",
 			description: 'Generate an HTML5 "Hello World" website, including JavaScript, HTML, and CSS files.',
-			contentURITemplate: htmlHelloWorld.href
+			folder: "Hello World",
+			command: "orion.importZipURL",
+			parameters: [{name: "url", type: "url", label: "Extracted from:", defaultValue: htmlHelloWorld.href},
+				{name: "unzip", type: "boolean", label: "Unzip:", defaultValue: true}]
 		});
 
-		provider.registerService("orion.core.content", null, {
+		provider.registerService("orion.navigate.content", null, {
 			id: "orion.content.plugin",
 			name: "Sample Orion Plugin",
 			description: "Generate a sample plugin for integrating with Orion.",
-			contentURITemplate: pluginHelloWorld.href
+			folder: "Hello World Plugin",
+			command: "orion.importZipURL",
+			parameters: [{name: "url", type: "url", label: "Extracted from:", defaultValue: pluginHelloWorld.href},
+				{name: "unzip", type: "boolean", label: "Unzip:", defaultValue: true}]
+		});
+
+		provider.registerService("orion.navigate.content", null, {
+			id: "orion.content.fromSFTP",
+			name: "SFTP Import",
+			description: "Import content from an SFTP location into an Orion folder. You will be prompted for the SFTP location and credentials.",
+			folder: "Imported Content",
+			command: "orion.importSFTP"
+		});
+
+		provider.registerService("orion.navigate.content", null, {
+			id: "orion.content.fromZip",
+			name: "Upload a File",
+			description: "Upload content from a local file into an Orion folder. You will be prompted for the local file.",
+			folder: "Uploaded Content",
+			command: "orion.import"
 		});
 
 		provider.registerService("orion.core.setting", null, {

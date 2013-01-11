@@ -16,10 +16,10 @@ define(['i18n!orion/nls/messages', 'require', 'orion/commonHTMLFragments', 'orio
 	'orion/extensionCommands', 'orion/uiUtils', 'orion/textview/keyBinding', 'orion/breadcrumbs', 'orion/webui/littlelib', 'orion/webui/splitter', 
 	'orion/webui/dropdown', 'orion/webui/tooltip', 'orion/favorites', 'orion/contentTypes', 'orion/URITemplate', 'orion/PageUtil', 'orion/widgets/themes/container/ThemeSheetWriter', 
 	'orion/searchUtils', 'orion/inputCompletion/inputCompletion', 'orion/globalSearch/advSearchOptContainer', 'orion/Deferred',
-	'orion/widgets/UserMenu', 'orion/PageLinks', 'orion/webui/dialogs/OpenResourceDialog'], 
+	'orion/widgets/UserMenu', 'orion/PageLinks', 'orion/webui/dialogs/OpenResourceDialog', 'orion/jazzui/pageUtil'], 
         function(messages, require, commonHTML, mCommands, mParameterCollectors, mExtensionCommands, mUIUtils, mKeyBinding, mBreadcrumbs, lib, mSplitter, 
         mDropdown, mTooltip, mFavorites, mContentTypes, URITemplate, PageUtil, ThemeSheetWriter, mSearchUtils, mInputCompletion, 
-        mAdvSearchOptContainer, Deferred, mUserMenu, PageLinks, openResource){
+        mAdvSearchOptContainer, Deferred, mUserMenu, PageLinks, openResource, mPageUtil){
 
 	/**
 	 * This class contains static utility methods. It is not intended to be instantiated.
@@ -1082,6 +1082,10 @@ define(['i18n!orion/nls/messages', 'require', 'orion/commonHTMLFragments', 'orio
 				}, {pid: "nav.config"}); //$NON-NLS-0$
 		}
 		window.setTimeout(function() {readTargetPreference(serviceRegistry);}, 0);
+		
+		// changes to the page layout
+		mPageUtil.updateBanner();
+		// end of changes to the page layout
 	}
 	
 	//return the module exports
