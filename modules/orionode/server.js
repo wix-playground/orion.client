@@ -44,9 +44,10 @@ function handleError(err) {
 function noop(req, res, next) { next(); }
 
 function auth(options) {
-	if (typeof options.password === 'string') {
-		return connect.basicAuth(function(user, pwd) {
-			return pwd === options.password;
+	var pwd = options.password ? options.password : options.configParams.pwd;
+	if (typeof pwd === 'string' && pwd.length > 0) {
+		return connect.basicAuth(function(user, password) {
+			return password === pwd;
 		});
 	}
 	return noop;
@@ -57,9 +58,9 @@ function logger(options) {
 }
 
 function startServer(options) {
-	var workspaceDir = options.workspaceDir, tempDir = options.tempDir;
+	var workspaceDir = options.workspaceDir, tempDir = options.tempDir, configParams = options.configParams;
 	try {
-		var appContext = new AppContext({fileRoot: '/file', workspaceDir: workspaceDir});
+		var appContext = new AppContext({fileRoot: '/file', workspaceDir: workspaceDir, configParams: configParams});
 
 		// HTTP server
 		var app = connect()
@@ -125,17 +126,24 @@ var port = args.port || args.p || 8081;
 var workspaceArg = args.workspace || args.w;
 var workspaceDir = workspaceArg ? path.resolve(process.cwd(), workspaceArg) : path.join(__dirname, '.workspace');
 var tempDir = path.join(workspaceDir, '.temp');
+var config_params = {};
 argslib.createDirs([workspaceDir, tempDir], function(dirs, tempDir) {
 	var passwordFile = args.password || args.pwd;
 	argslib.readPasswordFile(passwordFile, function(password) {
-		startServer({
-			port: port,
-			workspaceDir: dirs[0],
-			tempDir: dirs[1],
-			passwordFile: passwordFile,
-			password: password,
-			dev: args.hasOwnProperty('dev'),
-			log: args.hasOwnProperty('log')
+		argslib.readConfigFile("./server.conf", function(configParams) {
+			if(configParams){
+				config_params = configParams;
+			}
+			startServer({
+				port: port,
+				workspaceDir: dirs[0],
+				tempDir: dirs[1],
+				passwordFile: passwordFile,
+				password: password,
+				configParams: config_params,
+				dev: args.hasOwnProperty('dev'),
+				log: args.hasOwnProperty('log')
+			});
 		});
 	});
 });

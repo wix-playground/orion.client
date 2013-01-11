@@ -75,3 +75,26 @@ exports.readPasswordFile = function(passwordFile, callback) {
 		callback(null);
 	}
 };
+
+/**
+ * @param {Function} callback Invoked as function(configObject), the configObject is null if the file couldn't be read.
+ */
+exports.readConfigFile = function(configFile, callback) {
+	if (configFile) {
+		fs.readFile(configFile, function(err, content) {
+			if (err) { throw err; }
+			var params = content.toString().split("\n");
+			var result = {};
+			for (var i = 0; i < params.length; i++) {
+				var pair = params[i];
+				var parsed = /([^=]*)(=?)(.*)/.exec(pair);
+				var name = parsed[1] || ""; 
+				var value = parsed[3] || ""; 
+				result[name] = value;
+			}
+			callback(result);
+		});
+	} else {
+		callback(null);
+	}
+};

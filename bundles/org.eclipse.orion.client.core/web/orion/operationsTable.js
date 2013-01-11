@@ -43,21 +43,32 @@ define(['i18n!orion/operations/nls/messages',  'require', 'orion/webui/littlelib
 				
 				that.serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
 			}
-			this.operationsClient.getOperations().then(function(operations){
-				for(var operationLocation in operations){
-					var operation = operations[operationLocation];
+			this.operationsClient.getOperations().then(function(globalOperations){
+				var operationLocations = globalOperations.keys();
+				var operations = {};
+				for(var i=0; i<operationLocations.length; i++){
+					var operationLocation = operationLocations[i];
+					var operation = globalOperations.get(operationLocation);
+					operation.Location = operationLocation;
+					operations[operationLocation]= operation;
 					if(operation.expires && new Date().getTime()>operation.expires){
 						//operations expired
 						operations.remove(operationLocation);
 						continue;
 					}
-					operations[operationLocation].deferred = that.operationsClient.getOperation(operationLocation);
+					operation.deferred = that.operationsClient.getOperation(operationLocation);
 					var success = function (result){
 						operations[this].operation = operations.operation || {};
 						operations[this].operation.type = "loadend";
 						that.changedItem(this);
 					};
 					var failure = function(error) {
+						if(error.HttpCode==404 && error.JsonData && error.JsonData.taskNotFound){
+							globalOperations.remove(this);
+							delete operations[this];
+							that._loadOperationsList.bind(that)(operations);
+							return;
+						}
 						operations[this].operation = operations.operation || {};
 						operations[this].operation.type = "error";
 						operations[this].operation.error = error;
@@ -67,7 +78,7 @@ define(['i18n!orion/operations/nls/messages',  'require', 'orion/webui/littlelib
 						operations[this].operation = operation;
 						that.changedItem(this);
 					};
-					operations[operationLocation].deferred.then(success.bind(operationLocation), failure.bind(operationLocation), progress.bind(operationLocation));
+					operation.deferred.then(success.bind(operationLocation), failure.bind(operationLocation), progress.bind(operationLocation));
 				}
 				that._loadOperationsList.bind(that)(operations);
 			}, displayError);
@@ -79,6 +90,7 @@ define(['i18n!orion/operations/nls/messages',  'require', 'orion/webui/littlelib
 			mOperationsCommands.updateNavTools(this.registry, this, this.toolbarId, this.selectionToolsId, this.operations);
 			this.model = new exports.OperationsModel(operationsList);
 			this.createTree(this.parentId, this.model);
+			this.getNavHandler().refreshModel(this.getNavDict(), this.model, operationsList);
 		};
 		
 		OperationsExplorer.prototype.changedItem = function(location){

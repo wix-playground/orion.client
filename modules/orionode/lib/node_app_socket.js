@@ -60,10 +60,23 @@ exports.install = function(options) {
 	}
 	io.sockets.on('connection', function(socket) {
 		var handshakeData = socket.handshake;
+		socket.on('npm', function(data) {
+			try {
+				var app = appContext.startNPM(data.args, data.context);
+				pipeStreams(app, socket);
+				app.on('exit', function(c) {
+					socket.emit('stopped', app.toJson());
+				});
+				//socket.emit('started', app.toJson());
+			} catch (error) {
+				console.log(error && error.stack);
+				emitError(socket, error);
+			}
+		});
 		socket.on('start', function(data) {
 			try {
 				checkParamType(data, 'modulePath', 'string');
-				var app = appContext.startApp(data.modulePath, data.args);
+				var app = appContext.startApp(data.modulePath, data.args, data.context);
 				pipeStreams(app, socket);
 				app.on('exit', function(c) {
 					socket.emit('stopped', app.toJson());
@@ -78,7 +91,7 @@ exports.install = function(options) {
 			try {
 				checkParamType(data, 'modulePath', 'string');
 				checkParamType(data, 'port', 'number');
-				var app = appContext.debugApp(data.modulePath, data.port, handshakeData.headers, handshakeData.url);
+				var app = appContext.debugApp(data.modulePath, data.port, data.args, data.context, handshakeData.headers, handshakeData.url);
 				pipeStreams(app, socket);
 				app.on('exit', function(c) {
 					socket.emit('stopped', app.toJson());

@@ -65,7 +65,7 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 			range.selectNode(parent);
 			var frameFragment = range.createContextualFragment(this.CONTAINERTEMPLATE);
 			parent.appendChild(frameFragment);
-			this.$frame = lib.$(".dialog", parent); //$NON-NLS-0$
+			this.$frame = parent.lastChild;
 			if (this.title) {
 				lib.$("#title", this.$frame).appendChild(document.createTextNode(this.title)); //$NON-NLS-0$
 			}
@@ -86,15 +86,15 @@ define(['i18n!orion/widgets/nls/messages', 'require', 'orion/webui/littlelib'],
 				}
 			}, false);
 			
-			this.$parent = lib.$(".dialogContent", parent); //$NON-NLS-0$
+			this.$parent = lib.$(".dialogContent", this.$frame); //$NON-NLS-0$
 			range = document.createRange();
 			range.selectNode(this.$parent);
 			var contentFragment = range.createContextualFragment(this.TEMPLATE);
 			if (this.messages) {
-				lib.processTextNodes(contentFragment, messages);
+				lib.processTextNodes(contentFragment, this.messages);
 			}
 			this.$parent.appendChild(contentFragment);
-			this.$buttonContainer = lib.$(".dialogButtons", parent); //$NON-NLS-0$
+			this.$buttonContainer = lib.$(".dialogButtons", this.$frame); //$NON-NLS-0$
 			this._makeButtons();
 			this._bindElements(this.$parent);
 			if (typeof this._bindToDom === "function") { //$NON-NLS-0$
