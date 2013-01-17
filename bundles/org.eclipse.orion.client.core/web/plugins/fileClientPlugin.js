@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @license
- * Copyright (c) 2010, 2012 IBM Corporation and others.
+ * Copyright (c) 2010, 2013 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials are made 
  * available under the terms of the Eclipse Public License v1.0 
  * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
@@ -11,7 +11,7 @@
 
 /*global window document parent define console eclipse*/
 
-define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/fileImpl", "domReady!"], function(Deferred, PluginProvider, FileServiceImpl) {
+define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/fileImpl", "plugins/filePlugin/sftpFileImpl", "domReady!"], function(Deferred, PluginProvider, FileServiceImpl, SFTPFileServiceImpl) {
 	function trace(implementation) {
 		var method;
 		var traced = {};
@@ -67,6 +67,9 @@ define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/fileImpl", "domRea
 	temp.href = "../file";
 	// note global
 	var fileBase = makeParentRelative(temp.href);
+	
+	temp.href = "../sftp";
+	var sftpBase = makeParentRelative(temp.href);
 
 	temp.href = "../workspace";
 	// note global
@@ -84,6 +87,15 @@ define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/fileImpl", "domRea
 		nls: 'orion/navigate/nls/messages',
 		top: fileBase,
 		pattern: patternBase
+	});
+	//sftp file service
+	var sftpService = new SFTPFileServiceImpl(sftpBase, workspaceBase);
+	provider.registerService("orion.core.file", sftpService, {
+		Name: 'SFTP Content',
+		NameKey: 'SFTP Content',
+		nls: 'orion/navigate/nls/messages',
+		top: sftpBase,
+		pattern: sftpBase
 	});
 	provider.connect();
 });
