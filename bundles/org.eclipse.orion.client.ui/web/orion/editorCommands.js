@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @license
- * Copyright (c) 2011, 2012 IBM Corporation and others.
+ * Copyright (c) 2011, 2013 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials are made 
  * available under the terms of the Eclipse Public License v1.0 
  * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
@@ -318,7 +318,7 @@ define([
 				if (!allowHTML && status && typeof status.HTML !== "undefined") { //$NON-NLS-0$
 					delete status.HTML;
 				}
-				var statusService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
+				var statusService = self.serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
 				if (statusService) {
 					statusService.setProgressResult(status);
 				} else {
