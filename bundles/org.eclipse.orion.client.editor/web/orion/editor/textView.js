@@ -1281,6 +1281,20 @@ define("orion/editor/textView", [ //$NON-NLS-0$
 			this._createRuler(ruler, index);
 			this._update();
 		},
+		setShowPrintMargin: function(show){
+			this._showPrintMargin = show;
+			if(this._showPrintMargin){
+				this._createPrintMargin();
+				this._update();
+			}else{
+				this._destroyPrintMargin();
+			}
+		},
+		setPrintMargin: function(numColumns){
+			if ((undefined === numColumns) || (null === numColumns)) { return; }
+		    if (typeof numColumns !== 'number') { return; }
+			this._printMargin = numColumns;
+		},
 		computeSize: function() {
 			var w = 0, h = 0;
 			var model = this._model, clientDiv = this._clientDiv;
@@ -4621,6 +4635,32 @@ define("orion/editor/textView", [ //$NON-NLS-0$
 				"toggleTabMode": {defaultHandler: function(data) {return self._doTabMode();}, actionDescription: {name: messages.toggleTabMode}}, //$NON-NLS-0$
 				"toggleWrapMode": {defaultHandler: function(data) {return self._doWrapMode();}, actionDescription: {name: messages.toggleWrapMode}} //$NON-NLS-0$
 			};
+		},		
+		_createPrintMargin: function(){
+			if (!this._printMarginDiv) { return; }
+			if (this._printMargin < 50 || this._printMargin > 200) { return; }
+			
+			this._destroyPrintMargin();
+			
+			var parent = this._printMarginDiv;
+			var document = parent.ownerDocument;
+			
+			// Temp string of 200 fill characters
+			var tempString = "________________________________________________________________________________________________________________________________________________________________________________________________________".substring(0, this._printMargin);
+			
+			parent.innerHTML = tempString;
+			
+			var lineImg = util.createElement(document, "img"); //$NON-NLS-0$
+			lineImg.src = "../orion/editor/images/OnePixel.png"; //$NON-NLS-0$
+			lineImg.style.height = "100%"; //$NON-NLS-0$
+			lineImg.style.width = "1px"; //$NON-NLS-0$
+			lineImg.style["padding-left"] = "2px";
+			parent.appendChild(lineImg);
+		},		
+		_destroyPrintMargin: function(){
+			if (!this._printMarginDiv) { return; }
+			var parent = this._printMarginDiv;
+			while (parent.hasChildNodes()) { parent.removeChild(parent.lastChild); }
 		},
 		_createRuler: function(ruler, index) {
 			if (!this._clientDiv) { return; }
@@ -4742,6 +4782,11 @@ define("orion/editor/textView", [ //$NON-NLS-0$
 			}
 			
 			this._setFullSelection(this._fullSelection, true);
+			
+			var printMarginDiv = util.createElement(document, "div");
+			this._printMarginDiv = printMarginDiv;
+			printMarginDiv.style.height = "100%"; //$NON-NLS-0$
+			(this._clipDiv || rootDiv).appendChild(printMarginDiv);
 
 			var clientDiv = util.createElement(document, "div"); //$NON-NLS-0$
 			clientDiv.className = "textviewContent"; //$NON-NLS-0$
@@ -4892,6 +4937,7 @@ define("orion/editor/textView", [ //$NON-NLS-0$
 			this._rightDiv = null;
 			this._vScrollDiv = null;
 			this._hScrollDiv = null;
+			this._printMarginDiv = null;
 		},
 		_doAutoScroll: function (direction, x, y) {
 			this._autoScrollDir = direction;
@@ -5388,6 +5434,8 @@ define("orion/editor/textView", [ //$NON-NLS-0$
 			this._dragOffset = -1;
 			this._isRangeRects = (!util.isIE || util.isIE >= 9) && typeof parent.ownerDocument.createRange().getBoundingClientRect === "function"; //$NON-NLS-0$
 			this._isW3CEvents = parent.addEventListener;
+			this._printMargin = 80;
+			this._showPrintMargin = false;
 
 			/* Auto scroll */
 			this._autoScrollX = null;
