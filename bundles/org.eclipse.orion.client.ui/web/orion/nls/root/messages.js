@@ -69,8 +69,6 @@ define({
 	"More" : "More",
 	"Saved searches" : "Saved searches",
 	"Recent searches" : "Recent searches",
-	"Open in new tab" : "Open in new tab",
-	"Open in same tab": "Open in same tab",
 	"Regular expression" : "Regular expression",
 	"Search options" : "Search options",
 	"Global search" : "Global search",
@@ -88,7 +86,5 @@ define({
 	"Generate a sample plugin for integrating with Orion.": "Generate a sample plugin for integrating with Orion.",
 	"Raw": "Raw",
 	"Open the raw file or folder in the browser": "Open the raw file or folder in the browser",
-	"Navigation": "Navigation",
-	"Links": "Links",
 	"OutlineProgress": "Getting outline for ${0} from ${1}"
 });
