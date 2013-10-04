@@ -79,6 +79,24 @@ define(['i18n!git/nls/gitmessages', 'require', 'orion/bootstrap', 'orion/status'
 
 			commandRegistry.addCommand(showDiffCommand);
 			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.diff.showCurrent", 2000); //$NON-NLS-1$ //$NON-NLS-0$
+			
+			
+			var showBlameCommand = new Commands.Command({ 
+				name: messages.Blame,
+				tooltip: messages.BlameTooltip,
+				id: "eclipse.orion.git.blame", //$NON-NLS-0$
+				hrefCallback: function(data) {
+					var resourceRaw = PageUtil.matchResourceParameters().resourceRaw;
+					var start = resourceRaw.indexOf("/file"); //$NON-NLS-0$
+					return require.toUrl("edit/edit.html") + "#" + resourceRaw.substring(0, start) + data.items.ContentLocation + "?parts=body,blame=true"; //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				},
+				visibleWhen: function(item) {
+					return item.Type === "Diff"; //$NON-NLS-0$
+				}
+			});
+
+			commandRegistry.addCommand(showBlameCommand);
+			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.blame", 2000); //$NON-NLS-1$ //$NON-NLS-0$
 
 			var pageParams = PageUtil.matchResourceParameters();
 			explorer.display(pageParams.resource);
