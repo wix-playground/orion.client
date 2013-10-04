@@ -112,7 +112,7 @@ define([
 			var editor = this.getEditor();
 			if (this._fileMetadata) {
 				//Reload if out of sync, unless we are already in the process of saving
-				if (!this._saving) {
+				if (!this._saving && !this._readonly) {
 					progressService.progress(fileClient.read(resourceRaw, true), i18nUtil.formatMessage(messages.ReadingMetadata, fileURI)).then(function(data) {
 						if (this._fileMetadata && this._fileMetadata.Location === data.Location && this._fileMetadata.ETag !== data.ETag) {
 							this._fileMetadata = data;
@@ -126,12 +126,20 @@ define([
 					}.bind(this));
 				}
 			} else {
+				var metadataURI = resourceRaw;
+				if (metadataURI.indexOf("/gitapi/commit/") === 0) { //$NON-NLS-0$
+					var start = metadataURI.indexOf("/file"); //$NON-NLS-0$
+					var end = metadataURI.indexOf("?", start); //$NON-NLS-0$
+					if (end === -1) { end = metadataURI.length; }
+					metadataURI = metadataURI.substring(start, end);
+					this._readonly = true;
+				}
 				var progressTimeout = window.setTimeout(function() {
 					editor.reportStatus(i18nUtil.formatMessage(messages.Fetching, fileURI));
 				}, 800);
 				new Deferred.all([
 					progressService.progress(fileClient.read(resourceRaw, false, true), i18nUtil.formatMessage(messages.Reading, fileURI)),
-					progressService.progress(fileClient.read(resourceRaw, true), i18nUtil.formatMessage(messages.ReadingMetadata, fileURI))
+					progressService.progress(fileClient.read(metadataURI, true), i18nUtil.formatMessage(messages.ReadingMetadata, metadataURI))
 				], function(error) { return {_error: error}; }).then(function(results) {
 					if (progressTimeout) {
 						window.clearTimeout(progressTimeout);
@@ -175,7 +183,7 @@ define([
 		},
 		getReadOnly: function() {
 			var data = this._fileMetadata;
-			return !data || (data.Attributes && data.Attributes.ReadOnly);
+			return this._readonly || !data || (data.Attributes && data.Attributes.ReadOnly);
 		},
 		getContentType: function() {
 			return this._contentType;
@@ -183,7 +191,7 @@ define([
 		save: function() {
 			if (this._saving) { return; }
 			var editor = this.getEditor();
-			if (!editor.isDirty()) { return; }
+			if (!editor.isDirty() || this.getReadOnly()) { return; }
 			var failedSaving = this._errorSaving;
 			this._saving = true;
 			var input = this.getInput();
