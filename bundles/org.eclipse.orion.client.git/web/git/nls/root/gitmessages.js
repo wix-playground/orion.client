@@ -17,6 +17,8 @@ define({
 	"Working Directory Version": "Working Directory Version",
 	"Working Directory": "Working Directory",
 	"View the working directory version of the file": "View the working directory version of the file",
+	"Blame": "Blame",
+	"BlameTooltip": "Blame commit version of the file",
 	"Loading...": "Loading...",
 	"Repositories": "Git Repositories",
 	"Repo": "Repositories",

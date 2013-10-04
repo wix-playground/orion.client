@@ -764,10 +764,24 @@ var exports = {};
 				return require.toUrl("edit/edit.html")+"#" + data.items.ContentLocation; //$NON-NLS-1$ //$NON-NLS-0$
 			},
 			visibleWhen : function(item) {
-				return item.Type === "Commit" && item.ContentLocation != null && !explorer.isDirectory; //$NON-NLS-0$
+				return item.Type === "Commit" && item.ContentLocation !== null && !explorer.isDirectory; //$NON-NLS-0$
 			}
 		});
 		commandService.addCommand(openGitCommit);
+		
+		var blameGitCommit = new mCommands.Command({
+			name : messages["Blame"],
+			id : "eclipse.blameGitCommit", //$NON-NLS-0$
+			imageClass: "git-sprite-blame", //$NON-NLS-0$
+			spriteClass: "gitCommandSprite",
+			hrefCallback: function(data) {
+				return require.toUrl("edit/edit.html")+"#" + data.items.ContentLocation + ",blame=true"; //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			},
+			visibleWhen : function(item) {
+				return item.Type === "Commit" && item.ContentLocation !== null && !explorer.isDirectory; //$NON-NLS-0$
+			}
+		});
+		commandService.addCommand(blameGitCommit);
 
 		var fetchCommand = new mCommands.Command({
 			name: messages["Fetch"],

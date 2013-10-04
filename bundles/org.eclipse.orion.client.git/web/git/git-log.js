@@ -52,7 +52,8 @@ define(['i18n!git/nls/gitmessages', 'require', 'orion/browserCompatibility', 'or
 			
 			// commands appearing directly in local actions column
 			commandService.registerCommandContribution("itemLevelCommands", "eclipse.openGitCommit", 1); //$NON-NLS-1$ //$NON-NLS-0$
-			commandService.registerCommandContribution("itemLevelCommands", "eclipse.compareWithWorkingTree", 2); //$NON-NLS-1$ //$NON-NLS-0$
+			commandService.registerCommandContribution("itemLevelCommands", "eclipse.blameGitCommit", 2); //$NON-NLS-1$ //$NON-NLS-0$
+			commandService.registerCommandContribution("itemLevelCommands", "eclipse.compareWithWorkingTree", 3); //$NON-NLS-1$ //$NON-NLS-0$
 		
 			// selection based command contributions in nav toolbar
 			commandService.registerCommandContribution("selectionTools", "eclipse.compareGitCommits", 1, "eclipse.selectionGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$

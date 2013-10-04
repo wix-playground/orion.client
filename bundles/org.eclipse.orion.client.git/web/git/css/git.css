@@ -95,6 +95,7 @@
 .git-sprite-cherry_pick{ background-image: url(../images/cherry-pick.png); width: 16px; height: 16px; }
 .git-sprite-compare{ background-image: url(../images/compare.png); width: 16px; height: 16px; }
 .git-sprite-open{ background-image: url(../images/git-open.png); width: 16px; height: 16px; }
+.git-sprite-blame{ background-image: url(../images/git-open.png); width: 16px; height: 16px; }
 .git-sprite-conflict-file{ background-position: 0 -108px; width: 16px; height: 16px; } 
 .git-sprite-fetch{ background-position: 0 -126px; width: 16px; height: 16px; } 
 .git-sprite-file{ background-image: url(../images/git-file.png); width: 16px; height: 16px; } 
