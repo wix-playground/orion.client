@@ -902,18 +902,17 @@ input {
 	position: relative;
 }
 
-.orionMarkdown table, .orionProject table, .folderNav table {
+.orionMarkdown table, .orionProject table, .folderNav table, .sectionWrapper, .sectionTable{
 	text-align: left;
 	border-collapse: collapse;
 	border-spacing: 0;
-	border-right: 1px solid lightgrey;
-	border-left: 1px solid lightgrey;
-	width: 90%;
+	border: 1px solid lightgrey;
 	margin-left: 5%;
 	margin-right: 5%;
 	margin-top: 30px;
 	margin-bottom: 0;
 	border-color:#daedf1;
+	width: 90%;
 }
 
 .folderNav tr {
@@ -939,7 +938,7 @@ input {
 	border: 1px solid lightgrey;
 }
 
-.folderNav th, .orionMarkdown th, .orionProject th {
+.folderNav th, .orionMarkdown th, .orionProject th, .sectionWrapper{
 	border-color:#daedf1;
 	border-bottom: 1px solid #daedf1;
 	border-top: 1px solid #daedf1;
@@ -952,5 +951,16 @@ input {
 .folderNav th:first-child, .orionMarkdown th:first-child, .orionProject th:first-child {
 	padding-top: 9px;
 	padding-bottom: 9px;
+}
+
+.sectionWrapper{
+	margin-bottom: 0;
+	width: inherit;
+}
+
+.sectionTable{
+	margin-top: 0;
+	padding: 9px;
+	width: inherit;
 }
 
