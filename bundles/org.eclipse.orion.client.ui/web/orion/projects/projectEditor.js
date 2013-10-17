@@ -9,8 +9,8 @@
  ******************************************************************************/
  
 /*global define document setTimeout*/
-define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'orion/projectCommands', 'orion/commandRegistry'],
-	function(mMarkdownView, URITemplate, lib, mProjectCommands, mCommandRegistry) { //$NON-NLS-0$
+define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'orion/projectCommands', 'orion/commandRegistry',  'orion/URITemplate', 'orion/PageLinks'],
+	function(mMarkdownView, URITemplate, lib, mProjectCommands, mCommandRegistry, URITemplate, PageLinks) { //$NON-NLS-0$
 	function ProjectEditor(options){
 		this.serviceRegistry = options.serviceRegistry;
 		this.fileClient = options.fileClient;
@@ -233,7 +233,8 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 								td = document.createElement("td");
 								if(child.href){
 									var a = document.createElement("a");
-									a.href = child.href.replace("{OrionHome}", "..");
+									var uriTemplate = new URITemplate(child.href);
+									a.href = uriTemplate.expand({OrionHome : PageLinks.getOrionHome()});
 									a.appendChild(document.createTextNode(child.value || " "));
 									td.appendChild(a);
 								} else {
