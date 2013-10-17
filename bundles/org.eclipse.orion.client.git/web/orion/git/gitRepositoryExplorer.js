@@ -10,9 +10,9 @@
  ******************************************************************************/
 /*global define document Image window*/
 define(['i18n!git/nls/gitmessages', 'require', 'orion/commandRegistry', 'orion/section', 'orion/i18nUtil', 'orion/webui/littlelib', 'orion/PageUtil', 'orion/dynamicContent', 'orion/fileUtils', 
-        'orion/globalCommands', 'orion/git/gitCommands', 'orion/Deferred', 'orion/git/widgets/CommitTooltipDialog'], 
+        'orion/globalCommands', 'orion/git/gitCommands', 'orion/Deferred', 'orion/git/widgets/CommitTooltipDialog', 'orion/URITemplate'], 
 		function(messages, require, mCommands, mSection, i18nUtil, lib, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, mGitCommands, Deferred,
-				mCommitTooltip) {
+				mCommitTooltip, URITemplate) {
 var exports = {};
 
 exports.GitRepositoryExplorer = (function() {
@@ -63,17 +63,25 @@ exports.GitRepositoryExplorer = (function() {
 	};
 	
 	GitRepositoryExplorer.prototype.changedItem = function(parent, children) {
-		// An item changed so we do not need to process any URLs
-		this.redisplay(false);
+		if(parent){
+			this.redisplay(true, parent.Location);
+		} else {
+			// An item changed so we do not need to process any URLs
+			this.redisplay(false);
+		}
 	};
 	
-	GitRepositoryExplorer.prototype.redisplay = function(processURLs){
+	GitRepositoryExplorer.prototype.redisplay = function(processURLs, newUrl){
 		// make sure to have this flag
 		if(processURLs === undefined){
 			processURLs = true;
 		}
 	
 		var pageParams = PageUtil.matchResourceParameters();
+		if(newUrl !== undefined && pageParams.resource != newUrl){
+			window.location = new URITemplate(require.toUrl("git/git-repository.html") + "#" + newUrl).expand({});
+			return;
+		}
 		if (pageParams.resource) {
 			this.displayRepository(pageParams.resource);
 		} else {
