@@ -9,10 +9,10 @@
  ******************************************************************************/
  
 /*global define document window*/
-define(['orion/projects/projectExplorer',
+define(['i18n!orion/projects/nls/messages', 'orion/projects/projectExplorer',
 	'orion/selection',
 	'orion/URITemplate',
-	'orion/webui/littlelib'], function(mProjectExplorer, Selection, URITemplate, lib) {
+	'orion/webui/littlelib'], function(messages, mProjectExplorer, Selection, URITemplate, lib) {
 		function ProjectView(options){
 			this.progress = options.progress;
 			this.fileClient = options.fileClient;
@@ -33,14 +33,14 @@ define(['orion/projects/projectExplorer',
 					return;
 				}
 				if(parent){
-					_self.progress.progress(_self.projectClient.readAllProjects(parent), "Listing projects").then(function(projects){
+					_self.progress.progress(_self.projectClient.readAllProjects(parent), messages["listingProjects"]).then(function(projects){
 						_self.projectExplorer.loadProjects(projects);
 						lib.empty(_self.projectExplorer.newActionsSpan);
 						_self.commandService.renderCommands(mProjectExplorer.newActionsScope, _self.projectExplorer.newActionsSpan, parent, _self.projectExplorer, "tool"); //$NON-NLS-0$
 					});
 				} else {
-					_self.progress.progress(_self.fileClient.loadWorkspace(), "Getting workspace information").then(function(workspace){
-						_self.progress.progress(_self.projectClient.readAllProjects(parent), "Listing projects").then(function(projects){
+					_self.progress.progress(_self.fileClient.loadWorkspace(), messages["gettingWorkspaceInformation"]).then(function(workspace){
+						_self.progress.progress(_self.projectClient.readAllProjects(parent), messages["listingProjects"]).then(function(projects){
 							_self.projectExplorer.loadProjects(projects);
 							lib.empty(_self.projectExplorer.newActionsSpan);
 							_self.commandService.renderCommands(mProjectExplorer.newActionsScope, _self.projectExplorer.newActionsSpan, parent, _self.projectExplorer, "tool"); //$NON-NLS-0$

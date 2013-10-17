@@ -11,9 +11,9 @@
  *******************************************************************************/
 /*global window define orion XMLHttpRequest confirm*/
 /*jslint sub:true*/
-define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/commands', 'orion/Deferred', 'orion/webui/dialogs/DirectoryPrompterDialog',
+define(['i18n!orion/projects/nls/messages', 'i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/commands', 'orion/Deferred', 'orion/webui/dialogs/DirectoryPrompterDialog',
  'orion/commandRegistry', 'orion/i18nUtil', 'orion/webui/dialogs/ImportDialog'],
-	function(messages, lib, mCommands, Deferred, DirectoryPrompterDialog, mCommandRegistry, i18nUtil, ImportDialog){
+	function(messages, navigateMessages, lib, mCommands, Deferred, DirectoryPrompterDialog, mCommandRegistry, i18nUtil, ImportDialog){
 		var projectCommandUtils = {};
 		
 		var selectionListenerAdded = false;
@@ -116,7 +116,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 					actionComment = handler.actionComment;
 				}
 			} else {
-				actionComment = "Getting content from "	+ handler.type;
+				actionComment = messages["gettingContentFrom"]	+ handler.type;
 			}
 			progress.showWhile(handler.initDependency(dependency, params, project), actionComment).then(function(dependency){
 				projectClient.addProjectDependency(project, dependency).then(function(){
@@ -148,8 +148,8 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		}
 		
 		var connectDependencyCommand = new mCommands.Command({
-			name: "Connect",
-			tooltip: "Fetch content",
+			name: messages["connect"],
+			tooltip: messages["fetchContent"],
 			id: "orion.project.dependency.connect", //$NON-NLS-0$
 			callback: function(data) {
 				var item = forceSingleItem(data.items);
@@ -185,14 +185,14 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		
 				
 		var disconnectDependencyCommand = new mCommands.Command({
-			name: "Disconnect from project",
-			tooltip: "Do not treat this folder as a part of the project",
+			name: messages["disconnectFromProject"],
+			tooltip: messages["doNotTreatThisFolder"],
 			imageClass: "core-sprite-delete", //$NON-NLS-0$
 			id: "orion.project.dependency.disconnect", //$NON-NLS-0$
 			callback: function(data) {
 				var item = forceSingleItem(data.items);
 				progress.progress(projectClient.removeProjectDependency(item.Project, item.Dependency),
-					i18nUtil.formatMessage("Removing ${0} from project ${1}", item.Dependency.Name, item.Project.Name)).then(function(resp){
+					i18nUtil.formatMessage(messages["removing${0}FromProject${1}"], item.Dependency.Name, item.Project.Name)).then(function(resp){
 						explorer.changedItem();
 					});
 			},
@@ -232,13 +232,13 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		dependencyTypes =  dependencyTypes || [];
 		
 		var addFolderCommand = new mCommands.Command({
-			name: "Add External Folder",
-			tooltip: "Add an external folder from workspace",
+			name: messages["addExternalFolder"],
+			tooltip: messages["addAnExternalFolderFrom"],
 			id: "orion.project.addFolder", //$NON-NLS-0$
 			callback: function(data) {
 				var item = forceSingleItem(data.items);
 				
-				var dialog = new DirectoryPrompterDialog.DirectoryPrompterDialog({ title : messages["Choose a Folder"],
+				var dialog = new DirectoryPrompterDialog.DirectoryPrompterDialog({ title : navigateMessages["Choose a Folder"],
 					serviceRegistry : serviceRegistry,
 					fileClient : fileClient,
 					func : function(targetFolder) {
@@ -302,8 +302,8 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		commandService.addCommand(addFolderCommand);
 		
 		var initProjectCommand = new mCommands.Command({
-			name: "Init Basic Project",
-			tooltip: "Convert this folder into a project",
+			name: messages["initBasicProject"],
+			tooltip: messages["convertThisFolderIntoA"],
 			id: "orion.project.initProject", //$NON-NLS-0$
 			callback: function(data) {
 				var item = forceSingleItem(data.items);
@@ -380,7 +380,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 							}
 						}, errorHandler);
 						
-						progress.showWhile(searchLocallyDeferred, "Searching your workspace for matching content").then(function(resp){
+						progress.showWhile(searchLocallyDeferred, messages["searchingYourWorkspaceForMatching"]).then(function(resp){
 							if(resp) {
 								projectClient.addProjectDependency(item, resp).then(function(){
 									explorer.changedItem();
@@ -440,7 +440,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 								actionComment = handler.actionComment;
 							}
 						} else {
-							actionComment = "Getting content from "	+ handler.type;
+							actionComment = messages["gettingContentFrom"]	+ handler.type;
 						}
 						progress.showWhile(handler.initProject(params, {WorkspaceLocation: item.Location}), actionComment).then(function(project){
 									explorer.changedItem(item, true);
@@ -486,14 +486,14 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 			}
 		
 		var addReadmeCommand = new mCommands.Command({
-			name: "Create Readme",
-			tooltip: "Create README.md file in this project",
+			name: messages["createReadme"],
+			tooltip: messages["createREADME.mdFileInThis"],
 			id: "orion.project.create.readme",
 			callback: function(data){
 				var item = forceSingleItem(data.items);
 				progress.progress(fileClient.createFile(item.Project.ContentLocation, "README.md"), "Creating README.md").then(function(readmeMeta){
 					if(item.Project){
-						progress.progress(fileClient.write(readmeMeta.Location, "# " + item.Project.Name), "Writing sample readme").then(function(){
+						progress.progress(fileClient.write(readmeMeta.Location, "# " + item.Project.Name), messages["writingSampleReadme"]).then(function(){
 							explorer.changedItem();							
 						});
 					} else {
@@ -517,17 +517,17 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		commandService.addCommand(addReadmeCommand);
 		
 		var createBasicProjectCommand = new mCommands.Command({
-			name: "Create a basic project",
-			tooltip: "Create an empty project",
+			name: messages["createABasicProject"],
+			tooltip: messages["createAnEmptyProject"],
 			id: "orion.project.create.basic",
-			parameters : new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter("name", "text", "Name: ")]),
+			parameters : new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter("name", "text", messages["name:"])]),
 			callback: function(data){
 					var name = data.parameters.valueFor("name");
 					if(!name){
 						return;
 					}
 					var item = forceSingleItem(data.items);
-					progress.progress(projectClient.createProject(item.Location, {Name: name}), "Creating project " + name).then(function(project){
+					progress.progress(projectClient.createProject(item.Location, {Name: name}), messages["creatingProject"] + name).then(function(project){
 						explorer.changedItem(item, true);
 					});
 				},
@@ -540,17 +540,17 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 			commandService.addCommand(createBasicProjectCommand);
 			
 			var createZipProjectCommand = new mCommands.Command({
-			name: "Create a project from a zipped folder",
-			tooltip: "Create project and fill it with data from local file",
+			name: messages["createAProjectFromA"],
+			tooltip: messages["createProjectAndFillIt"],
 			id: "orion.project.create.fromfile",
-			parameters : new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter("name", "text", "Name: ")]),
+			parameters : new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter("name", "text", messages["name:"])]),
 			callback: function(data){
 					var name = data.parameters.valueFor("name");
 					if(!name){
 						return;
 					}
 					var item = forceSingleItem(data.items);
-					progress.progress(projectClient.createProject(item.Location, {Name: name}), "Creating project " + name).then(function(projectInfo){
+					progress.progress(projectClient.createProject(item.Location, {Name: name}), messages["creatingProject"] + name).then(function(projectInfo){
 						progress.progress(fileClient.read(projectInfo.ContentLocation, true)).then(function(projectMetadata){
 							var dialog = new ImportDialog.ImportDialog({
 								importLocation: projectMetadata.ImportLocation,

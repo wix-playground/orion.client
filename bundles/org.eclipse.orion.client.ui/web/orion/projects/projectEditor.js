@@ -9,8 +9,8 @@
  ******************************************************************************/
  
 /*global define document setTimeout*/
-define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'orion/projectCommands', 'orion/commandRegistry',  'orion/URITemplate', 'orion/PageLinks'],
-	function(mMarkdownView, URITemplate, lib, mProjectCommands, mCommandRegistry, URITemplate, PageLinks) { //$NON-NLS-0$
+define(['i18n!orion/projects/nls/messages', 'orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'orion/projectCommands', 'orion/commandRegistry',  'orion/URITemplate', 'orion/PageLinks'],
+	function(messages, mMarkdownView, URITemplate, lib, mProjectCommands, mCommandRegistry, URITemplate, PageLinks) { //$NON-NLS-0$
 	function ProjectEditor(options){
 		this.serviceRegistry = options.serviceRegistry;
 		this.fileClient = options.fileClient;
@@ -69,7 +69,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 			}
 			
 			span.appendChild(document.createTextNode(this.projectData[property] || " "));
-			td.title = "Click to edit";
+			td.title = messages["clickToEdit"];
 			span.style.position = "absolute";
 			td.onclick = showInput.bind(this);
 			
@@ -83,7 +83,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 				if(event.keyCode === 13){
 					var properties = {};
 					properties[property] = event.target.value;
-					this.progress.progress(this.projectClient.changeProjectProperties(this.projectData, properties), "Saving project " + this.projectData.Name).then(
+					this.progress.progress(this.projectClient.changeProjectProperties(this.projectData, properties), messages["savingProject"] + this.projectData.Name).then(
 						function(newProjectData){
 							if(newProjectData){
 								this.projectData = newProjectData;
@@ -119,7 +119,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 			table.appendChild(tr);
 			var td = document.createElement("th");
 			td.colSpan = 2;
-			td.appendChild(document.createTextNode("Project Information"));
+			td.appendChild(document.createTextNode(messages["projectInformation"]));
 			tr.appendChild(td);
 
 			tr = document.createElement("tr");
@@ -147,7 +147,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 			table.appendChild(tr);
 			td = document.createElement("td");
 			b = document.createElement("b");
-			b.appendChild(document.createTextNode("Description"));
+			b.appendChild(document.createTextNode(messages["description"]));
 			td.appendChild(b);
 			td.width = "20%";
 			tr.appendChild(td);
@@ -172,7 +172,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 			table.appendChild(tr);
 			td = document.createElement("td");
 			b = document.createElement("b");
-			b.appendChild(document.createTextNode("Site"));
+			b.appendChild(document.createTextNode(messages["site"]));
 			td.appendChild(b);
 			td.width = "20%";
 			tr.appendChild(td);
@@ -199,7 +199,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 				if(!projectHandler || !projectHandler.getAdditionalProjectProperties){
 					return;
 				}
-				this.progress.progress(projectHandler.getAdditionalProjectProperties(this.parentFolder, this.projectData), "Getting additional project information").then(function(additionalProperties){
+				this.progress.progress(projectHandler.getAdditionalProjectProperties(this.parentFolder, this.projectData), messages["gettingAdditionalProjectInformation"]).then(function(additionalProperties){
 					if(!additionalProperties || !additionalProperties.length || additionalProperties.length === 0){
 						return;
 					}
@@ -261,7 +261,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 			var tr = document.createElement("tr");
 			table.appendChild(tr);
 			var td = document.createElement("th");
-			td.appendChild(document.createTextNode("Associated Content"));
+			td.appendChild(document.createTextNode(messages["associatedContent"]));
 			tr.appendChild(td);
 			td = document.createElement("th");
 			tr.appendChild(td);
@@ -285,7 +285,7 @@ define(['orion/markdownView', 'orion/URITemplate', 'orion/webui/littlelib', 'ori
 						}
 					}, function(){
 						lib.empty(td);
-						td.appendChild(document.createTextNode(dependency.Name + " (disconnected)"));
+						td.appendChild(document.createTextNode(dependency.Name + messages["(disconnected)"]));
 						lib.empty(span);
 						this.commandService.renderCommands(this.dependencyActions, span, {Dependency: dependency,  disconnected: true, Project: this.projectData}, this, "tool");
 					}.bind(this));
