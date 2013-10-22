@@ -36,6 +36,13 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		}
 		return item;
 	}
+	
+	function dispatchModelEventOn(explorer, event) {
+		var dispatcher = explorer.modelEventDispatcher;
+		if (dispatcher && typeof dispatcher.dispatchEvent === "function") { //$NON-NLS-0$
+			dispatcher.dispatchEvent(event);
+		}
+	}
 		
 	/**
 	 * Updates the explorer toolbar.
@@ -228,7 +235,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 				window.console.log(error);
 			}
 		}
-		
+		var dispatchModelEvent = dispatchModelEventOn.bind(null, explorer);
 		dependencyTypes =  dependencyTypes || [];
 		
 		var addFolderCommand = new mCommands.Command({
@@ -316,7 +323,8 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 				if(parentProject){
 					projectClient.initProject(parentProject.Location).then(function(){
 						fileClient.read(item.Location, true).then(function(fileMetadata){
-							explorer.changedItem(fileMetadata);
+							//explorer.changedItem(fileMetadata);
+							dispatchModelEvent({ type: "create", parent: item, newValue: fileMetadata }); //$NON-NLS-0$
 						}, errorHandler);
 					}, errorHandler);
 				}
@@ -528,7 +536,8 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 					}
 					var item = forceSingleItem(data.items);
 					progress.progress(projectClient.createProject(item.Location, {Name: name}), "Creating project " + name).then(function(project){
-						explorer.changedItem(item, true);
+//						explorer.changedItem(item, true);
+						dispatchModelEvent({ type: "create", parent: item, newValue: project.projectMetadata }); //$NON-NLS-0$
 					});
 				},
 			visibleWhen: function(item) {
