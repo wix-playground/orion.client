@@ -126,7 +126,7 @@ define([
 		]
 	});
 
-	var getPluginsTemplate = "http://orion-plugins.googlecode.com/git/index.html#?target={InstallTarget}&version={Version}&OrionHome={OrionHome}";
+	var getPluginsTemplate = "http://localhost:3000/webui/catalog.html?orionHome={OrionHome}";
 	provider.registerService("orion.core.getplugins", null, {
 		uri: decodeURIComponent(new URITemplate(getPluginsTemplate).expand({
 			Version: "4.0",
