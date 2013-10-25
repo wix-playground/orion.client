@@ -229,6 +229,25 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 			}
 		}
 		
+				
+		function dispatchNewProject(workspace, project){
+			var dispatcher = explorer.modelEventDispatcher;
+			if (dispatcher && typeof dispatcher.dispatchEvent === "function") { //$NON-NLS-0$
+				if(project.ContentLocation){
+					fileClient.read(project.ContentLocation, true).then(function(folder){
+						dispatcher.dispatchEvent( { type: "create", parent: workspace, newValue: folder});
+					},
+					function(){
+						dispatcher.dispatchEvent( { type: "create", parent: workspace, newValue: null});					
+					});
+				} else {
+					dispatcher.dispatchEvent( { type: "create", parent: workspace, newValue: null});
+				}
+			} else {
+				explorer.changedItem(workspace, true);
+			}
+		}
+		
 		dependencyTypes =  dependencyTypes || [];
 		
 		var addFolderCommand = new mCommands.Command({
@@ -443,7 +462,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 							actionComment = "Getting content from "	+ handler.type;
 						}
 						progress.showWhile(handler.initProject(params, {WorkspaceLocation: item.Location}), actionComment).then(function(project){
-									explorer.changedItem(item, true);
+							dispatchNewProject(item, project);
 						}, function(error){
 							if(error.retry && error.addParamethers){
 								var paramDescps = [];
@@ -528,7 +547,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 					}
 					var item = forceSingleItem(data.items);
 					progress.progress(projectClient.createProject(item.Location, {Name: name}), "Creating project " + name).then(function(project){
-						explorer.changedItem(item, true);
+						dispatchNewProject(item, project);
 					});
 				},
 			visibleWhen: function(item) {
@@ -555,7 +574,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 							var dialog = new ImportDialog.ImportDialog({
 								importLocation: projectMetadata.ImportLocation,
 								func: function() {
-									explorer.changedItem(item, true);
+									dispatchNewProject(item, projectInfo);
 								}
 							});
 							dialog.show();
