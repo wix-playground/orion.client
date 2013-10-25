@@ -225,7 +225,7 @@ define(["orion/util"], function(util) {
 		// auto dismissal.  Click anywhere else means close.
 		function onclick(event) {
 			autoDismissNodes.forEach(function(autoDismissNode) {
-				var excluded = autoDismissNode.excludeNodes.every(function(excludeNode) {
+				var excluded = autoDismissNode.excludeNodes.some(function(excludeNode) {
 					return !document.body.contains(excludeNode) || excludeNode.contains(event.target);
 				});
 				if (!excluded) {
