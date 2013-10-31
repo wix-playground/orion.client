@@ -289,6 +289,12 @@ define([
 				this._node = document.createElement("div"); //$NON-NLS-0$
 			}
 			this._parent.appendChild(this._node);
+			
+			if (readmeMd) {
+				div = document.createElement("div"); //$NON-NLS-0$
+				this.markdownView.displayInFrame(div, readmeMd);
+				this._node.appendChild(div);
+			}
 				
 			if(projectJson && this.showProjectView){
 				div = document.createElement("div"); //$NON-NLS-0$
@@ -309,12 +315,6 @@ define([
 				});
 				this.folderNavExplorer.loadRoot(this._metadata);
 				this._node.appendChild(navNode);
-			}
-			
-			if (readmeMd) {
-				div = document.createElement("div"); //$NON-NLS-0$
-				this.markdownView.displayInFrame(div, readmeMd);
-				this._node.appendChild(div);
 			}
 		},
 		create: function() {
