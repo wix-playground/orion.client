@@ -26,11 +26,16 @@ define(['i18n!orion/navigate/nls/messages', 'require', 'orion/Deferred', 'orion/
 		this.idPrefix = idPrefix || "";
 		this.excludeFiles = !!excludeFiles;
 		this.excludeFolders = !!excludeFolders;
+		this.queue = [];
 	}
 	FileModel.prototype = new mExplorer.ExplorerModel(); 
 	
 	FileModel.prototype.getRoot = function(onItem){
 		onItem(this.root);
+	};
+	
+	FileModel.prototype.getPending = function(){
+		return Deferred.all(this.queue);
 	};
 	
 	/*
@@ -82,12 +87,19 @@ define(['i18n!orion/navigate/nls/messages', 'require', 'orion/Deferred', 'orion/
 			onComplete([]);
 		} else if (parentItem.Location) {
 			var progress = this.registry.getService("orion.page.progress");
-			progress.progress(this.fileClient.fetchChildren(parentItem.ChildrenLocation), "Fetching children of " + parentItem.Name).then( 
+			var deferred = progress.progress(this.fileClient.fetchChildren(parentItem.ChildrenLocation), "Fetching children of " + parentItem.Name);
+			this.queue.push(deferred);
+			deferred.then(
 				function(children) {
 					if (self.destroyed) { return; }
 					onComplete(self.processParent(parentItem, children));
+					//remove deferred from queue
+					var index = self.queue.indexOf(deferred);
+					self.queue.splice(index, 1);
 				}
-			);
+			, function() {
+				//error handler remove this deferred from queue
+			});
 		} else {
 			onComplete([]);
 		}
@@ -220,8 +232,12 @@ define(['i18n!orion/navigate/nls/messages', 'require', 'orion/Deferred', 'orion/
 			});
 		},
 		create: function(modelEvent) {
+			var that = this;
 			// refresh the node
-			this.changedItem(modelEvent.parent, true, modelEvent.newValue);
+			this.changedItem(modelEvent.parent, true, modelEvent.newValue).then(
+				function (event) {
+					that.modelEventDispatcher.dispatchEvent({type: "postCreate", newValue: modelEvent.newValue});
+			});
 		},
 		"delete": function(modelEvent) { //$NON-NLS-0$
 			// Handled by deleteMultiple
@@ -497,6 +513,7 @@ define(['i18n!orion/navigate/nls/messages', 'require', 'orion/Deferred', 'orion/
 		var that = this;
 		var deferred = new Deferred();
 		parent.children = null;
+		this.model.queue.push(deferred);
 		this.model.getChildren(parent, function(children) {
 			//If a key board navigator is hooked up, we need to sync up the model
 			if(that.getNavHandler()){
@@ -504,6 +521,11 @@ define(['i18n!orion/navigate/nls/messages', 'require', 'orion/Deferred', 'orion/
 			}
 			that.myTree.refresh.bind(that.myTree)(parent, children, forceExpand);
 			deferred.resolve(children);
+			//remove deferred from queue
+			window.console.log("Model Size Before: " + that.queue.length);
+			var index = that.queue.indexOf(deferred);
+			that.queue.splice(index, 1);
+			window.console.log("Model Size After: " + that.queue.length);
 		});
 		return deferred;
 	};

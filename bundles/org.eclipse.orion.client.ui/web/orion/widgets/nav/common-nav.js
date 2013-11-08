@@ -55,7 +55,9 @@ define([
 		this.treeRoot = {}; // Needed by FileExplorer.prototype.loadResourceList
 		var _self = this;
 		this.editorInputListener = function(event) {
-			_self.reveal(event.metadata, true);
+			if (_self.model) {
+				_self.model.getPending().then(function() {_self.reveal(event.metadata, true);});
+			}
 		};
 		this.editorInputManager.addEventListener("InputChanged", this.editorInputListener); //$NON-NLS-0$
 		var dispatcher = this.modelEventDispatcher;
