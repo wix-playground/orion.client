@@ -9,7 +9,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-/*global define esprima*/
+/*global define*/
 define([
 	'orion/plugin', 
 	'javascript/outliner',
@@ -18,7 +18,7 @@ define([
 	'esprima/esprima',
 	'orion/serialize',
 	'orion/i18nUtil'
-], function(PluginProvider, Outliner, Occurrences, EsprimaAssist, _, Serialize, i18nUtil) {
+], function(PluginProvider, Outliner, Occurrences, EsprimaAssist, esprima, Serialize, i18nUtil) {
 
 	/**
 	 * Plug-in headers

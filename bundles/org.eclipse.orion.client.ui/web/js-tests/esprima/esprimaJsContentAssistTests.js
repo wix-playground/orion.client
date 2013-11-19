@@ -14,7 +14,7 @@
  *     Manu Sridharan (IBM) - Various improvements
  ******************************************************************************/
 
-/*global define esprima console setTimeout doctrine*/
+/*global define console setTimeout doctrine*/
 define([
 	"javascript/esprima/esprimaJsContentAssist",
 	"javascript/esprima/esprimaVisitor",
@@ -22,7 +22,7 @@ define([
 	"esprima/esprima",
 	"doctrine/doctrine",
 	"orion/Deferred"
-], function(mEsprimaPlugin, mVisitor, assert, _, __, Deferred) {
+], function(mEsprimaPlugin, mVisitor, assert, esprima, __, Deferred) {
 
 	//////////////////////////////////////////////////////////
 	// helpers

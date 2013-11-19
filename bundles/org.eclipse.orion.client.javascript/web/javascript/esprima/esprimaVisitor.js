@@ -12,8 +12,9 @@
 
 /*global define esprima */
 define([
+'esprima/esprima',
 'javascript/esprima/scriptedLogger'
-], function(scriptedLogger) {
+], function(esprima, scriptedLogger) {
 
 	return {
 		/**

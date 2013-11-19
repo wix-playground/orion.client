@@ -12,7 +12,7 @@
  *       Manu Sridharan (IBM) - Various improvements
  ******************************************************************************/
 
-/*global define esprima doctrine inferencerPostOp*/
+/*global define doctrine inferencerPostOp*/
 define([
 'javascript/esprima/esprimaVisitor', 
 'javascript/esprima/typeEnvironment', 
@@ -22,7 +22,7 @@ define([
 'javascript/esprima/scriptedLogger', 
 'orion/Deferred', 
 'esprima/esprima'
-], function(mVisitor, typeEnv, typeInf, typeUtils, proposalUtils, scriptedLogger, Deferred, _) {
+], function(mVisitor, typeEnv, typeInf, typeUtils, proposalUtils, scriptedLogger, Deferred, esprima) {
 
 	/**
 	 * Convert an array of parameters into a string and also compute linked editing positions
