@@ -161,7 +161,7 @@ define([
 
 	provider.registerService("orion.edit.content", {}, {
 		id: "orion.edit.imageContent",
-		uriTemplate: "../edit/content/imageViewer.html#{,OrionHome}{,Location,params*}"});
+		uriTemplate: "../edit/content/imageViewer.html#{,Location,params*}"});
 		
 	provider.registerService("orion.navigate.openWith", {}, {
 			editor: "orion.imageViewer",
