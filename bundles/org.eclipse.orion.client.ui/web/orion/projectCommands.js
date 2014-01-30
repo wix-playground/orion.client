@@ -963,10 +963,31 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 
 					},
 					visibleWhen: function(item) {
-						if(!item.Project || !item.children || item.children.length === 0){
+						if(!item.Project){
 							return false;
 						}
-						return projectClient.matchesDeployService(item.children[0], deployService);
+						var project = item.Project;
+						
+						if(!project.children || project.children.length === 0){
+							return false;
+						}
+						
+						function hasDependencyParent(item){
+							if(item.Dependency){
+								return true;
+							}
+							if(!item.parent){
+								return false;
+							}
+							return hasDependencyParent(item.parent);
+						}
+						
+						if(hasDependencyParent(item)){
+							//don't allow to deploy dependencies from project view
+							return false;
+						}
+						
+						return projectClient.matchesDeployService(project.children[0], deployService);
 					}
 				};
 				
