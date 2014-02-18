@@ -11,7 +11,8 @@
 /*global define */
 
 
-define(["orion/assert", "orion/URITemplate"], function(assert, URITemplate) {
+define(["chai/chai", "orion/URITemplate"], function(chai, URITemplate) {
+	var assert = chai.assert;
 	var tests = {};
 	
 	var variables = {
@@ -29,6 +30,7 @@ define(["orion/assert", "orion/URITemplate"], function(assert, URITemplate) {
 		x: "1024",
 		y: "768",
 		empty: "",
+		empty_list: [],
 		empty_keys: {},
 		undef: null,
 		encodedpct: "%25%A2"
@@ -96,8 +98,12 @@ define(["orion/assert", "orion/URITemplate"], function(assert, URITemplate) {
 		assert.equal(new URITemplate("{,path:6}/here").expand(variables), "/foo/b/here");
 		assert.equal(new URITemplate("{,list}").expand(variables), "red,green,blue");
 		assert.equal(new URITemplate("{,list*}").expand(variables), "red,green,blue");
+		assert.equal(new URITemplate("{,empty_list}").expand(variables), "");
+		assert.equal(new URITemplate("{,empty_list*}").expand(variables), "");
 		assert.equal(new URITemplate("{,keys}").expand(variables), "semi,;,dot,.,comma,%2C");
 		assert.equal(new URITemplate("{,keys*}").expand(variables), "semi=;,dot=.,comma=%2C");
+		assert.equal(new URITemplate("{,empty_keys}").expand(variables), "");
+		assert.equal(new URITemplate("{,empty_keys*}").expand(variables), "");
 		assert.equal(new URITemplate("{,encodedpct}").expand(variables), "%25%A2");
 	};
 	return tests;

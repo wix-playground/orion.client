@@ -9,12 +9,13 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*global define setTimeout window*/
-define(['orion/assert', 'orion/Deferred', 'orion/testHelpers', 'js-tests/editor/mockTextView', 'orion/editor/AsyncStyler',
+define(['chai/chai', 'orion/Deferred', 'orion/testHelpers', 'js-tests/editor/mockTextView', 'orion/editor/AsyncStyler',
 		'orion/serviceregistry', 'orion/EventTarget'],
-		function(assert, Deferred, testHelpers, mMockTextView, AsyncStyler, mServiceRegistry, EventTarget) {
-var MockTextView = mMockTextView.MockTextView;
+		function(chai, Deferred, testHelpers, mMockTextView, AsyncStyler, mServiceRegistry, EventTarget) {
+	var assert = chai.assert;		
+	var MockTextView = mMockTextView.MockTextView;
 
-var tests = {};
+	var tests = {};
 tests['test AsyncStyler listens to highlight provider service'] = function() {
 	var serviceRegistry = new mServiceRegistry.ServiceRegistry();
 	var textView = new MockTextView();

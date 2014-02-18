@@ -10,10 +10,11 @@
  ******************************************************************************/
 /*global define window*/
 define([
-	'orion/assert',
+	'chai/chai',
 	'orion/contentTypes',
 	'orion/serviceregistry'
-], function(assert, mContentTypes, mServiceRegistry) {
+], function(chai, mContentTypes, mServiceRegistry) {
+	var assert = chai.assert;
 	var ServiceRegistry = mServiceRegistry.ServiceRegistry;
 	var ContentTypeRegistry = mContentTypes.ContentTypeRegistry;
 

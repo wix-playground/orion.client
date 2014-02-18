@@ -13,10 +13,9 @@
 
 define([
 	'orion/Deferred',
-	'orion/assert',
 	'orion/EventTarget',
 	'require'
-], function(Deferred, assert, EventTarget, require) {
+], function(Deferred, EventTarget, require) {
 	// Time to wait before declaring an async test failed. A test function can override this by defining a 'timeout' property.
 	var DEFAULT_TIMEOUT = 30000;
 

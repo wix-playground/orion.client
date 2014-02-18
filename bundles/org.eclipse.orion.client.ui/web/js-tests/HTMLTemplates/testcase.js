@@ -11,7 +11,8 @@
 /*global define document*/
 
 
-define(["orion/assert", "orion/HTMLTemplates-shim", "domReady!"], function(assert, URITemplate) {
+define(["chai/chai", "orion/HTMLTemplates-shim", "domReady!"], function(chai, URITemplate) {
+	var assert = chai.assert;
 	var tests = {};
 	
 	tests.testTemplateElement = function() {

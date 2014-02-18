@@ -10,10 +10,11 @@
  ******************************************************************************/
 /*global define */
 define([
-	"orion/assert",
+	"chai/chai",
 	"orion/serviceRegistry",
 	"orion/serviceTracker"
-], function(assert, mServiceRegistry, ServiceTracker) {
+], function(chai, mServiceRegistry, ServiceTracker) {
+	var assert = chai.assert;
 	var ServiceRegistry = mServiceRegistry.ServiceRegistry;
 
 	var tests = {};

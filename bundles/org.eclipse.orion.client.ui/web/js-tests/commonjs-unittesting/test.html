@@ -17,8 +17,8 @@
 	var exports = {};
 	var module = {};
 
-	define("assert", ["orion/assert"], function(assert) {
-	    return assert;
+	define("assert", ["chai/chai"], function(chai) {
+	    return chai.assert;
 	});
 
 	define("test", ["orion/test"], function(test) {

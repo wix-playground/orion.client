@@ -13,13 +13,12 @@
 /*global define*/
 
 define([
-	"orion/assert",
 	"orion/editor/eventTarget",
 	"orion/editor/keyModes",
 	"orion/editor/textModel",
 	"orion/editor/annotations",
 	"orion/editor/mirror"
-], function(assert, mEventTarget, mKeyModes, mTextModel) {
+], function(mEventTarget, mKeyModes, mTextModel) {
 
 	function clone(obj) {
 		/*Note that this code only works because of the limited types used in TextViewOptions */
