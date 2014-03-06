@@ -389,11 +389,11 @@ define(['require', 'orion/webui/littlelib', 'orion/EventTarget'], function(requi
 		  * @param submenu The submenu that was opened and should be set as the next this._selectedSubmenu
 		  */
 		submenuOpen: function(submenu) {
-			if (submenu !== this._selectedSubmenu) {
+			if (this._selectedSubmenu && (submenu !== this._selectedSubmenu)) {
 				//close the current menu and all its children
 				this._closeSelectedSubmenu();
-				this._selectedSubmenu = submenu;
 			}
+			this._selectedSubmenu = submenu;
 		 },
 		 
 		_closeSelectedSubmenu: function() {
