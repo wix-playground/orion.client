@@ -270,10 +270,12 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 					});
 				},
 				visibleWhen: function(items) {
+					if (!(command.showCommand == undefined || command.showCommand)) return false;
 					var item = forceSingleItem(items);
 					return(item.Project === treeRoot.Project);
 				}
 			});
+			deployLaunchConfigurationCommands.isLaunchCommand = true;
 			commandService.addCommand(deployLaunchConfigurationCommands);
 		})(launchConfigurations[i]);
 		}
@@ -594,6 +596,25 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 		for (var commandId in commandRegistry._commandList) {
 			var command = commandRegistry._commandList[commandId];
 			if (command.isDeployProject) {
+				commands.push(command);
+			}
+		}
+		return commands;
+	};
+	
+	/**
+	 * Gets any launch project commands in the given <code>commandRegistry</code>. If {@link #createProjectCommands}, has not been called,
+	 * this returns an empty array.
+	 * @name orion.projectCommands.getLaunchProjectCommands
+	 * @function
+	 * @param {orion.commandregistry.CommandRegistry} commandRegistry The command registry to consult.
+	 * @returns {orion.commands.Command[]} All the launch project commands added to the given <code>commandRegistry</code>.
+	 */
+	projectCommandUtils.getLaunchProjectCommands = function(commandRegistry) {
+		var commands = [];
+		for (var commandId in commandRegistry._commandList) {
+			var command = commandRegistry._commandList[commandId];
+			if (command.isLaunchProject) {
 				commands.push(command);
 			}
 		}
@@ -1062,6 +1083,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 			projectCommandUtils.createDependencyCommands(serviceRegistry, commandService, fileClient, projectClient, dependencyTypes);
 			
 			function createDeployProjectCommand(deployService){
+				var command;
 				var commandParams = {
 					name: deployService.name,
 					tootlip: deployService.tooltip,
@@ -1098,6 +1120,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 
 					},
 					visibleWhen: function(item) {
+						if (!(command.showCommand == undefined || command.showCommand)) return false;
 						item = explorer.treeRoot;
 						if(!item.Project || !item.children || item.children.length === 0){
 							return false;
@@ -1108,7 +1131,7 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/comm
 				
 				commandParams.parameters = getCommandParameters(deployService.parameters, deployService.optionalParameters);
 				
-				var command = new mCommands.Command(commandParams);
+				command = new mCommands.Command(commandParams);
 				command.isDeployProject = true;
 				commandService.addCommand(command);
 			}
