@@ -1818,6 +1818,10 @@ parseStatement: true, parseSourceElement: true */
         if (typeof token.lineNumber === 'number') {
             error = new Error('Line ' + token.lineNumber + ': ' + msg);
             error.index = token.range[0];
+            // mamacdon a09739e
+            // mamacdon @ 1.0.0 esprima.js:1198
+            error.end = token.range[1];
+            error.token = token.value;
             error.lineNumber = token.lineNumber;
             error.column = token.range[0] - lineStart + 1;
         } else {
@@ -2194,6 +2198,7 @@ parseStatement: true, parseSourceElement: true */
 
     // 11.2 Left-Hand-Side Expressions
 
+    // mamacdon 1420b19
     function parseArguments() {
         var args = [];
 
@@ -2205,7 +2210,7 @@ parseStatement: true, parseSourceElement: true */
                 if (match(')')) {
                     break;
                 }
-               try {
+                try {
                     expect(',');
                 } catch (e) {
                     if (extra.errors) {
@@ -2219,8 +2224,16 @@ parseStatement: true, parseSourceElement: true */
             }
         }
 
-        //expect(')');
-        expectConditionCloseParenWrapThrow();
+		try {
+            expect(')');
+        } catch (e) {
+            if (extra.errors) {   
+                // soldier on...
+                pushError(e);
+            } else {
+                throw e;
+            }
+        }
 
         return args;
     }
@@ -2641,6 +2654,8 @@ parseStatement: true, parseSourceElement: true */
 
         block = parseStatementList();
 
+        // mamacdon 853a9865
+        // @ 1.0.0 esprima.js:2204
         //expect('}');
         expectConditionCloseBracketWrapThrow();
 
@@ -2758,10 +2773,12 @@ parseStatement: true, parseSourceElement: true */
 
         test = parseExpression();
 
+        // mamacdon 853a9865
         //expect(')');
         expectConditionCloseParenWrapThrow();
 
         consequent = parseStatement();
+        // mamacdon 853a9865
 		// required because of the check in wrapTracking that returns nothing if node is undefined
         if (!consequent) {
             consequent = null;
@@ -2814,6 +2831,7 @@ parseStatement: true, parseSourceElement: true */
 
         test = parseExpression();
 
+        // mamacdon 853a9865
         //expect(')');
         expectConditionCloseParenWrapThrow();
 
@@ -2895,6 +2913,7 @@ parseStatement: true, parseSourceElement: true */
             }
         }
 
+        // mamacdon 853a9865
         //expect(')');
         expectConditionCloseParenWrapThrow();
 
@@ -3271,6 +3290,7 @@ parseStatement: true, parseSourceElement: true */
         expr = parseExpression();
 
         // 12.12 Labelled Statements
+        // mamacdon 1420b19
         if (expr && (expr.type === Syntax.Identifier) && match(':')) {
             lex();
 
@@ -3346,6 +3366,7 @@ parseStatement: true, parseSourceElement: true */
             sourceElements.push(sourceElement);
         }
 
+        // mamacdon 853a986
         //expect('}');
         expectConditionCloseBracketWrapThrow();
 
@@ -3896,7 +3917,8 @@ parseStatement: true, parseSourceElement: true */
         }
 
 	}
-
+    // mamacdon 1420b19
+    // @ 1.0.0 esprima.js:1609
 	/**
 	 * @name pushError
      * @description Add the error if not already reported.
@@ -3966,6 +3988,9 @@ parseStatement: true, parseSourceElement: true */
         }
     }
 
+    // mamacdon 1420b19
+    // @ 1.0.0 esprima.js:1661
+    // TODO refactor
 	/**
 	 * @name rewindToInterestingChar
      * @description From a position 'idx' in the source this function moves back through the source until
