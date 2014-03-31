@@ -76,7 +76,13 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 						status=="error";
 					}
 				}
-				switch(status){
+				
+				this.setDisplayMode(status);
+				
+				this._operationsDialog.setOperations(operationsToDisplay, deferreds);
+			},
+			setDisplayMode: function(mode) {
+				switch(mode){
 				case "running": //$NON-NLS-0$
 					this._progressPane.title = messages["Operations running"];
 					this._progressPane.alt = messages['Operations running'];
@@ -103,7 +109,6 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 					}
 					this._switchIconTo("progressPane_empty");					 //$NON-NLS-0$
 				}
-				this._operationsDialog.setOperations(operationsToDisplay, deferreds);
 			},
 			_isEmpty: function(object){
 				for(var key in object){
@@ -159,9 +164,9 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 						if(progressMonitor){
 							operation.progressMonitor = progressMonitor;
 						}
-						that.writeOperation.bind(that)(operationsIndex, operation, deferred);
+						that.writeOperation(operationsIndex, operation, deferred);
 						if(!operation.Location){
-							that._removeOperationFromTheList.bind(that)(operationsIndex);
+							that._removeOperationFromTheList(operationsIndex);
 						}
 					}
 				}, function(error){
@@ -175,9 +180,9 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 						that._lastOperation = operation;
 						operation.type = error.canceled ? "abort" : "error";
 						operation.error = error; 
-						that.writeOperation.bind(that)(operationsIndex, operation, deferred);
+						that.writeOperation(operationsIndex, operation, deferred);
 						if(!operation.Location){
-							that._removeOperationFromTheList.bind(that)(operationsIndex);
+							that._removeOperationFromTheList(operationsIndex);
 						}
 					}
 				}, function(operation){
@@ -186,7 +191,7 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 					if(progressMonitor){
 						operation.progressMonitor = progressMonitor;
 					}
-					that.writeOperation.bind(that)(operationsIndex, operation, deferred);
+					that.writeOperation(operationsIndex, operation, deferred);
 				});
 				return deferred;
 			},
@@ -198,7 +203,7 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 						break;
 					}
 				}
-				that._operationsClient.removeOperation.bind(that._operationsClient)(operationLocation);
+				that._operationsClient.removeOperation(operationLocation);
 			},
 			_removeOperationFromTheList: function(operationId){
 				var progressMonitor = this._operations[operationId].progressMonitor;
@@ -234,22 +239,32 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 			 * @param avoidDisplayError Do not display error when deferred is rejected
 			 * @returns {orion.Promise}
 			 */
-			showWhile: function(deferred, message, avoidDisplayError){
+			showWhile: function(deferred, message, avoidDisplayError, animateProgressIndicator){
+				var statusService = this._serviceRegistry.getService("orion.page.message");
 				if(message) {
-					this._serviceRegistry.getService("orion.page.message").setProgressMessage(message); //$NON-NLS-0$
+					statusService.setProgressMessage(message); //$NON-NLS-0$
 				}
-				var that = this;
 				
+				if (animateProgressIndicator){
+					this.startProgressIndicator();
+				}
+
 				deferred.then(function(jsonResult){
-					that._serviceRegistry.getService("orion.page.message").setProgressMessage(""); //$NON-NLS-0$
-				}, function(jsonError){
+					statusService.setProgressMessage(""); //$NON-NLS-0$
+					if (animateProgressIndicator){
+						this.stopProgressIndicator();
+					}
+				}.bind(this), function(jsonError){
 					if(avoidDisplayError){
-						that._serviceRegistry.getService("orion.page.message").setProgressMessage(""); //$NON-NLS-0$
+						statusService.setProgressMessage(""); //$NON-NLS-0$
 					} else {
-						that.setProgressResult.bind(that)(jsonError);
+						this.setProgressResult(jsonError);
+					}
+					if (animateProgressIndicator){
+						this.stopProgressIndicator();
 					}
 					return jsonError;
-				});
+				}.bind(this));
 				return this.progress(deferred, message);
 			},
 			writeOperation: function(operationIndex, operation, deferred){
@@ -265,6 +280,12 @@ function(messages, require, Deferred, lib, mOperationsDialog) {
 				}else{
 					this._progressMonitorTool.generateOperationsInfo(this._operations, this._operationDeferrds);
 				}
+			},
+			startProgressIndicator: function() {
+				this._progressMonitorTool.setDisplayMode("running"); //$NON-NLS-0$
+			},
+			stopProgressIndicator: function() {
+				this._progressMonitorTool.setDisplayMode();
 			}
 	};
 			
