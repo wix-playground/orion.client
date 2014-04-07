@@ -11,7 +11,7 @@
  *******************************************************************************/
 /*global esprima*/
 /*jslint amd:true*/
-define(['orion/plugin', 'orion/editor/htmlContentAssist', 'orion/editor/htmlGrammar', 'orion/editor/stylers/text_html/syntax'], function(PluginProvider, htmlContentAssist, htmlGrammar, mHTML) {
+define(['orion/plugin', 'html/htmlContentAssist', 'html/htmlGrammar', 'orion/editor/stylers/text_html/syntax'], function(PluginProvider, htmlContentAssist, htmlGrammar, mHTML) {
 
 	/**
 	 * Plug-in headers
