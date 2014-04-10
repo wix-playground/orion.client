@@ -1434,6 +1434,9 @@ parseStatement: true, parseSourceElement: true */
         },
 
         markEndIf: function (node) {
+            // mamacdon: in tolerant mode, node passed to the delegate may be null
+            if (!node)
+                return node;
             if (node.range || node.loc) {
                 if (extra.loc) {
                     state.markerStack.pop();
@@ -1818,6 +1821,10 @@ parseStatement: true, parseSourceElement: true */
         if (typeof token.lineNumber === 'number') {
             error = new Error('Line ' + token.lineNumber + ': ' + msg);
             error.index = token.range[0];
+            // mamacdon a09739e
+            // mamacdon @ 1.0.0 esprima.js:1198
+            error.end = token.range[1];
+            error.token = token.value;
             error.lineNumber = token.lineNumber;
             error.column = token.range[0] - lineStart + 1;
         } else {
@@ -1831,6 +1838,7 @@ parseStatement: true, parseSourceElement: true */
         throw error;
     }
 
+    // mamacdon: in tolerant mode, records the error and returns undefined. If non tolerant, throws.
     function throwErrorTolerant() {
         try {
             throwError.apply(null, arguments);
@@ -1842,7 +1850,6 @@ parseStatement: true, parseSourceElement: true */
             }
         }
     }
-
 
     // Throw an exception because of the token.
 
@@ -1868,7 +1875,6 @@ parseStatement: true, parseSourceElement: true */
                 throwError(token, Messages.UnexpectedReserved);
             } else if (strict && isStrictModeReservedWord(token.value)) {
                 throwErrorTolerant(token, Messages.StrictReservedWord);
-                return;
             }
             throwError(token, Messages.UnexpectedToken, token.value);
         }
@@ -1888,7 +1894,7 @@ parseStatement: true, parseSourceElement: true */
     }
 
     // Expect the next token to match the specified keyword.
-    // If not, an exception will be thrown.
+    // If not, an exception will be thrown (in non-tolerant mode) or null returned (tolerant mode).
 
     function expectKeyword(keyword) {
         var token = lex();
@@ -2189,11 +2195,12 @@ parseStatement: true, parseSourceElement: true */
             return delegate.markEnd(expr);
         }
 
-        throwUnexpected(lex());
+        return throwUnexpected(lex()); // mamacdon recover here?! wut
     }
 
     // 11.2 Left-Hand-Side Expressions
 
+    // mamacdon 1420b19
     function parseArguments() {
         var args = [];
 
@@ -2205,7 +2212,7 @@ parseStatement: true, parseSourceElement: true */
                 if (match(')')) {
                     break;
                 }
-               try {
+                try {
                     expect(',');
                 } catch (e) {
                     if (extra.errors) {
@@ -2219,8 +2226,16 @@ parseStatement: true, parseSourceElement: true */
             }
         }
 
-        //expect(')');
-        expectConditionCloseParenWrapThrow();
+		try {
+            expect(')');
+        } catch (e) {
+            if (extra.errors) {   
+                // soldier on...
+                pushError(e);
+            } else {
+                throw e;
+            }
+        }
 
         return args;
     }
@@ -2235,7 +2250,8 @@ parseStatement: true, parseSourceElement: true */
         	if (extra.errors) {
                 attemptRecoveryNonComputedProperty(token);
             }
-            throwUnexpected(token);
+            throwUnexpected(token, true /*recover*/);
+            return null;
         }
 
         return delegate.markEnd(delegate.createIdentifier(token.value));
@@ -2641,6 +2657,8 @@ parseStatement: true, parseSourceElement: true */
 
         block = parseStatementList();
 
+        // mamacdon 853a9865
+        // @ 1.0.0 esprima.js:2204
         //expect('}');
         expectConditionCloseBracketWrapThrow();
 
@@ -2758,11 +2776,13 @@ parseStatement: true, parseSourceElement: true */
 
         test = parseExpression();
 
+        // mamacdon 853a9865
         //expect(')');
         expectConditionCloseParenWrapThrow();
 
         consequent = parseStatement();
-		// required because of the check in wrapTracking that returns nothing if node is undefined
+        // mamacdon 853a9865: required because of the check in wrapTracking that returns nothing if node is undefined
+		// TODO: delegate handles tracking now, check if this test is still needed
         if (!consequent) {
             consequent = null;
         }
@@ -2814,6 +2834,7 @@ parseStatement: true, parseSourceElement: true */
 
         test = parseExpression();
 
+        // mamacdon 853a9865
         //expect(')');
         expectConditionCloseParenWrapThrow();
 
@@ -2895,6 +2916,7 @@ parseStatement: true, parseSourceElement: true */
             }
         }
 
+        // mamacdon 853a9865
         //expect(')');
         expectConditionCloseParenWrapThrow();
 
@@ -3271,7 +3293,7 @@ parseStatement: true, parseSourceElement: true */
         expr = parseExpression();
 
         // 12.12 Labelled Statements
-        if (expr && (expr.type === Syntax.Identifier) && match(':')) {
+        if (expr && (expr.type === Syntax.Identifier) && match(':')) { // mamacdon 1420b19
             lex();
 
             key = '$' + expr.name;
@@ -3346,6 +3368,7 @@ parseStatement: true, parseSourceElement: true */
             sourceElements.push(sourceElement);
         }
 
+        // mamacdon 853a986
         //expect('}');
         expectConditionCloseBracketWrapThrow();
 
@@ -3798,6 +3821,18 @@ parseStatement: true, parseSourceElement: true */
             }
             if (typeof options.tolerant === 'boolean' && options.tolerant) {
                 extra.errors = [];
+
+				// mamacdon patch
+				extra.parseStatement = parseStatement;
+				extra.parseExpression = parseExpression;
+				extra.parseNonComputedProperty = parseNonComputedProperty;
+				extra.consumeSemicolon = consumeSemicolon;
+
+				parseStatement = wrapThrowParseStatement(parseStatement);       // Note special case
+				parseExpression = wrapThrow(parseExpression);
+				// this enables 'foo.<EOF>' to return something
+				parseNonComputedProperty = wrapThrow(parseNonComputedProperty);
+				consumeSemicolon = wrapThrow(consumeSemicolon);
             }
             if (extra.attachComment) {
                 extra.range = true;
@@ -3835,6 +3870,12 @@ parseStatement: true, parseSourceElement: true */
         } catch (e) {
             throw e;
         } finally {
+			// mamacdon unpatch
+			parseStatement = extra.parseStatement;
+			parseExpression = extra.parseExpression;
+			parseNonComputedProperty = extra.parseNonComputedProperty;
+			consumeSemicolon = extra.consumeSemicolon;
+
             extra = {};
         }
 
@@ -3894,9 +3935,9 @@ parseStatement: true, parseSourceElement: true */
                 throw e;
             }
         }
-
 	}
-
+    // mamacdon 1420b19
+    // @ 1.0.0 esprima.js:1609
 	/**
 	 * @name pushError
      * @description Add the error if not already reported.
@@ -3917,7 +3958,29 @@ parseStatement: true, parseSourceElement: true */
     }
     
     //Recovery
+    function wrapThrow(parseFunction) {
+        return function () {
+            try {
+                return parseFunction.apply(null, arguments);
+            } catch (e) {
+				pushError(e);
+				return null;
+            }
+        };
+    }
     
+    function wrapThrowParseStatement(parseFunction) {
+        return function () {
+            extra.statementStart = index; // record where attempting to parse statement from
+            try {
+                return parseFunction.apply(null, arguments);
+            } catch (e) {
+				pushError(e);
+//				return null;   // why is this commented out
+            }
+        };
+    }
+
     /**
      * @name isNewlineOrSemicolon
      * @description If the given char is the new line char or a semicolon char
@@ -3966,6 +4029,9 @@ parseStatement: true, parseSourceElement: true */
         }
     }
 
+    // mamacdon 1420b19
+    // @ 1.0.0 esprima.js:1661
+    // TODO refactor
 	/**
 	 * @name rewindToInterestingChar
      * @description From a position 'idx' in the source this function moves back through the source until
