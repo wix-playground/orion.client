@@ -1435,9 +1435,7 @@ parseStatement: true, parseSourceElement: true */
 
         markEndIf: function (node) {
             // mamacdon: in tolerant mode, node passed to the delegate may be null
-            if (!node)
-                return node;
-            if (node.range || node.loc) {
+            if (!node || node.range || node.loc) {
                 if (extra.loc) {
                     state.markerStack.pop();
                     state.markerStack.pop();
@@ -1894,7 +1892,7 @@ parseStatement: true, parseSourceElement: true */
     }
 
     // Expect the next token to match the specified keyword.
-    // If not, an exception will be thrown (in non-tolerant mode) or null returned (tolerant mode).
+    // If not, an exception will be thrown.
 
     function expectKeyword(keyword) {
         var token = lex();
@@ -2250,8 +2248,8 @@ parseStatement: true, parseSourceElement: true */
         	if (extra.errors) {
                 attemptRecoveryNonComputedProperty(token);
             }
-            throwUnexpected(token, true /*recover*/);
-            return null;
+            throwUnexpected(token);
+            // return null; // unecessary
         }
 
         return delegate.markEnd(delegate.createIdentifier(token.value));
@@ -3964,7 +3962,8 @@ parseStatement: true, parseSourceElement: true */
                 return parseFunction.apply(null, arguments);
             } catch (e) {
 				pushError(e);
-				return null;
+				// Although the node failed to parse we must still pop its range marker off the stack
+				return delegate.markEndIf(null);
             }
         };
     }
@@ -4111,7 +4110,9 @@ parseStatement: true, parseSourceElement: true */
                 // do not recover in this case
             } else if (ch==='.') {
 	            index = idx+1;
-	            lookahead=null;
+//                lookahead=null;
+                // mamacdon: re-calculate lookahead
+                peek();
             }
         }
     }
