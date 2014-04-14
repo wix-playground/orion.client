@@ -2193,7 +2193,7 @@ parseStatement: true, parseSourceElement: true */
             return delegate.markEnd(expr);
         }
 
-        return throwUnexpected(lex()); // mamacdon recover here?! wut
+        return throwUnexpected(lex());
     }
 
     // 11.2 Left-Hand-Side Expressions
@@ -4023,7 +4023,7 @@ parseStatement: true, parseSourceElement: true */
         }	        
         if (doRewind) {
 	        index = idx;
-	        lookahead = null;
+	        peek(); // recalculate lookahead
 	        extra.lastRewindLocation = index;
         }
     }
@@ -4111,8 +4111,7 @@ parseStatement: true, parseSourceElement: true */
             } else if (ch==='.') {
 	            index = idx+1;
 //                lookahead=null;
-                // mamacdon: re-calculate lookahead
-                peek();
+                peek(); // recalculate lookahead
             }
         }
     }
