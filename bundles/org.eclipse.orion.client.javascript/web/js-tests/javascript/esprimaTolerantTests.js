@@ -2,11 +2,13 @@
 /*global esprima:true*/
 define([
 	"chai/chai",
-	"esprima"
-], function(chai, _esprima) {
+	"esprima",
+	'estraverse'
+], function(chai, _esprima, Estraverse) {
 	var assert = chai.assert;
-	if (_esprima)
+	if (_esprima) {
 		esprima = _esprima;
+	}
 
 	//////////////////////////////////////////////////////////
 	// Helpers
@@ -22,7 +24,7 @@ define([
 			raw: true
 		});
 	}
-
+	/* */
 	function pf(str /*, args*/) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var i=0;
@@ -31,6 +33,9 @@ define([
 		});
 	}
 
+	/**
+	 * @description Run a test
+	 */
 	function runTest(name, data) {
 		assert.ok(data.source);
 		var ast = parseFull(data.source);
@@ -41,7 +46,43 @@ define([
 			// Could use deepEqual here but its debugging output is worse than strings
 			assert.equal("*** " + JSON.stringify(actualBody), "*** " + JSON.stringify(expectedBody));
 		}
-
+		//Check tokens 
+		var expectedTokens = data.tokens, actualTokens = ast.tokens;
+		if(expectedTokens) {
+			assert(actualTokens, 'The AST should contain the tokens');
+			var len = actualTokens.length;
+			assert.equal(len, expectedTokens.length, 'Token streams are not the same');
+			for(var i = 0; i < len; i++) {
+				assert.equal(actualTokens[i].type, expectedTokens[i].type, 'Unexpected token found in stream: ');
+				assert.equal(actualTokens[i].value, expectedTokens[i].value, 'Unexpected token value found in stream');
+			}
+		}
+		// Check the nodes
+		var expectedNodes = data.nodes;
+		if(expectedNodes) {
+			assert(ast, 'The AST should exist');
+			var that = this;
+			Estraverse.traverse(ast, {
+				counter: 0,
+				enter: function(node) {
+					if(node.type !== 'Program') {
+						that.assert(that.expectedNodes.length < this.counter, 'There are more nodes to visit: '+ JSON.stringify(node));
+						var expected = that.expectedNodes[this.counter];
+						that.assert.equal(node.type, expected.type, 'The node types differ');
+						that.assert(expected.range !== null, 'The expected node has no range');
+						that.assert.equal(node.range[0], expected.range[0], 'The node starts differ');
+						that.assert.equal(node.range[1], expected.range[1], 'The node ends differ');
+						this.counter++;
+					}
+				},
+				leave: function(node) {
+					if(node.type !== 'Program') {
+						that.expectedNodes.splice(0, 1);
+					}
+				}
+			});
+			assert(expectedNodes.length === 0, 'We did not find all of the nodes');
+		}
 		// Check errors
 		var expectedErrors = data.errors, actualErrors = ast.errors;
 		if (expectedErrors) {
@@ -50,12 +91,15 @@ define([
 			expectedErrors.forEach(function(expected, i) {
 				var actual = actualErrors[i];
 				var formatStr = "Error #%s has correct %s";
-				if (typeof expected.token === "string")
+				if (typeof expected.token === "string") {
 					assert.equal(actual.token, expected.token, pf(formatStr, i, "token"));
-				if (typeof expected.index === "number")
+				}
+				if (typeof expected.index === "number") {
 					assert.equal(actual.index, expected.index, pf(formatStr, i, "index"));
-				if (typeof expected.lineNumber === "number")
+				}
+				if (typeof expected.lineNumber === "number") {
 					assert.equal(actual.lineNumber, expected.lineNumber, pf("Error %s has correct %s", i, "lineNumber"));
+				}
 				assert.equal(actual.message.replace(/^Line [0-9]*: /, ""), expected.message, pf("Error %s has correct %s", i, "message"));
 			});
 		}
@@ -142,17 +186,17 @@ define([
 			errors: [{ lineNumber: 3, message: "Unexpected token ]", token: "]" }],
 			body: {type:"VariableDeclaration",declarations:[{type:"VariableDeclarator",id:{type:"Identifier",name:"x",range:[4,5]},init:{type:"Literal",value:0,raw:"0",range:[8,9]},range:[4,9]}],kind:"var",range:[0,10]}
 		},
-		"full file inferecing 20": {
+		"invalid member expression1": {
 			source: "x./**/\nvar x = {};\nx.fff = '';",
 			errors: [{ lineNumber: 2, message: "Unexpected identifier", token: "x" }],
 			body: {type:"ExpressionStatement",expression:{type:"MemberExpression",computed:false,object:{type:"Identifier",name:"x",range:[0,1]},property:{type:"Identifier",name:"var",range:[7,10]},range:[0,10]},range:[0,6]}
 		},
-		"full file inferecing 21": {
+		"invalid member expression2": {
 			source: "function a() {\nx.fff = '';\n}\nx./**/\nvar x = {}; ",
 			errors: [{ lineNumber: 5, message: "Unexpected identifier", token: "x" }],
 			body: {type:"FunctionDeclaration",id:{type:"Identifier",name:"a",range:[9,10]},params:[],body:{type:"BlockStatement",body:[{type:"ExpressionStatement",expression:{type:"AssignmentExpression",operator:"=",left:{type:"MemberExpression",computed:false,object:{type:"Identifier",name:"x",range:[15,16]},property:{type:"Identifier",name:"fff",range:[17,20]},range:[15,20]},right:{type:"Literal",value:"",raw:"''",range:[23,25]},range:[15,25]},range:[15,26]}],range:[13,28]},range:[0,28]}
 		},
-		"full file inferecing 22": {
+		"invalid member expression3": {
 			source: "x./**/\nfunction a() {\nx.fff = '';\n}\nvar x = {}; ",
 			errors: [{ lineNumber: 2, message: "Unexpected identifier", token: "a" }],
 			body: {type:"ExpressionStatement",expression:{type:"MemberExpression",computed:false,object:{type:"Identifier",name:"x",range:[0,1]},property:{type:"Identifier",name:"function",range:[7,15]},range:[0,15]},range:[0,6]}
@@ -217,6 +261,97 @@ define([
 			errors: [{ lineNumber: 4, message: "Unexpected end of input" }],
 			body: {type:"FunctionDeclaration",id:{type:"Identifier",name:"foo",range:[9,12]},params:[],body:{type:"BlockStatement",body:[{type:"ExpressionStatement",expression:{type:"AssignmentExpression",operator:"=",left:{type:"MemberExpression",computed:false,object:{type:"ThisExpression",range:[17,21]},property:{type:"Identifier",name:"_init",range:[22,27]},range:[17,27]},right:{type:"FunctionExpression",id:null,params:[],body:{type:"BlockStatement",body:[{type:"ReturnStatement",argument:{type:"ThisExpression",range:[50,54]},range:[43,55]}],range:[41,57]},range:[30,57]},range:[17,57]},range:[17,58]},{type:"ExpressionStatement",expression:{type:"AssignmentExpression",operator:"=",left:{type:"MemberExpression",computed:false,object:{type:"ThisExpression",range:[58,62]},property:{type:"Identifier",name:"cmd",range:[63,66]},range:[58,66]},right:{type:"FunctionExpression",id:null,params:[],body:{type:"BlockStatement",body:[{type:"ExpressionStatement",expression:{type:"MemberExpression",computed:false,object:{type:"ThisExpression",range:[82,86]},property:{type:"Identifier",name:"_in",range:[87,90]},range:[82,90]},range:[82,90]}],range:[80,90]},range:[69,90]},range:[58,90]},range:[58,90]}],range:[15,90]},range:[0,90]}
 		},
+		"obj prop recovery1": {
+			source: "var f = {\na\n};",
+			errors: [],
+			nodes: [{type:'VariableDelcaration', value:'f', range:[0, 14]}, {type:'VariableDeclarator'}, {type:'ObjectExpression', range:[8, 14]}],
+			tokens: [{type:'Keyword', value:'var'}, {type:'Identifier', value:'f'}, {type:'Operand', value:'='}, {type:'Punctuator', value:'{'}, {type:'Identifier', value:'a'}, {type:'Punctuator', value:'}'}, {type:'Punctuator', value:';'}]
+		},
+		"obj prop recovery2": {
+			source: "var f = {\na:\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery3": {
+			source: "var f = {\na: b.\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery4": {
+			source: "var f = {\na: b/**/\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery5": {
+			source: "var f = {\na: b/**/\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery6": {
+			source: "var f = {\na.\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression*/}
+		},
+		"obj prop recovery7": {
+			source: "var f = {\na/**/\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression*/}
+		},
+		"obj prop recovery8": {
+			source: "var f = {\nz: function(){}\na: this.z\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery9": {
+			source: "var f = {\nz: function(){}\na: this.z(\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery10": {
+			source: "var f = {\nz: function(){}\na: this.z(this.)\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"obj prop recovery11": {
+			source: "var f = {\na: {\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property*/}
+		},
+		"nested obj prop recovery1": {
+			source: "var f = {\none: {\na}\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression*/}
+		},
+		"nested obj prop recovery2": {
+			source: "var f = {\none: {\na:}\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression -> Property*/}
+		},
+		"nested obj prop recovery3": {
+			source: "var f = {\none: {\na: d}\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression -> Property*/}
+		},
+		"nested obj prop recovery4": {
+			source: "var f = {\none: {\na: d.}\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression -> Property*/}
+		},
+		"nested obj prop recovery5": {
+			source: "var f = {\none: {\na: d(}\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression -> Property*/}
+		},
+		"nested obj prop recovery6": {
+			source: "var f = {\none: {\na: {}\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression -> Property*/}
+		},
+		"nested obj prop recovery7": {
+			source: "var f = {\none: {\na: d(c.)\n};",
+			errors: [],
+			body: {/*VariableDelcaration -> VariableDeclarator -> ObjectExpression -> Property -> ObjectExpression -> Property*/}
+		}
 	};
 	Object.keys(testData).forEach(function(name) {
 		tests["test " + name] = runTest.bind(tests, name, testData[name]);
