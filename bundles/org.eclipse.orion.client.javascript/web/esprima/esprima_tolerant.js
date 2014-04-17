@@ -1957,10 +1957,11 @@ parseStatement: true, parseSourceElement: true */
         }
 
         if (lookahead.type !== Token.EOF && !match('}')) {
+        	var badToken = lookahead;
         	if (extra.errors) {
-                rewind();
+                rewind(); // mutates lookahead
             }
-            throwUnexpected(lookahead);
+            throwUnexpected(badToken);
         }
     }
 
