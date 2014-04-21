@@ -25,7 +25,7 @@
 				var source = element.value.replace(/\\n/g, "\n");
 				document.getElementById("source2").value = source;
 				
-				var ast = esprima.parse(source, {comment:true, tokens:true, tolerant:true, range:true});
+				var ast = esprima.parse(source, {comment:true, tokens:true, tolerant:true, range:true, raw:true});
 				var expected = [];
 				Estraverse.traverse(ast, {
 					enter: function(node) {
@@ -49,6 +49,8 @@
 					.replace(/"(\w+)":/g, function(match, propName) {
 						return propName + ":";
 					});
+
+				document.getElementById("ast").value = JSON.stringify(ast);
 			};
 		});
 		
@@ -63,5 +65,8 @@
 
 	<p>Test data</p>
 	<textarea id="testData" rows=10 cols=150></textarea>
+
+	<p>AST</p>
+	<textarea id="ast" rows=30 cols=100></textarea>
 </form>
 </html>
