@@ -2242,6 +2242,10 @@ parseStatement: true, parseSourceElement: true */
     function parseNonComputedProperty() {
         var token;
 
+		if (lookahead.lineNumber !== lineNumber) {
+			// Token giving our identifier name lies on the following line, so go there before marking start
+			index = lookahead.lineStart;
+		}
         delegate.markStart();
         token = lex();
 
