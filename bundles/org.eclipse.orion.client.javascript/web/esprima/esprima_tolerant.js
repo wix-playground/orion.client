@@ -3960,11 +3960,14 @@ parseStatement: true, parseSourceElement: true */
     function wrapThrow(parseFunction) {
         return function () {
             try {
+            	var initialHeight = state.markerStack.length;
                 return parseFunction.apply(null, arguments);
             } catch (e) {
 				pushError(e);
-				// Although the node failed to parse we must still pop its range marker off the stack
-				return delegate.markEndIf(null);
+				// Clean up un-popped end markers from failed parse
+				while (state.markerStack.length > initialHeight)
+					delegate.markEndIf(null);
+				return null;
             }
         };
     }
