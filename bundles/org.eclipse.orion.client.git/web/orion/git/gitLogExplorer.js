@@ -11,15 +11,22 @@
 
 /*global define console document Image */
 
-define(['i18n!git/nls/gitmessages', 'require', 'orion/explorers/explorer', 'orion/PageUtil', 'orion/URITemplate', 'orion/webui/littlelib', 'orion/section', 'orion/i18nUtil', 'orion/globalCommands', 
-        'orion/git/gitCommands', 'orion/explorers/navigationUtils', 'orion/Deferred', 'orion/git/widgets/CommitTooltipDialog','orion/git/util'], 
-		function(messages, require, mExplorer, PageUtil, URITemplate, lib, mSection, i18nUtil, mGlobalCommands, mGitCommands, mNavUtils, Deferred,
-				mCommitTooltip, util) {
+define([
+	'require',
+	'i18n!git/nls/gitmessages',
+	'orion/git/widgetsTake2/gitCommitList',
+	'orion/Deferred',
+	'orion/URITemplate',
+	'orion/globalCommands', 
+	'orion/git/gitCommands',
+	'orion/i18nUtil',
+	'orion/PageUtil',
+	'orion/webui/littlelib'
+], function(require, messages, mGitCommitList, Deferred, URITemplate, mGlobalCommands, mGitCommands, i18nUtil, PageUtil, lib) {
 var exports = {};
 
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
-var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 	
 exports.GitLogExplorer = (function() {
 	
@@ -310,168 +317,26 @@ exports.GitLogExplorer = (function() {
 
 	GitLogExplorer.prototype.displayLog = function(commits){
 		
-		var that = this;
-
 		var tableNode = lib.node('table'); //$NON-NLS-0$
-		
 		var contentParent = document.createElement("div");
 		contentParent.className = "sectionTable";
 		tableNode.appendChild(contentParent);
-		contentParent.innerHTML = '<div id="logNode" class="mainPadding"></div>'; //$NON-NLS-0$;
+		var logNode  = document.createElement("div");
+		logNode.id = "logNode";
+		logNode.className = "mainPadding";
+		contentParent.appendChild(logNode);
 		
-		var LogModel = (function() {
-			function LogModel() {
-			}
-			
-			LogModel.prototype = {					
-				destroy: function(){
-				},
-				getRoot: function(onItem){
-					onItem(commits);
-				},
-				getChildren: function(parentItem, onComplete){	
-					if (parentItem instanceof Array && parentItem.length > 0) {
-						onComplete(parentItem);
-					} else {
-						onComplete([]);
-					}
-				},
-				getId: function(/* item */ item){
-					return item.Name;
-				}
-			};
-			
-			return LogModel;
-		}());
-		
-		var LogRenderer = (function() {
-			function LogRenderer (options, explorer) {
-				this._init(options);
-				this.options = options;
-				this.explorer = explorer;
-				this.registry = options.registry;
-			}
-			
-			LogRenderer.prototype = new mExplorer.SelectionRenderer();
-
-			LogRenderer.prototype.getCellElement = function(col_no, item, tableRow){
-				var commit = item;
-				
-				switch(col_no){
-				case 0:	
-					var td = document.createElement("td"); //$NON-NLS-0$
-
-					var sectionItem = document.createElement("div");
-					sectionItem.className = "sectionTableItem";
-					td.appendChild(sectionItem);
-
-					var horizontalBox = document.createElement("div");
-					horizontalBox.style.overflow = "hidden";
-					sectionItem.appendChild(horizontalBox);
-					
-					var incomingCommit = false;
-					for(var i=0; i<that.incomingCommits.length; i++){
-						var comm = that.incomingCommits[i];
-						
-						if (commit.Name === comm.Name){
-							incomingCommit = true;
-						}
-					}
-						
-					var outgoingCommit = false;
-					for(var i=0; i<that.outgoingCommits.length; i++){
-						var comm = that.outgoingCommits[i];
-						
-						if (commit.Name === comm.Name){
-							outgoingCommit = true;
-						}
-					}
-					
-					if(!incomingCommit && !outgoingCommit){
-						var direction = document.createElement("span");
-						horizontalBox.appendChild(direction);
-					} else {
-						var imgSpriteName = (outgoingCommit ? "git-sprite-outgoing-commit" : "git-sprite-incoming-commit");
-						var direction = document.createElement("span");
-						direction.className = "sectionIcon gitImageSprite " + imgSpriteName;
-						horizontalBox.appendChild(direction);
-					}
-					
-					if (commit.AuthorImage) {
-						var authorImage = document.createElement("div");
-						authorImage.style["float"] = "left";
-						var image = new Image();
-						image.src = commit.AuthorImage;
-						image.name = commit.AuthorName;
-						image.className = "git-author-icon";
-						authorImage.appendChild(image);
-						horizontalBox.appendChild(authorImage);
-					}
-					
-					var detailsView = document.createElement("div");
-					detailsView.className = "stretch";
-					horizontalBox.appendChild(detailsView);
-
-					var titleLink = document.createElement("a");
-					titleLink.className = "navlinkonpage";
-					titleLink.href = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
-					titleLink.textContent = util.trimCommitMessage(commit.Message);
-					detailsView.appendChild(titleLink);
-					
-					//Add the commit page link as the first grid of the row
-					mNavUtils.addNavGrid(this.explorer.getNavDict(), item, titleLink);
-					
-					new mCommitTooltip.CommitTooltipDialog({commit: commit, triggerNode: titleLink});
-
-					var d = document.createElement("div");
-					detailsView.appendChild(d);
-
-					var description = document.createElement("span");
-					description.textContent = messages[" (SHA "] + commit.Name + messages[") by "] + commit.AuthorName + messages[" on "]
-							+ new Date(commit.Time).toLocaleString();
-					detailsView.appendChild(description);
-
-					return td;
-					
-					break;
-				case 1:
-					var actionsColumn = this.getActionsColumn(item, tableRow, null, null, true);
-					return actionsColumn;
-					break;
-				}
-			};
-			
-			return LogRenderer;
-		}());
-		
-		var LogNavigator = (function() {
-			function LogNavigator(registry, selection, parentId, actionScopeId, commandService) {
-				this.registry = registry;
-				this.checkbox = false;
-				this.parentId = parentId;
-				this.selection = selection;
-				this.actionScopeId = actionScopeId;
-				this.commandService = commandService;
-				this.renderer = new LogRenderer({registry: this.registry, commandService: this.commandService, actionScopeId: this.actionScopeId, cachePrefix: "LogNavigator", checkbox: false}, this); //$NON-NLS-0$
-				this.createTree(this.parentId, new LogModel());
-			}
-			
-			LogNavigator.prototype = new mExplorer.Explorer();
-		
-			//provide to the selection model that if a row is selectable
-			LogNavigator.prototype.isRowSelectable = function(modelItem){
-				return true;
-			};
-			//provide to the expandAll/collapseAll commands
-			LogNavigator.prototype.getItemCount  = function(){
-				return false;
-			};
-			return LogNavigator;
-		}());
-		
-		var logNavigator = new LogNavigator(this.registry, this.selection, "logNode", this.actionScopeId, this.commandService); //$NON-NLS-0$
-	};
-
+		new mGitCommitList.GitCommitListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			selection: this.selection,
+			actionScopeId: this.actionScopeId,
+			parentId: logNode,
+			incomingCommits: this.incomingCommits,
+			outgoingCommits: this.outgoingCommits,
+			commits: commits
+		});
+	}
 	return GitLogExplorer;
 }());
 

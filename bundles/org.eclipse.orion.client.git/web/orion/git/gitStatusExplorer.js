@@ -9,10 +9,10 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*global define document window Image*/
-define(['require', 'i18n!git/nls/gitmessages', 'orion/explorers/explorer', 'orion/selection', 'orion/section', 'orion/URITemplate', 'orion/PageUtil', 'orion/webui/littlelib',
+define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommitList','orion/explorers/explorer', 'orion/selection', 'orion/section', 'orion/URITemplate', 'orion/PageUtil', 'orion/webui/littlelib',
 		'orion/i18nUtil', 'orion/globalCommands', 'orion/git/uiUtil',	'orion/git/gitCommands', 'orion/Deferred', 'orion/git/widgets/CommitTooltipDialog',
 		'orion/webui/tooltip', 'orion/git/util'],
-		function(require, messages, mExplorer, mSelection, mSection, URITemplate, PageUtil, lib, i18nUtil, mGlobalCommands, mGitUIUtil, mGitCommands,
+		function(require, messages, mGitCommitList, mExplorer, mSelection, mSection, URITemplate, PageUtil, lib, i18nUtil, mGlobalCommands, mGitUIUtil, mGitCommands,
 				Deferred, mCommitTooltip, Tooltip, util) {
 
 	var exports = {};
@@ -819,29 +819,24 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/explorers/explorer', 'orio
 									that.registry.getService("orion.git.provider").getLog(
 										currentBranch.RemoteLocation[0].Children[0].CommitLocation + "?page=1&pageSize=20", "HEAD"),
 									i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], currentBranch.Name)).then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-									function(resp) {
-										progress.worked(messages['Rendering commits']);
-
-										var commitsCount = resp.Children.length;
-
-										for (var i = 0; i < resp.Children.length; i++) {
-											that.renderCommit(resp.Children[i], true, i);
-										}
-
-										progress.worked(messages['Getting outgoing commits']);
+									function(outgoingResp) {
 										that.registry
 											.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(currentBranch.CommitLocation + "?page=1&pageSize=20", currentBranch.RemoteLocation[0].Children[0].Id), messages['Getting outgoing commits']).then( //$NON-NLS-1$ //$NON-NLS-0$
-											function(resp) {
+											function(incomingResp) {
 												progress.worked(messages['Rendering commits']);
-												for (var i = 0; i < resp.Children.length; i++) {
-													that.renderCommit(resp.Children[i], false, i + commitsCount);
-												}
-
-												commitsCount = commitsCount + resp.Children.length;
-
-												if (commitsCount === 0) {
-													that.renderNoCommit();
-												}
+												var incomingCommits = incomingResp.Children;
+												var outgoingCommits = outgoingResp.Children;
+												var commits = outgoingCommits.concat(incomingCommits);
+												new mGitCommitList.GitCommitListExplorer({
+													serviceRegistry: this.registry,
+													commandRegistry: this.commandService,
+													selection: this.selection,
+													actionScopeId: this.actionScopeId,
+													parentId:"commitNode", //hack
+													incomingCommits: incomingCommits,
+													outgoingCommits: outgoingCommits,
+													commits: commits
+												});
 
 												progress.done();
 											}, function(error) {
@@ -854,16 +849,21 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/explorers/explorer', 'orio
 							that.registry.getService("orion.page.progress").progress(
 								that.registry.getService("orion.git.provider").doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20"),
 								i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], currentBranch.Name)).then( //$NON-NLS-1$ //$NON-NLS-0$
-								function(resp) {
+								function(outgoingResp) {
 									progress.worked(messages['Rendering commits']);
-									for (var i = 0; i < resp.Children.length; i++) {
-										that.renderCommit(resp.Children[i], true, i);
-									}
-
-									if (resp.Children.length === 0) {
-										that.renderNoCommit();
-									}
-
+									var incomingCommits = [];
+									var outgoingCommits = outgoingResp.Children;
+									var commits = outgoingCommits.concat(incomingCommits);
+									new mGitCommitList.GitCommitListExplorer({
+										serviceRegistry: this.registry,
+										commandRegistry: this.commandService,
+										selection: this.selection,
+										actionScopeId: this.actionScopeId,
+										parentId:"commitNode", //hack
+										incomingCommits: incomingCommits,
+										outgoingCommits: outgoingCommits,
+										commits: commits
+									});
 									progress.done();
 								}, function(error) {
 									progress.done(error);
@@ -873,72 +873,7 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/explorers/explorer', 'orio
 					},
 					that.handleError.bind(that));
 		};
-
-		GitStatusExplorer.prototype.renderNoCommit = function() {
-			var commitNode = lib.node("commitNode"); //$NON-NLS-0$
-			commitNode.innerHTML = ""; //$NON-NLS-0$
-			var sectionItem = document.createElement("div"); //$NON-NLS-0$
-			sectionItem.className = "sectionTableItem"; //$NON-NLS-0$
-			commitNode.appendChild(sectionItem);
-
-			var detailsView = document.createElement("div"); //$NON-NLS-0$
-			sectionItem.appendChild(detailsView);
-
-			var title = document.createElement("div"); //$NON-NLS-0$
-			title.appendChild(document.createTextNode(messages['The branch is up to date.']));
-			detailsView.appendChild(title);
-
-			var description = document.createElement("div"); //$NON-NLS-0$
-			description.appendChild(document.createTextNode(messages['You have no outgoing or incoming commits.']));
-			detailsView.appendChild(description);
-		};
-
-		GitStatusExplorer.prototype.renderCommit = function(commit, outgoing, index) {
-			var commitNode = lib.node("commitNode"); //$NON-NLS-0$
-			var sectionItem = document.createElement("div"); //$NON-NLS-0$
-			sectionItem.className = "sectionTableItem lightTreeTableRow"; //$NON-NLS-0$
-			commitNode.appendChild(sectionItem);
-
-			var horizontalBox = document.createElement("div"); //$NON-NLS-0$
-			horizontalBox.className = "sectionTableItem"; //$NON-NLS-0$
-			horizontalBox.style.overflow = "hidden"; //$NON-NLS-0$
-			sectionItem.appendChild(horizontalBox);
-
-			var imgSpriteName = (outgoing ? "git-sprite-outgoing-commit" : "git-sprite-incoming-commit"); //$NON-NLS-1$ //$NON-NLS-0$
-
-			var direction = document.createElement("span"); //$NON-NLS-0$
-			direction.className = "sectionIcon gitImageSprite " + imgSpriteName; //$NON-NLS-0$
-			horizontalBox.appendChild(direction);
-
-			if (commit.AuthorImage) {
-				var authorImage = document.createElement("div"); //$NON-NLS-0$
-				authorImage.style['float'] = "left"; //$NON-NLS-0$
-				var image = new Image();
-				image.src = commit.AuthorImage;
-				image.name = commit.AuthorName;
-				image.className = "git-author-icon"; //$NON-NLS-0$
-				authorImage.appendChild(image);
-				horizontalBox.appendChild(authorImage);
-			}
-
-			var detailsView = document.createElement("div"); //$NON-NLS-0$
-			detailsView.className = "stretch"; //$NON-NLS-0$
-			horizontalBox.appendChild(detailsView);
-
-			var titleLink = document.createElement("a"); //$NON-NLS-0$
-			titleLink.className = "navlinkonpage"; //$NON-NLS-0$
-			titleLink.href = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
-			titleLink.textContent = util.trimCommitMessage(commit.Message);
-			detailsView.appendChild(titleLink);
-
-			new mCommitTooltip.CommitTooltipDialog({commit: commit, triggerNode: titleLink});
-
-			var description = document.createElement("div"); //$NON-NLS-0$
-			description.textContent = " (SHA " + commit.Name + ") by " + commit.AuthorName //$NON-NLS-1$ //$NON-NLS-0$
-				+ " on " + new Date(commit.Time).toLocaleString(); //$NON-NLS-0$
-			detailsView.appendChild(description);
-		};
-
+		
 		return GitStatusExplorer;
 	}());
 
