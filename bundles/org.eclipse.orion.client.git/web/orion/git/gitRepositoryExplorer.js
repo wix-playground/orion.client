@@ -833,123 +833,15 @@ exports.GitRepositoryExplorer = (function() {
 			canHide: true,
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		}); 
-
-		var progress = titleWrapper.createProgressMonitor();
-		progress.begin(messages["Getting current branch"]);
-
-		var commitsContainer = document.createElement("div");
-		commitsContainer.className = "mainPadding";
 		
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(repository.BranchLocation), "Getting current branch " + repository.Name).then( //$NON-NLS-0$
-			function(resp){
-				var branches = resp.Children;
-				var currentBranch;
-				for (var i=0; i<branches.length; i++){
-					if (branches[i].Current){
-						currentBranch = branches[i];
-						break;
-					}
-				}
-				
-				if (!currentBranch){
-					progress.done();
-					return;
-				}
-				
-				var tracksRemoteBranch = (currentBranch.RemoteLocation.length === 1 && currentBranch.RemoteLocation[0].Children.length === 1);
-				
-				titleWrapper.setTitle(i18nUtil.formatMessage(messages["Commits for \"${0}\" branch"], currentBranch.Name)); //$NON-NLS-1$ //$NON-NLS-0$
-				that.commandService.destroy(titleWrapper.actionsNode.id);
-
-				that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-				that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, 
-					{"ViewAllLink":logTemplate.expand({resource: currentBranch.CommitLocation}), "ViewAllLabel":messages["See Full Log"], "ViewAllTooltip":messages["See the full log"]}, that, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-				
-				if (tracksRemoteBranch){
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
-					that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, currentBranch.RemoteLocation[0].Children[0], that, "button"); //$NON-NLS-0$
-				}
-				
-				that.commandService.addCommandGroup(titleWrapper.actionsNode.id, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-				that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-0$
-				that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-0$
-				that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.pushToGerrit", 1300, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-0$
-				
-				that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, currentBranch, that, "button"); //$NON-NLS-0$	
-				
-				if (currentBranch.RemoteLocation[0] === null){
-					progress.done();
-					that.renderNoCommit(commitsContainer);
-					return;
-				}
-				
-				progress.worked(i18nUtil.formatMessage(messages["Getting commits for \"${0}\" branch"], currentBranch.Name));
-				if (tracksRemoteBranch && currentBranch.RemoteLocation[0].Children[0].CommitLocation){
-					that.registry.getService("orion.git.provider").getLog(currentBranch.RemoteLocation[0].Children[0].CommitLocation + "?page=1&pageSize=20", "HEAD").then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						function(incomingResp){
-							progress.worked(messages["Rendering commits"]);
-
-							progress.worked(messages["Getting outgoing commits"]);
-							that.registry.getService("orion.git.provider").getLog(currentBranch.CommitLocation + "?page=1&pageSize=20", currentBranch.RemoteLocation[0].Children[0].Id).then(  //$NON-NLS-1$ //$NON-NLS-0$
-								function(outgoingResp){	
-									progress.worked("Rendering commits"); //$NON-NLS-0$
-									var incomingCommits = incomingResp.Children;
-									var outgoingCommits = outgoingResp.Children;
-									var commits = outgoingCommits.concat(incomingCommits);
-									new mGitCommitList.GitCommitListExplorer({
-										serviceRegistry: this.registry,
-										commandRegistry: this.commandService,
-										selection: this.selection,
-										actionScopeId: this.actionScopeId,
-										parentId:"commitNode", //hack
-										incomingCommits: incomingCommits,
-										outgoingCommits: outgoingCommits,
-										commits: commits
-									});
-
-									progress.done();
-								},
-								function(error){
-									progress.done(error);
-								}
-							);	
-						},
-						function(error){
-							progress.done(error);
-						}
-					);
-				} else {
-					that.registry.getService("orion.git.provider").doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20").then(  //$NON-NLS-1$ //$NON-NLS-0$
-						function(outgoingResp){	
-							progress.worked(messages['Rendering commits']);
-							var incomingCommits = [];
-							var outgoingCommits = outgoingResp.Children;
-							var commits = outgoingCommits.concat(incomingCommits);
-							new mGitCommitList.GitCommitListExplorer({
-								serviceRegistry: this.registry,
-								commandRegistry: this.commandService,
-								selection: this.selection,
-								actionScopeId: this.actionScopeId,
-								parentId:"commitNode", //hack
-								incomingCommits: incomingCommits,
-								outgoingCommits: outgoingCommits,
-								commits: commits
-							});
-							progress.done();
-						},
-						function(error) {
-							progress.done(error);
-						}
-					);	
-				}
-			}
-		);
-		
-		lib.empty(lib.node("commitNode"));
-		lib.node("commitNode").appendChild(commitsContainer);
+		var explorer = new mGitCommitList.GitCommitListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			selection: this.selection,
+			actionScopeId: this.actionScopeId,
+			parentId:"commitNode", //hack
+		});
+		explorer.displayCommits(repository, titleWrapper, that.handleError.bind(this));
 	};
 	
 	// Git tags
