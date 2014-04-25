@@ -9,16 +9,28 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*global define document Image window*/
-define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommitList', 'orion/section', 'orion/i18nUtil', 'orion/webui/littlelib', 'orion/git/util', 'orion/URITemplate', 'orion/PageUtil', 'orion/dynamicContent', 'orion/fileUtils', 
-        'orion/globalCommands', 'orion/Deferred', 'orion/git/widgets/CommitTooltipDialog'], 
-		function(require, messages, mGitCommitList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred,
-				mCommitTooltip) {
+define([
+	'require',
+	'i18n!git/nls/gitmessages',
+	'orion/git/widgetsTake2/gitCommitList',
+	'orion/git/widgetsTake2/gitBranchList',
+	'orion/section',
+	'orion/i18nUtil',
+	'orion/webui/littlelib',
+	'orion/git/util',
+	'orion/URITemplate',
+	'orion/PageUtil',
+	'orion/dynamicContent',
+	'orion/fileUtils',
+	'orion/globalCommands',
+	'orion/Deferred',
+	'orion/git/widgets/CommitTooltipDialog'
+], function(require, messages, mGitCommitList, mGitBranchList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred, mCommitTooltip) {
 var exports = {};
 	
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 var repoPageTemplate = new URITemplate("git/git-repository.html#{,resource,params*}?page=1&pageSize=20"); //$NON-NLS-0$
 var statusTemplate = new URITemplate(mGitUtil.statusUILocation + "#{,resource,params*}"); //$NON-NLS-0$
-var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 
 exports.GitRepositoryExplorer = (function() {
@@ -628,10 +640,6 @@ exports.GitRepositoryExplorer = (function() {
 		
 	GitRepositoryExplorer.prototype.displayBranches = function(repository, mode){
 		
-		var branchLocation = repository.BranchLocation;
-
-		var that = this;
-		
 		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
 		
 		var titleWrapper = new mSection.Section(tableNode, {
@@ -644,90 +652,36 @@ exports.GitRepositoryExplorer = (function() {
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		});
 
-		var progress = titleWrapper.createProgressMonitor();
-		progress.begin("Getting branches"); //$NON-NLS-0$
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(branchLocation + (mode === "full" ? "?commits=1" : "?commits=1&page=1&pageSize=5")), "Getting branches " + repository.Name).then( //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			function(resp){
-				var branches = resp.Children;
-				progress.done();
-				
-				that.commandService.destroy(titleWrapper.actionsNode.id);
-				
-				if (mode !== "full" && branches.length !== 0){ //$NON-NLS-0$
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-					that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, 
-						{"ViewAllLink":repoTemplate.expand({resource: branchLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all local and remote tracking branches"]}, that, "button"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-				}
-				
-				that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.addBranch", 200); //$NON-NLS-0$
-				that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, that, "button"); //$NON-NLS-0$
-				
-				var branchesContainer = document.createElement("div");
-				branchesContainer.className = "mainPadding";
-
-				for(var i=0; i<branches.length;i++){
-					branches[i].ParentLocation = branchLocation;
-					that.renderBranch(branches[i], i, branchesContainer);
-				}
-				
-				lib.empty(lib.node("branchNode"));
-				lib.node("branchNode").appendChild(branchesContainer);
-			}, function(error){
-				progress.done();
-				that.handleError(error);
-			}
-		);
-	};
-		
-	GitRepositoryExplorer.prototype.renderBranch = function(branch, index, container){
-		var sectionItem = document.createElement("div");
-		sectionItem.className = "sectionTableItem lightTreeTableRow";
-		container.appendChild(sectionItem);
-
-		var horizontalBox = document.createElement("div");
-		horizontalBox.style.overflow = "hidden";
-		sectionItem.appendChild(horizontalBox);	
-
-		if (branch.Current){
-			var span = document.createElement("span");
-			span.className = "sectionIcon gitImageSprite git-sprite-branch-active";
-			horizontalBox.appendChild(span);
+		//TODO: Move inside gitBranchList
+		if (mode !== "full" /*&& branches.length !== 0*/){ //$NON-NLS-0$
+			this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
+			this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, 
+				{"ViewAllLink":repoTemplate.expand({resource: repository.BranchLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all local and remote tracking branches"]}, this, "button"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		}
 		
-		var detailsView = document.createElement("div");
-		detailsView.className = "stretch";
-		horizontalBox.appendChild(detailsView);
-
-		var title = document.createElement("span");
-		title.className = (branch.Current ? "activeBranch" : "");
-		title.textContent = branch.Name;
-		detailsView.appendChild(title);
-
-		var commit = branch.Commit.Children[0];
+		this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.addBranch", 200); //$NON-NLS-0$
+		this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, this, "button"); //$NON-NLS-0$
 		
-		var tracksMessage = ((branch.RemoteLocation.length && branch.RemoteLocation.length === 1 && branch.RemoteLocation[0].Children.length && branch.RemoteLocation[0].Children.length === 1) ? 
-				i18nUtil.formatMessage(messages["tracks ${0}, "], branch.RemoteLocation[0].Children[0].Name) : messages["tracks no branch, "]);
-				
-		var description = document.createElement("div");
-		description.textContent = tracksMessage + i18nUtil.formatMessage(messages["last modified ${0} by ${1}"], new Date(commit.Time).toLocaleString(), //$NON-NLS-0$
-				commit.AuthorName);
-		detailsView.appendChild(description);
-		
-		var actionsArea = document.createElement("div");
-		actionsArea.className = "sectionTableItemActions";
-		actionsArea.id = "branchActionsArea";
-		horizontalBox.appendChild(actionsArea);
-		
-		this.commandService.renderCommands(this.actionScopeId, actionsArea, branch, this, "tool");	 //$NON-NLS-0$
+		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			parentId:"branchNode", //hack
+			actionScopeId: this.actionScopeId,
+			titleWrapper: titleWrapper,
+			handleError: this.handleError,
+			root: {
+				Type: "BranchRoot",
+				repository: repository,
+				mode: mode
+			}
+		});
+		branchNavigator.display();
 	};
+		
 	
 	// Git remote branches
 	
 	GitRepositoryExplorer.prototype.displayRemoteBranches = function(repository, mode){
-		
-		var remoteLocation = repository.RemoteLocation;
-				
-		var that = this;
 		
 		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
 		
@@ -740,83 +694,22 @@ exports.GitRepositoryExplorer = (function() {
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		}); 
 
-		var progress = titleWrapper.createProgressMonitor();
-		progress.begin("Getting remote branches"); //$NON-NLS-0$
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitRemote(remoteLocation), "Getting remote branches " + repository.Name).then( //$NON-NLS-0$
-			function(resp){
-				var remotes = resp.Children;
-				progress.done();
-				if (remotes.length === 0){
-					titleWrapper.setTitle(messages["No Remote Branches"]);
-					return;
-				}
-				progress = titleWrapper.createProgressMonitor();
-				progress.begin(messages["Rendering branches"]);
-				that.displayRemoteBranches2(titleWrapper, remotes, repository).then(
-					function(){
-						progress.done();
-					}, function(error){
-						progress.done();
-					}
-				);
-			}, function(error){
-				progress.done(error);
+		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			parentId:"remoteBranchNode", //hack
+			actionScopeId: this.actionScopeId,
+			titleWrapper: titleWrapper,
+			handleError: this.handleError,
+			root: {
+				Type: "RemoteRoot",
+				repository: repository,
+				mode: mode
 			}
-		);
+		});
+		branchNavigator.display();
 	};
 	
-	GitRepositoryExplorer.prototype.displayRemoteBranches2 = function(titleWrapper, remotes, repository, deferred, anyRemoteBranch, previousRemoteBranches){
-		var that = this;
-		deferred = deferred || new Deferred();
-		
-		if (remotes.length > 0) {
-			this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitRemote(remotes[0].Location), "Getting remote branches " + remotes[0].Name).then( //$NON-NLS-0$
-				function(resp){
-					var remoteBranches = resp.Children;
-					for(var i=0; (i<remoteBranches.length);i++){
-						remoteBranches[i].Repository = repository;
-						that.renderRemoteBranch(remoteBranches[i], i);
-					}
-					
-					that.displayRemoteBranches2(titleWrapper, remotes.slice(1), repository, deferred, (anyRemoteBranch || (remoteBranches.length > 0)), remoteBranches);
-				}, function (error) {
-					deferred.reject(error);
-				}
-			);
-		} else {
-			if (!anyRemoteBranch){
-				titleWrapper.setTitle(messages['No Remote Branches']);
-			}
-			deferred.resolve();
-		}
-		
-		return deferred;
-	};
-			
-	GitRepositoryExplorer.prototype.renderRemoteBranch = function(remoteBranch, index){
-		var sectionItem = document.createElement("div");
-		sectionItem.className = "sectionTableItem lightTreeTableRow";
-		lib.node("remoteBranchNode").appendChild(sectionItem);
-
-		var horizontalBox = document.createElement("div");
-		horizontalBox.style.overflow = "hidden";
-		sectionItem.appendChild(horizontalBox);	
-
-		var detailsView = document.createElement("div");
-		detailsView.className = "stretch";
-		horizontalBox.appendChild(detailsView);
-
-		var title = document.createElement("span");
-		title.textContent = remoteBranch.Name;
-		detailsView.appendChild(title);
-		
-		var actionsArea = document.createElement("div");
-		actionsArea.className = "sectionTableItemActions";
-		actionsArea.id = "branchActionsArea";
-		horizontalBox.appendChild(actionsArea);
-		
-		this.commandService.renderCommands(this.actionScopeId, actionsArea, remoteBranch, this, "tool");	 //$NON-NLS-0$
-	};
 
 	// Git commits
 		
@@ -991,10 +884,7 @@ exports.GitRepositoryExplorer = (function() {
 	// Git Remotes
 	
 	GitRepositoryExplorer.prototype.displayRemotes = function(repository, mode){
-		
-		var remoteLocation = repository.RemoteLocation;
-		var that = this;
-		
+
 		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
 		
 		var titleWrapper = new mSection.Section(tableNode, {
@@ -1008,62 +898,26 @@ exports.GitRepositoryExplorer = (function() {
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		});
 		
-		var progress = titleWrapper.createProgressMonitor();
-		progress.begin("Getting remotes"); //$NON-NLS-0$
+		//TODO: Move inside widget
+		this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.addRemote", 100); //$NON-NLS-0$
+		this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, this, "button"); //$NON-NLS-0$
 		
-		that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.addRemote", 100); //$NON-NLS-0$
-		that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, that, "button"); //$NON-NLS-0$
-				
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitRemote(remoteLocation), "Getting remotes " + repository.Name).then( //$NON-NLS-0$
-			function(resp){
-				var remotes = resp.Children;
-				
-				progress.worked(messages["Rendering remotes"]);
-				if (remotes.length === 0){
-					titleWrapper.setTitle(messages["No Remotes"]);
-					progress.done();
-					return;
-				}
-				
-				for(var i=0; i<remotes.length ;i++){
-					that.renderRemote(remotes[i], i);
-				};
-				progress.done();
-			}, function(error){
-				progress.done();
-				that.handleError(error);
+		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			parentId:"remoteNode", //hack
+			actionScopeId: this.actionScopeId,
+			titleWrapper: titleWrapper,
+			handleError: this.handleError,
+			root: {
+				Type: "RemoteRoot",
+				repository: repository,
+				mode: mode
 			}
-		);
+		});
+		branchNavigator.display();
 	};
 	
-	GitRepositoryExplorer.prototype.renderRemote = function(remote, index){
-		var sectionItem = document.createElement("div");
-		sectionItem.className = "sectionTableItem lightTreeTableRow";
-		lib.node("remoteNode").appendChild(sectionItem);
-
-		var horizontalBox = document.createElement("div");
-		horizontalBox.style.overflow = "hidden";
-		sectionItem.appendChild(horizontalBox);
-
-		var detailsView = document.createElement("div");
-		detailsView.className = "stretch";
-		horizontalBox.appendChild(detailsView);
-		
-		var title = document.createElement("div");
-		title.textContent = remote.Name;
-		detailsView.appendChild(title);
-		
-		var description = document.createElement("div");
-		description.textContent = remote.GitUrl;
-		detailsView.appendChild(description);
-
-		var actionsArea = document.createElement("div");
-		actionsArea.className = "sectionTableItemActions";
-		actionsArea.id = "remoteActionsArea";
-		horizontalBox.appendChild(actionsArea);
-
-		this.commandService.renderCommands(this.actionScopeId, actionsArea, remote, this, "tool");	 //$NON-NLS-0$
-	};
 	
 	// Git Config
 	
