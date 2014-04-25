@@ -14,6 +14,7 @@ define([
 	'i18n!git/nls/gitmessages',
 	'orion/git/widgetsTake2/gitCommitList',
 	'orion/git/widgetsTake2/gitBranchList',
+	'orion/git/widgetsTake2/gitConfigList',
 	'orion/section',
 	'orion/i18nUtil',
 	'orion/webui/littlelib',
@@ -25,7 +26,7 @@ define([
 	'orion/globalCommands',
 	'orion/Deferred',
 	'orion/git/widgets/CommitTooltipDialog'
-], function(require, messages, mGitCommitList, mGitBranchList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred, mCommitTooltip) {
+], function(require, messages, mGitCommitList, mGitBranchList, mGitConfigList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred, mCommitTooltip) {
 var exports = {};
 	
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
@@ -939,73 +940,36 @@ exports.GitRepositoryExplorer = (function() {
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		});
 		
-		var progress = titleWrapper.createProgressMonitor();
-		progress.begin(messages["Getting confituration"]);
-				
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitCloneConfig(configLocation), "Getting configuration of " + repository.Name).then( //$NON-NLS-0$
-			function(resp){
-				progress.worked("Rendering configuration"); //$NON-NLS-0$
-				var configurationEntries = resp.Children;
-				
-				if (mode !== "full" && configurationEntries.length !== 0){ //$NON-NLS-0$
+		
+		if (mode !== "full"/* && configurationEntries.length !== 0*/){ //$NON-NLS-0$
 
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-					that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id,
-							{"ViewAllLink":repoTemplate.expand({resource: configLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all configuration entries"]}, that, "button"); //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-				}
-				
-				if (mode === "full"){ //$NON-NLS-0$
-					that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.addConfigEntryCommand", 1000); //$NON-NLS-0$
-					that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, that, "button"); //$NON-NLS-0$
-				}
-				
-				if (configurationEntries.length === 0){
-					titleWrapper.setTitle("No Configuration"); //$NON-NLS-0$
-					progress.done();
-					return;
-				}
-				
-				for(var i=0; i<configurationEntries.length ;i++){
-					if (mode === "full" || configurationEntries[i].Key.indexOf("user.") !== -1) //$NON-NLS-1$ //$NON-NLS-0$
-						that.renderConfigEntry(configurationEntries[i], i);
-				}
-				progress.done();
-			}, function(error){
-				progress.done();
-				that.handleError(error);
+			that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
+			that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id,
+					{"ViewAllLink":repoTemplate.expand({resource: configLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all configuration entries"]}, that, "button"); //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		}
+		
+		if (mode === "full"){ //$NON-NLS-0$
+			that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.addConfigEntryCommand", 1000); //$NON-NLS-0$
+			that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, that, "button"); //$NON-NLS-0$
+		}
+		
+			
+		var configNavigator = new mGitConfigList.GitConfigListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			parentId:"configNode", //hack
+			actionScopeId: this.actionScopeId,
+			titleWrapper: titleWrapper,
+			handleError: this.handleError,
+			root: {
+				Type: "ConfigRoot",
+				repository: repository,
+				mode: mode
 			}
-		);
+		});
+		configNavigator.display();
 	};
 	
-	GitRepositoryExplorer.prototype.renderConfigEntry = function(configEntry, index){
-		var sectionItem = document.createElement("div");
-		sectionItem.className = "sectionTableItem lightTreeTableRow";
-		lib.node("configNode").appendChild(sectionItem);
-
-		var horizontalBox = document.createElement("div");
-		horizontalBox.style.overflow = "hidden";
-		sectionItem.appendChild(horizontalBox);
-		
-		var detailsView = document.createElement("div");
-		detailsView.className = "stretch";
-		horizontalBox.appendChild(detailsView);
-
-		var keySpan = document.createElement("span");
-		keySpan.textContent = configEntry.Key;
-		detailsView.appendChild(keySpan);
-		
-		var valueSpan = document.createElement("span");
-		valueSpan.style.paddingLeft = "10px";
-		valueSpan.textContent = configEntry.Value;
-		detailsView.appendChild(valueSpan);
-		
-		var actionsArea = document.createElement("div");
-		actionsArea.className = "sectionTableItemActions";
-		actionsArea.id = "configActionsArea";
-		horizontalBox.appendChild(actionsArea);
-
-		this.commandService.renderCommands(this.actionScopeId, actionsArea, configEntry, this, "tool"); //$NON-NLS-0$
-	};
 	
 	return GitRepositoryExplorer;
 }());
