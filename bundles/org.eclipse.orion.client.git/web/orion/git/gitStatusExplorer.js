@@ -9,18 +9,25 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*global define document window Image*/
-define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommitList','orion/explorers/explorer', 'orion/selection', 'orion/section', 'orion/URITemplate', 'orion/PageUtil', 'orion/webui/littlelib',
-		'orion/i18nUtil', 'orion/globalCommands', 'orion/git/uiUtil',	'orion/git/gitCommands', 'orion/Deferred', 'orion/git/widgets/CommitTooltipDialog',
-		'orion/webui/tooltip', 'orion/git/util'],
-		function(require, messages, mGitCommitList, mExplorer, mSelection, mSection, URITemplate, PageUtil, lib, i18nUtil, mGlobalCommands, mGitUIUtil, mGitCommands,
-				Deferred, mCommitTooltip, Tooltip, util) {
+define([
+	'require',
+	'i18n!git/nls/gitmessages',
+	'orion/git/widgetsTake2/gitCommitList',
+	'orion/git/widgetsTake2/gitChangeList',
+	'orion/explorers/explorer',
+	'orion/selection',
+	'orion/section',
+	'orion/URITemplate',
+	'orion/PageUtil',
+	'orion/webui/littlelib',
+	'orion/globalCommands',
+	'orion/git/gitCommands'
+], function(require, messages, mGitCommitList, mGitChangeList, mExplorer, mSelection, mSection, URITemplate, PageUtil, lib, mGlobalCommands, mGitCommands) {
 
 	var exports = {};
 	var conflictTypeStr = "Conflicting"; //$NON-NLS-0$
 
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
-	var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
-	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 
 	function isConflict(type) {
 		return type === conflictTypeStr;
@@ -122,12 +129,12 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 				return false;
 			},
 
-			getClass: function(type) {
-				return this.statusTypeMap[type].imageClass;
+			getClass: function(item) {
+				return this.statusTypeMap[item.type].imageClass;
 			},
 
-			getTooltip: function(type) {
-				return this.statusTypeMap[type].tooltip;
+			getTooltip: function(item) {
+				return this.statusTypeMap[item.type].tooltip;
 			}
 		};
 
@@ -226,8 +233,8 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 													var tableNode = lib.node('table'); //$NON-NLS-0$
 													lib.empty(tableNode);
 													that.initTitleBar(status, repositories[0]);
-													that.displayUnstaged(status, repositories[0]);
-													that.displayStaged(status, repositories[0]);
+													that.displayUnstaged(repositories[0]);
+													that.displayStaged(repositories[0]);
 													that.displayCommits(repositories[0]);
 
 													// render
@@ -290,7 +297,7 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 							path : groupData[j].Path,
 							commitURI : groupData[j].Git.CommitLocation,
 							indexURI : groupData[j].Git.IndexLocation,
-							diffURI : groupData[j].Git.DiffLocation,
+							DiffLocation : groupData[j].Git.DiffLocation,
 							CloneLocation : this._model.items.CloneLocation,
 							conflicting : isConflict(renderType)
 						});
@@ -313,7 +320,7 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 
 		// Git unstaged changes
 
-		GitStatusExplorer.prototype.displayUnstaged = function(status, repository) {
+		GitStatusExplorer.prototype.displayUnstaged = function(repository) {
 			var that = this;
 			var unstagedSortedChanges = this._sortBlock(this._model.interestedUnstagedGroup);
 			var tableNode = lib.node('table'); //$NON-NLS-0$
@@ -356,179 +363,22 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 
 			this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
 
-			var UnstagedModel = (function() {
-				function UnstagedModel() {}
-
-				UnstagedModel.prototype = {
-					destroy : function() {},
-
-					getRoot : function(onItem) {
-						onItem(unstagedSortedChanges);
-					},
-
-					getChildren : function(parentItem, onComplete) {
-						if (parentItem instanceof Array && parentItem.length > 0) {
-							onComplete(parentItem);
-						} else if (mGitUIUtil.isChange(parentItem)) {
-							if (!parentItem.children) {// lazy creation,
-														// this is required
-														// for selection
-														// model to be able
-														// to traverse into
-														// children
-								parentItem.children = [];
-								parentItem.children.push({ "diffUri" : parentItem.diffURI, "Type" : "Diff", parent : parentItem}); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-							}
-							onComplete(parentItem.children); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						} else {
-							onComplete([]);
-						}
-					},
-
-					getId : function(/* item */item) {
-						if (item instanceof Array && item.length > 0) {
-							return "unstagedRoot"; //$NON-NLS-0$
-						} else if (mGitUIUtil.isChange(item)) {
-							return "unstaged" + item.name; //$NON-NLS-0$
-						} else {
-							return "unstaged" + item.diffUri; //$NON-NLS-0$
-						}
-					}
-				};
-
-				return UnstagedModel;
-			}());
-
-			var UnstagedRenderer = (function() {
-				function UnstagedRenderer(options, explorer) {
-					this._init(options);
-					this.options = options;
-					this.explorer = explorer;
-					this.registry = options.registry;
-				}
-
-				UnstagedRenderer.prototype = new mExplorer.SelectionRenderer();
-
-				UnstagedRenderer.prototype.getCellElement = function(col_no, item, tableRow) {
-					switch (col_no) {
-						case 0:
-							if (mGitUIUtil.isChange(item)) {
-								var td = document.createElement("td"); //$NON-NLS-0$
-								var div = document.createElement("div"); //$NON-NLS-0$
-								div.className = "sectionTableItem"; //$NON-NLS-0$
-								td.appendChild(div);
-
-								this.getExpandImage(tableRow, div);
-
-								var navGridHolder = this.explorer.getNavDict() ? this.explorer.getNavDict().getGridNavHolder(item, true) : null;
-
-								var diffActionWrapper = document.createElement("span"); //$NON-NLS-0$
-								diffActionWrapper.id = "unstaged" + item.name + "DiffActionWrapper"; //$NON-NLS-0$
-								diffActionWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
-								div.appendChild(diffActionWrapper);
-
-								that.commandService.destroy(diffActionWrapper);
-								that.commandService.renderCommands(
-											"DefaultActionWrapper", diffActionWrapper, item, that, "tool", null, navGridHolder); //$NON-NLS-1$ //$NON-NLS-0$
-
-								var icon = document.createElement("span"); //$NON-NLS-0$
-								icon.className = that._model.getClass(item.type);
-								icon.commandTooltip = new Tooltip.Tooltip({
-									node: icon,
-									text: that._model.getTooltip(item.type),
-									position: ["above", "below", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								});
-								div.appendChild(icon);
-
-								var itemLabel = document.createElement("span"); //$NON-NLS-0$
-								itemLabel.textContent = item.name;
-								div.appendChild(itemLabel);
-
-								return td;
-							} else {
-								// render the compare widget
-								var td = document.createElement("td"); //$NON-NLS-0$
-								td.colSpan = 2;
-
-								var div = document.createElement("div"); //$NON-NLS-0$
-								div.className = "sectionTableItem"; //$NON-NLS-0$
-								td.appendChild(div);
-
-								var compareWidgetActionWrapper = document.createElement("div"); //$NON-NLS-0$
-								compareWidgetActionWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
-								compareWidgetActionWrapper.id = "unstaged" + item.parent.name + "CompareWidgetActionWrapper"; //$NON-NLS-1$ //$NON-NLS-0$
-								div.appendChild(compareWidgetActionWrapper);
-
-								var diffContainer = document.createElement("div"); //$NON-NLS-0$
-								diffContainer.id = "diffArea_" + item.diffUri; //$NON-NLS-0$
-								diffContainer.style.height = "420px"; //$NON-NLS-0$
-								diffContainer.style.border = "1px solid lightgray"; //$NON-NLS-0$
-								diffContainer.style.overflow = "hidden"; //$NON-NLS-0$
-								div.appendChild(diffContainer);
-
-								var navGridHolder = this.explorer.getNavDict() ? this.explorer.getNavDict().getGridNavHolder(item, true) : null;
-								mGitUIUtil.createCompareWidget(
-									that.registry,
-									that.commandService,
-									item.diffUri,
-									isConflict(item.parent.type),
-									diffContainer,
-									compareWidgetActionWrapper.id,
-									true, //editableInComparePage
-									{navGridHolder: navGridHolder} //gridRenderer
-								);
-
-								return td;
-							}
-
-							break;
-					}
-				};
-
-				return UnstagedRenderer;
-			}());
-
-			var UnstagedNavigator = (function() {
-				function UnstagedNavigator(registry, selection, parentId, actionScopeId) {
-					this.registry = registry;
-					this.checkbox = false;
-					this.parentId = parentId;
-					this.selection = selection;
-					this.actionScopeId = actionScopeId;
-					this.renderer = new UnstagedRenderer({ registry : this.registry,/*
-																					 * actionScopeId:
-																					 * sectionItemActionScopeId,
-																					 */
-					cachePrefix : "UnstagedNavigator", checkbox : false}, this); //$NON-NLS-0$
-					this.createTree(this.parentId, new UnstagedModel(), { setFocus : true
-					});
-				}
-
-				UnstagedNavigator.prototype = new mExplorer.Explorer();
-
-				// provide to the selection model that if a row is
-				// selectable
-				UnstagedNavigator.prototype.isRowSelectable = function(modelItem) {
-					return mGitUIUtil.isChange(modelItem);
-				};
-				// provide to the expandAll/collapseAll commands
-				UnstagedNavigator.prototype.getItemCount = function() {
-					return unstagedSortedChanges.length;
-				};
-				return UnstagedNavigator;
-			}());
-
-			var unstagedNavigator = new UnstagedNavigator(this.registry, this.unstagedSelection, "unstagedNode" /*
-																												 * ,
-																												 * sectionItemActionScopeId
-																												 */); //$NON-NLS-0$
-			this.commandService.renderCommands(unstagedSection.actionsNode.id, unstagedSection.actionsNode.id, unstagedNavigator, unstagedNavigator,
-				"button"); //$NON-NLS-0$
+			var unstagedNavigator = new mGitChangeList.GitChangeListExplorer({
+				serviceRegistry: this.registry,
+				commandRegistry: this.commandService,
+				selection: this.unstagedSelection,
+				parentId:"unstagedNode", //hack
+				changesModel: this._model,
+				prefix: "unstaged",
+				changes: unstagedSortedChanges,
+			});
+			unstagedNavigator.display();
+			this.commandService.renderCommands(unstagedSection.actionsNode.id, unstagedSection.actionsNode.id, unstagedNavigator, unstagedNavigator, "button"); //$NON-NLS-0$
 		};
 
 		// Git staged changes
 
-		GitStatusExplorer.prototype.displayStaged = function(status, repository) {
+		GitStatusExplorer.prototype.displayStaged = function(repository) {
 			var that = this;
 			var stagedSortedChanges = this._sortBlock(this._model.interestedStagedGroup);
 			var tableNode = lib.node('table'); //$NON-NLS-0$
@@ -570,180 +420,22 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 
 			this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
 
-			var StagedModel = (function() {
-				function StagedModel() {}
-
-				StagedModel.prototype = {
-					destroy : function() {},
-
-					getRoot : function(onItem) {
-						onItem(stagedSortedChanges);
-					},
-
-					getChildren : function(parentItem, onComplete) {
-						if (parentItem instanceof Array && parentItem.length > 0) {
-							onComplete(parentItem);
-						} else if (mGitUIUtil.isChange(parentItem)) {
-							if (!parentItem.children) {// lazy creation,
-														// this is required
-														// for selection
-														// model to be able
-														// to trverse into
-														// children
-								parentItem.children = [];
-								parentItem.children.push({ "diffUri" : parentItem.diffURI, "Type" : "Diff", parent : parentItem});//$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-							}
-							onComplete(parentItem.children);
-						} else {
-							onComplete([]);
-						}
-					},
-
-					getId : function(/* item */item) {
-						if (item instanceof Array && item.length > 0) {
-							return "stagedRoot"; //$NON-NLS-0$
-						} else if (mGitUIUtil.isChange(item)) {
-							return "staged" + item.name; //$NON-NLS-0$
-						} else {
-							return "staged" + item.diffUri; //$NON-NLS-0$
-						}
-					}
-				};
-
-				return StagedModel;
-			}());
-
-			var StagedRenderer = (function() {
-				function StagedRenderer(options, explorer) {
-					this._init(options);
-					this.options = options;
-					this.explorer = explorer;
-					this.registry = options.registry;
-				}
-
-				StagedRenderer.prototype = new mExplorer.SelectionRenderer();
-
-				StagedRenderer.prototype.getCellElement = function(col_no, item, tableRow) {
-					switch (col_no) {
-						case 0:
-							if (mGitUIUtil.isChange(item)) {
-								var td = document.createElement("td"); //$NON-NLS-0$
-								var div = document.createElement("div"); //$NON-NLS-0$
-								div.className = "sectionTableItem"; //$NON-NLS-0$
-								td.appendChild(div);
-
-								this.getExpandImage(tableRow, div);
-
-								var navGridHolder = this.explorer.getNavDict() ? this.explorer.getNavDict().getGridNavHolder(item, true) : null;
-
-								var diffActionWrapper = document.createElement("span"); //$NON-NLS-0$
-								diffActionWrapper.id = "staged" + item.name + "DiffActionWrapper"; //$NON-NLS-0$
-								diffActionWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
-								div.appendChild(diffActionWrapper);
-
-								that.commandService.destroy(diffActionWrapper);
-								that.commandService.renderCommands(
-									"DefaultActionWrapper", diffActionWrapper, item, that, "tool", null, navGridHolder); //$NON-NLS-1$ //$NON-NLS-0$
-
-								var icon = document.createElement("span"); //$NON-NLS-0$
-								icon.className = that._model.getClass(item.type);
-								icon.commandTooltip = new Tooltip.Tooltip({
-									node: icon,
-									text: that._model.getTooltip(item.type),
-									position: ["above", "below", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								});
-								div.appendChild(icon);
-
-								var itemLabel = document.createElement("span"); //$NON-NLS-0$
-								itemLabel.textContent = item.name;
-								div.appendChild(itemLabel);
-
-								return td;
-							} else {
-								// render the compare widget
-								var td = document.createElement("td"); //$NON-NLS-0$
-								td.colSpan = 2;
-
-								var div = document.createElement("div"); //$NON-NLS-0$
-								div.className = "sectionTableItem"; //$NON-NLS-0$
-								td.appendChild(div);
-
-								var compareWidgetActionWrapper = document.createElement("div"); //$NON-NLS-0$
-								compareWidgetActionWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
-								compareWidgetActionWrapper.id = "staged" + item.parent.name + "CompareWidgetActionWrapper"; //$NON-NLS-1$ //$NON-NLS-0$
-								div.appendChild(compareWidgetActionWrapper);
-
-								var diffContainer = document.createElement("div"); //$NON-NLS-0$
-								diffContainer.id = "diffArea_" + item.diffUri; //$NON-NLS-0$
-								diffContainer.style.height = "420px"; //$NON-NLS-0$
-								diffContainer.style.border = "1px solid lightgray"; //$NON-NLS-0$
-								diffContainer.style.overflow = "hidden"; //$NON-NLS-0$
-								div.appendChild(diffContainer);
-
-								var navGridHolder = this.explorer.getNavDict() ? this.explorer.getNavDict().getGridNavHolder(item, true) : null;
-								var hasConflict = isConflict(item.parent.type);
-								mGitUIUtil.createCompareWidget(
-									that.registry,
-									that.commandService,
-									item.diffUri,
-									isConflict(item.parent.type),
-									diffContainer,
-									compareWidgetActionWrapper.id,
-									false, //editableInComparePage
-									{navGridHolder: navGridHolder} //gridRenderer
-								);
-
-								return td;
-							}
-
-							break;
-					}
-				};
-
-				return StagedRenderer;
-			}());
-
-			var StagedNavigator = (function() {
-				function StagedNavigator(registry, selection, parentId, actionScopeId) {
-					this.registry = registry;
-					this.checkbox = false;
-					this.parentId = parentId;
-					this.status = status;
-					this.selection = selection;
-					this.actionScopeId = actionScopeId;
-					this.renderer = new StagedRenderer({ registry : this.registry, /*
-																					* actionScopeId:
-																					* sectionItemActionScopeId,
-																					*/
-					cachePrefix : "StagedNavigator", checkbox : false}, this); //$NON-NLS-0$
-					this.createTree(this.parentId, new StagedModel());
-				}
-
-				StagedNavigator.prototype = new mExplorer.Explorer();
-
-				// provide to the selection model that if a row is
-				// selectable
-				StagedNavigator.prototype.isRowSelectable = function(modelItem) {
-					return mGitUIUtil.isChange(modelItem);
-				};
-				// provide to the expandAll/collapseAll commands
-				StagedNavigator.prototype.getItemCount = function() {
-					return stagedSortedChanges.length;
-				};
-				return StagedNavigator;
-			}());
-
-			var stagedNavigator = new StagedNavigator(this.registry, this.stagedSelection, "stagedNode" /*
-																										 * ,
-																										 * sectionItemActionScopeId
-																										 */); //$NON-NLS-0$
+			var stagedNavigator = new mGitChangeList.GitChangeListExplorer({
+				serviceRegistry: this.registry,
+				commandRegistry: this.commandService,
+				selection: this.stagedSelection,
+				parentId:"stagedNode", //hack
+				changesModel: this._model,
+				prefix: "staged",
+				changes: stagedSortedChanges,
+			});
+			stagedNavigator.display();
 			this.commandService.renderCommands(stagedSection.actionsNode.id, stagedSection.actionsNode.id, stagedNavigator, stagedNavigator, "button"); //$NON-NLS-0$
 		};
 
 		// Git commits
 
 		GitStatusExplorer.prototype.displayCommits = function(repository) {
-			var that = this;
 			var tableNode = lib.node('table'); //$NON-NLS-0$
 			var titleWrapper = new mSection.Section(tableNode, {
 				id : "commitSection", //$NON-NLS-0$
@@ -753,7 +445,6 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 				canHide : true,
 				preferenceService : this.registry.getService("orion.core.preference") //$NON-NLS-0$
 			});
-			
 			var explorer = new mGitCommitList.GitCommitListExplorer({
 				serviceRegistry: this.registry,
 				commandRegistry: this.commandService,
@@ -761,8 +452,7 @@ define(['require', 'i18n!git/nls/gitmessages', 'orion/git/widgetsTake2/gitCommit
 				actionScopeId: this.actionScopeId,
 				parentId:"commitNode", //hack
 			});
-			explorer.displayCommits(repository, titleWrapper, that.handleError.bind(this));
-
+			explorer.displayCommits(repository, titleWrapper, this.handleError.bind(this));
 		};
 		
 		return GitStatusExplorer;

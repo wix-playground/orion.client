@@ -11,10 +11,22 @@
 
 /*global define window console document Image */
 
-define(
-		[ 'require', 'i18n!git/nls/gitmessages', 'orion/section', 'orion/explorers/explorer', 'orion/URITemplate', 'orion/PageUtil', 'orion/i18nUtil', 'orion/webui/littlelib',
-				'orion/globalCommands', 'orion/git/gitCommands', 'orion/git/uiUtil', 'orion/Deferred', 'orion/webui/tooltip' ],
-		function(require, messages, mSection, mExplorer, URITemplate, PageUtil, i18nUtil, lib, mGlobalCommands, mGitCommands, mGitUIUtil, Deferred, Tooltip) {
+define([
+	'require',
+	'i18n!git/nls/gitmessages',
+	'orion/section',
+	'orion/git/widgetsTake2/gitChangeList',
+	'orion/explorers/explorer',
+	'orion/URITemplate',
+	'orion/PageUtil',
+	'orion/i18nUtil',
+	'orion/webui/littlelib',
+	'orion/globalCommands',
+	'orion/git/gitCommands',
+	'orion/git/uiUtil',
+	'orion/Deferred',
+	'orion/webui/tooltip'
+], function(require, messages, mSection, mGitChangeList, mExplorer, URITemplate, PageUtil, i18nUtil, lib, mGlobalCommands, mGitCommands, mGitUIUtil, Deferred, Tooltip) {
 			var exports = {};
 			
 			var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
@@ -305,10 +317,36 @@ define(
 
 				GitCommitExplorer.prototype.displayDiffs = function(commit) {
 
-					var that = this;
-
 					var diffs = commit.Diffs;
 
+					var changesModel = {
+						getClass: function (item) {
+							var sprite = "git-sprite-file"; //$NON-NLS-0$
+							if (item.ChangeType === "ADD") { //$NON-NLS-0$
+								sprite = "git-sprite-addition"; //$NON-NLS-0$
+							} else if (item.ChangeType === "DELETE") { //$NON-NLS-0$
+								sprite = "git-sprite-removal"; //$NON-NLS-0$
+							}
+							return sprite;
+						},
+						getTooltip: function(item) {
+							var tooltip = messages["Diffs"]; //$NON-NLS-0$
+							if (item.ChangeType === "ADD") { //$NON-NLS-0$
+								tooltip =  messages["Addition"]; //$NON-NLS-0$
+							} else if (item.ChangeType === "DELETE") { //$NON-NLS-0$
+								tooltip = messages["Deletion"]; //$NON-NLS-0$
+							}
+							return tooltip;
+						}
+					};
+
+					diffs.forEach(function(item) {
+						var path = item.OldPath;
+						if (item.ChangeType === "ADD") { //$NON-NLS-0$
+							path = item.NewPath;
+						} 
+						item.name = path;
+					});
 					var tableNode = lib.node('table'); //$NON-NLS-0$
 
 					var section = new mSection.Section(tableNode, { id : "diffSection", //$NON-NLS-0$
@@ -323,191 +361,19 @@ define(
 
 					var sectionItemActionScopeId = "diffSectionItemActionArea"; //$NON-NLS-0$
 
-					var DiffModel = (function() {
-						function DiffModel() {
-						}
 
-						DiffModel.prototype = { destroy : function() {
-						},
-						getRoot : function(onItem) {
-							onItem(diffs);
-						},
-						getChildren : function(parentItem, onComplete) {
-							if (parentItem instanceof Array && parentItem.length > 0) {
-								onComplete(parentItem);
-							} else if (parentItem.Type === "Diff") {
-								if (!parentItem.children) {// lazy creation,
-															// this is required
-															// for selection
-															// model to be able
-															// to trverse into
-															// children
-									parentItem.children = [];
-									parentItem.children.push({ parent : parentItem,
-									DiffLocation : parentItem.DiffLocation
-									}); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								}
-								onComplete(parentItem.children); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								// onComplete([{parent: parentItem}]);
-								// //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-							} else {
-								onComplete([]);
-							}
-						},
-						getId : function(/* item */item) {
-							if (item instanceof Array && item.length > 0) {
-								return "diffRoot"; //$NON-NLS-0$
-							} else if (item.Type === "Diff") {
-								return "diff" + item.DiffLocation; //$NON-NLS-0$
-							} else {
-								return "diffWidget" + item.DiffLocation; //$NON-NLS-0$
-							}
-						}
-						};
-
-						return DiffModel;
-					}());
-
-					var DiffRenderer = (function() {
-						function DiffRenderer(options, explorer) {
-							this._init(options);
-							this.options = options;
-							this.explorer = explorer;
-							this.registry = options.registry;
-						}
-
-						DiffRenderer.prototype = new mExplorer.SelectionRenderer();
-
-						DiffRenderer.prototype.getCellElement = function(col_no, item, tableRow) {
-							switch (col_no) {
-							case 0:
-								if (item.Type === "Diff") {
-									var td = document.createElement("td"); //$NON-NLS-0$
-
-									var div = document.createElement("div"); //$NON-NLS-0$
-									div.className = "sectionTableItem"; //$NON-NLS-0$
-									td.appendChild(div);
-
-									var path = item.OldPath;
-									var sprite = "git-sprite-file"; //$NON-NLS-0$
-									var tooltip = messages["Diffs"]; //$NON-NLS-0$
-									if (item.ChangeType === "ADD") { //$NON-NLS-0$
-										path = item.NewPath;
-										sprite = "git-sprite-addition"; //$NON-NLS-0$
-										tooltip = messages["Addition"]; //$NON-NLS-0$
-									} else if (item.ChangeType === "DELETE") { //$NON-NLS-0$
-										sprite = "git-sprite-removal"; //$NON-NLS-0$
-										tooltip = messages["Deletion"]; //$NON-NLS-0$
-									}
-
-									this.getExpandImage(tableRow, div);
-									
-									var icon = document.createElement("span"); //$NON-NLS-0$
-									icon.className = sprite;
-									icon.classList.add("gitImageSprite");
-									icon.commandTooltip = new Tooltip.Tooltip({
-										node: icon,
-										text: tooltip,
-										position: ["above", "below", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-									});
-									div.appendChild(icon);
-									
-									var itemLabel = document.createElement("span"); //$NON-NLS-0$
-									itemLabel.className = "gitMainDescription"; //$NON-NLS-0$
-									itemLabel.textContent = path;
-									div.appendChild(itemLabel);
-
-									return td;
-								} else {
-									var td = document.createElement("td"); //$NON-NLS-0$
-									td.colSpan = 2;
-
-									var div = document.createElement("div"); //$NON-NLS-0$
-									div.className = "sectionTableItem"; //$NON-NLS-0$
-									td.appendChild(div);
-
-									var actionsWrapper = document.createElement("div"); //$NON-NLS-0$
-									actionsWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
-									div.appendChild(actionsWrapper);
-
-									var diffActionWrapper = document.createElement("span"); //$NON-NLS-0$
-									diffActionWrapper.id = "diff" + item.parent.DiffLocation + "DiffActionWrapper"; //$NON-NLS-0$
-									actionsWrapper.appendChild(diffActionWrapper);
-
-									var compareWidgetActionWrapper = document.createElement("span"); //$NON-NLS-0$
-									compareWidgetActionWrapper.id = "diff" + item.parent.DiffLocation + "CompareWidgetActionWrapper"; //$NON-NLS-0$
-									actionsWrapper.appendChild(compareWidgetActionWrapper);
-
-									var diffContainer = document.createElement("div"); //$NON-NLS-0$
-									diffContainer.id = "diffArea_" + item.parent.DiffLocation; //$NON-NLS-0$
-									diffContainer.style.height = "420px";
-									diffContainer.style.border = "1px solid lightgray";
-									diffContainer.style.overflow = "hidden";
-									div.appendChild(diffContainer);
-
-									var navGridHolder = this.explorer.getNavDict() ? this.explorer.getNavDict().getGridNavHolder(item, true) : null;
-									
-									mGitUIUtil.createCompareWidget(
-										that.registry,
-										that.commandService, 
-										item.parent.DiffLocation, 
-										false, 
-										diffContainer,
-										compareWidgetActionWrapper.id, 
-										false, //editableInComparePage
-										{
-											navGridHolder : navGridHolder,
-											additionalCmdRender : function(gridHolder) {
-												that.commandService.destroy(diffActionWrapper.id);
-												that.commandService.renderCommands(
-													"itemLevelCommands", diffActionWrapper.id, item.parent, that, "tool", false, gridHolder); //$NON-NLS-0$
-											},
-											before : true
-										}
-									);
-									
-									return td;
-								}
-								break;
-							}
-						};
-
-						return DiffRenderer;
-					}());
-
-					var DiffNavigator = (function() {
-						function DiffNavigator(registry, selection, parentId, actionScopeId) {
-							this.registry = registry;
-							this.checkbox = false;
-							this.parentId = parentId;
-							this.selection = selection;
-							this.actionScopeId = actionScopeId;
-							this.renderer = new DiffRenderer({ registry : this.registry,
-							actionScopeId : sectionItemActionScopeId,
-							cachePrefix : "DiffNavigator", checkbox : false}, this); //$NON-NLS-0$
-							this.createTree(this.parentId, new DiffModel(), {/*
-																				 * selectionPolicy:
-																				 * "cursorOnly"
-																				 */});
-						}
-
-						DiffNavigator.prototype = new mExplorer.Explorer();
-
-						// provide to the selection model that if a row is
-						// selectable
-						DiffNavigator.prototype.isRowSelectable = function(modelItem) {
-							return false;
-						};
-						// provide to the expandAll/collapseAll commands
-						DiffNavigator.prototype.getItemCount = function() {
-							return diffs.length;
-						};
-
-						return DiffNavigator;
-					}());
-
-					var diffnavigator = new DiffNavigator(this.registry, null, "diffNode", sectionItemActionScopeId); //$NON-NLS-0$
-					this.commandService.renderCommands(section.actionsNode.id, section.actionsNode.id, diffnavigator, diffnavigator, "button"); //$NON-NLS-0$
+					var diffNavigator = new mGitChangeList.GitChangeListExplorer({
+						serviceRegistry: this.registry,
+						commandRegistry: this.commandService,
+						selection: null,
+						parentId:"diffNode",
+						actionScopeId: sectionItemActionScopeId,
+						changesModel: changesModel,
+						prefix: "diff",
+						changes: diffs
+					});
+					diffNavigator.display();
+					this.commandService.renderCommands(section.actionsNode.id, section.actionsNode.id, diffNavigator, diffNavigator, "button"); //$NON-NLS-0$
 				};
 
 				return GitCommitExplorer;
