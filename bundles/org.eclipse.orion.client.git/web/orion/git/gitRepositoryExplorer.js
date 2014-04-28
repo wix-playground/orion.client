@@ -15,6 +15,7 @@ define([
 	'orion/git/widgetsTake2/gitCommitList',
 	'orion/git/widgetsTake2/gitBranchList',
 	'orion/git/widgetsTake2/gitConfigList',
+	'orion/git/widgetsTake2/gitTagList',
 	'orion/section',
 	'orion/i18nUtil',
 	'orion/webui/littlelib',
@@ -26,7 +27,7 @@ define([
 	'orion/globalCommands',
 	'orion/Deferred',
 	'orion/git/widgets/CommitTooltipDialog'
-], function(require, messages, mGitCommitList, mGitBranchList, mGitConfigList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred, mCommitTooltip) {
+], function(require, messages, mGitCommitList, mGitBranchList, mGitConfigList, mGitTagList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred, mCommitTooltip) {
 var exports = {};
 	
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
@@ -740,30 +741,8 @@ exports.GitRepositoryExplorer = (function() {
 	
 	// Git tags
 	
-	GitRepositoryExplorer.prototype.decorateTag = function(tag, deferred){
-		deferred = deferred || new Deferred();
-		
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").doGitLog(tag.CommitLocation + "?page=1&pageSize=1"), "Getting tag last commit " + tag.Name).then(
-			function(resp){
-				tag.Commit = resp.Children[0];
-				deferred.resolve();
-			}, function(err){
-				deferred.reject();
-			}
-		);
-		
-		return deferred;
-	};
 	
 	GitRepositoryExplorer.prototype.displayTags = function(repository, mode){
-		var that = this;
-		var href = window.location.href;
-		
-		var url = document.createElement("a");
-		var pageParams = PageUtil.matchResourceParameters();
-		url.href = pageParams.resource;	
-		var pageQuery = (url.search? url.search : "?page=1&pageSize=20");
-		
 		// render section even before initialRender
 		var tableNode = lib.node("table");
 		var titleWrapper = new mSection.Section(tableNode, {
@@ -773,114 +752,23 @@ exports.GitRepositoryExplorer = (function() {
 			content : '<div id="tagNode"></div>',
 			canHide : true,
 			hidden : true,
-			preferenceService : that.registry.getService("orion.core.preference")
+			preferenceService : this.registry.getService("orion.core.preference")
 		});
-						
-		var progress = titleWrapper.createProgressMonitor();
-		progress.begin(messages["Getting tags"]);
-
-		var tagsContainer = document.createElement("div");
-		tagsContainer.className = "mainPadding";
 		
-		this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(repository.TagLocation + (mode === "full" ? pageQuery : "?page=1&pageSize=5")), "Getting tags " + repository.Name).then(
-			function(resp){
-				var tags = resp.Children;
 				
-				var dynamicContentModel = new mDynamicContent.DynamicContentModel(tags,
-					function(i){
-						return that.decorateTag.bind(that)(tags[i]);
-					});
+		var tagsNavigator = new mGitTagList.GitTagListExplorer({
+			serviceRegistry: this.registry,
+			commandRegistry: this.commandService,
+			parentId:"tagNode",
+			actionScopeId: this.actionScopeId,
+			titleWrapper: titleWrapper,
+			repository: repository,
+			mode: mode
+		});
+		tagsNavigator.display();
 						
-				var dcExplorer = new mDynamicContent.DynamicContentExplorer(dynamicContentModel);
-				var tagRenderer = {
-					initialRender : function(){
-						progress.done();
-						var tagNode = lib.node("tagNode");
-						if (!tagNode) {
-							return;
-						}
-						lib.empty(tagNode);
-						tagNode.appendChild(tagsContainer);
-						
-						that.commandService.destroy(titleWrapper.actionsNode.id);
-						
-						if (mode !== "full" && tags.length !== 0){ //$NON-NLS-0$
-							that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-							that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id,
-									{"ViewAllLink":require.toUrl(repoPageTemplate.expand({resource: repository.TagLocation})), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all tags"]}, that, "button"); //$NON-NLS-7$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						}
-		
-						if (tags.length === 0) {
-							titleWrapper.setTitle(messages['No Tags']);
-						}
-					},
-					
-					renderBeforeItemPopulation : function(i){
-						var sectionItem = document.createElement("div");
-						sectionItem.className = "sectionTableItem lightTreeTableRow";
-						tagsContainer.appendChild(sectionItem);
-
-						var horizontalBox = document.createElement("div");
-						horizontalBox.style.overflow = "hidden";
-						sectionItem.appendChild(horizontalBox);
-						
-						var detailsView = document.createElement("div");
-						detailsView.className = "stretch";
-						horizontalBox.appendChild(detailsView);
-						
-						var title = document.createElement("span");
-						title.textContent = tags[i].Name;
-						detailsView.appendChild(title);
-	
-						this.explorer.progressIndicators[i] = new this.explorer.progressIndicator(i, title);
-						
-						var div = document.createElement("div");
-						div.id = "tagDetailsView"+i;
-						detailsView.appendChild(div);
-
-						var actionsArea = document.createElement("div");
-						actionsArea.className = "sectionTableItemActions";
-						actionsArea.id = "tagActionsArea";
-						horizontalBox.appendChild(actionsArea);
-						
-						that.commandService.renderCommands(that.actionScopeId, actionsArea, tags[i], that, "tool");	 //$NON-NLS-0$
-					},
-						
-					renderAfterItemPopulation : function(i){
-						that.renderTag(tags[i], i);
-					}			
-				};
-				
-				dcExplorer.use(tagRenderer);
-				dcExplorer.render();
-			
-			}, function(err){
-				progress.done();
-				that.handleError(err);
-			}
-		);
 	};
 			
-	GitRepositoryExplorer.prototype.renderTag = function(tag, i){
-		var description = document.createElement("span");
-		description.className = "tag-description";
-		
-		lib.empty(lib.node("tagDetailsView"+i));
-		lib.node("tagDetailsView"+i).appendChild(description);
-
-		var commit = tag.Commit;
-		
-		var link = document.createElement("a");
-		link.className = "navlinkonpage";
-		link.href = require.toUrl(commitTemplate.expand({resource: commit.Location}));
-		link.textContent = commit.Message;
-		description.appendChild(link);
-		
-		description.appendChild(document.createTextNode(messages[" by "] + commit.AuthorName + messages[" on "] + 
-				new Date(commit.Time).toLocaleString()));
-						
-		 new mCommitTooltip.CommitTooltipDialog({commit: commit, triggerNode: link});
-	};
 	
 	// Git Remotes
 	
