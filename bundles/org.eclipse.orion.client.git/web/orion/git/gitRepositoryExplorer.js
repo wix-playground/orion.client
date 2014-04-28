@@ -273,6 +273,7 @@ exports.GitRepositoryExplorer = (function() {
 	
 	GitRepositoryExplorer.prototype.displayRepositories = function(repositories, mode, links){
 		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
+		lib.empty(tableNode);
 		var contentParent = document.createElement("div");
 		tableNode.appendChild(contentParent);
 					
