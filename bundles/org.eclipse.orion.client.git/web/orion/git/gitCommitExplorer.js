@@ -16,6 +16,7 @@ define([
 	'i18n!git/nls/gitmessages',
 	'orion/section',
 	'orion/git/widgetsTake2/gitChangeList',
+	'orion/git/widgetsTake2/gitTagList',
 	'orion/explorers/explorer',
 	'orion/URITemplate',
 	'orion/PageUtil',
@@ -26,7 +27,7 @@ define([
 	'orion/git/uiUtil',
 	'orion/Deferred',
 	'orion/webui/tooltip'
-], function(require, messages, mSection, mGitChangeList, mExplorer, URITemplate, PageUtil, i18nUtil, lib, mGlobalCommands, mGitCommands, mGitUIUtil, Deferred, Tooltip) {
+], function(require, messages, mSection, mGitChangeList, mGitTagList, mExplorer, URITemplate, PageUtil, i18nUtil, lib, mGlobalCommands, mGitCommands, mGitUIUtil, Deferred, Tooltip) {
 			var exports = {};
 			
 			var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
@@ -109,7 +110,7 @@ define([
 														var repositories = resp.Children;
 														that.initTitleBar(commits[0], repositories[0]);
 														that.displayCommit(commits[0]);
-														that.displayTags(commits[0]);
+														that.displayTags(commits[0], repositories[0]);
 														that.displayDiffs(commits[0]);
 
 														commits[0].CloneLocation = repositories[0].Location;
@@ -262,56 +263,33 @@ define([
 
 				// Git tags
 
-				GitCommitExplorer.prototype.displayTags = function(commit) {
+				GitCommitExplorer.prototype.displayTags = function(commit, repository) {
 					var tags = commit.Tags;
 
 					var tableNode = lib.node('table'); //$NON-NLS-0$
 
 					var titleWrapper = new mSection.Section(tableNode, { id : "tagSection", //$NON-NLS-0$
-					title : ((tags && tags.length > 0) ? messages["Tags:"] : messages["No Tags"]),
-					iconClass : [ "gitImageSprite", "git-sprite-tag" ], //$NON-NLS-1$ //$NON-NLS-0$
-					slideout : true,
-					content : '<div id="tagNode"></div>', //$NON-NLS-0$
-					canHide : true,
-					preferenceService : this.registry.getService("orion.core.preference") //$NON-NLS-0$
+						title : ((tags && tags.length > 0) ? messages["Tags:"] : messages["No Tags"]),
+						iconClass : [ "gitImageSprite", "git-sprite-tag" ], //$NON-NLS-1$ //$NON-NLS-0$
+						slideout : true,
+						content : '<div id="tagNode"></div>', //$NON-NLS-0$
+						canHide : true,
+						preferenceService : this.registry.getService("orion.core.preference") //$NON-NLS-0$
 					});
 
-					this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.addTag", 100); //$NON-NLS-0$
-					this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode, commit, this, "button"); //$NON-NLS-0$
-
-					if (!tags && tags.length > 0)
-						return;
-
-					for ( var i = 0; (i < tags.length && i < 10); i++) {
-						this.renderTag(tags[i]);
-					}
+					var tagsNavigator = new mGitTagList.GitTagListExplorer({
+						serviceRegistry: this.registry,
+						commandRegistry: this.commandService,
+						parentId:"tagNode",
+						actionScopeId: this.actionScopeId,
+						titleWrapper: titleWrapper,
+						repository: repository,
+						mode: "full",
+						commit: commit
+					});
+					tagsNavigator.display();
 				};
 
-				GitCommitExplorer.prototype.renderTag = function(tag) {
-					var tagNode = lib.node("tagNode"); //$NON-NLS-0$
-
-					var sectionItem = document.createElement("div");
-					sectionItem.className = "sectionTableItem";
-					tagNode.appendChild(sectionItem);
-
-					var horizontalBox = document.createElement("div");
-					horizontalBox.className = "sectionTableItem";
-					sectionItem.appendChild(horizontalBox);
-
-					var detailsView = document.createElement("div");
-					detailsView.className = "stretch";
-					horizontalBox.appendChild(detailsView);
-
-					var title = document.createElement("span");
-					title.textContent = tag.Name;
-					detailsView.appendChild(title);
-
-					var actionsArea = document.createElement("div");
-					actionsArea.className = "sectionTableItemActions";
-					horizontalBox.appendChild(actionsArea);
-
-					this.commandService.renderCommands(this.actionScopeId, actionsArea, tag, this, "tool", false); //$NON-NLS-0$
-				};
 
 				// Git diffs
 
