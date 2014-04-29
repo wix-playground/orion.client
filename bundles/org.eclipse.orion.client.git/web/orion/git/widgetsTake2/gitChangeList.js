@@ -12,21 +12,13 @@
 /*global define document Image*/
 
 define([
-/*
-	'require',
-	'i18n!git/nls/gitmessages',
-	'orion/Deferred',
-	'orion/URITemplate',
-	'orion/git/util',
-	'orion/i18nUtil',
-	'orion/PageUtil',
-	'orion/explorers/navigationUtils',
-	*/
 	'orion/explorers/explorer',
 	'orion/git/uiUtil',
 	'orion/webui/tooltip',
+	'orion/selection',
+	'orion/webui/littlelib',
 	'orion/objects'
-], function(mExplorer, mGitUIUtil, mTooltip, objects/*require, messages, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, objects*/) {
+], function(mExplorer, mGitUIUtil, mTooltip, mSelection , lib, objects) {
 		
 	function GitChangeListModel(changes, prefix) {
 		this.changes = changes;
@@ -78,10 +70,20 @@ define([
 		this.prefix = options.prefix;
 		this.changes = options.changes;
 		this.status = options.status;
+		this.section = options.section;
+		this.repository = options.repository;
+		this.createSelection();
 	}
 	GitChangeListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {
+		destroy: function() {
+			if (this._selectionListener) {
+				this.selection.removeEventListener("selectionChanged", this._selectionListener);
+				this._selectionListener = null;
+			}
+		},
 		display: function() {
+			this.updateCommands();
 			this.createTree(this.parentId, new GitChangeListModel(this.changes, this.prefix));
 		},
 		isRowSelectable: function(modelItem) {
@@ -89,6 +91,41 @@ define([
 		},
 		getItemCount: function() {
 			return this.changes.length;
+		},
+		updateCommands: function() {
+			var actionsNodeScope = this.section.actionsNode.id;
+			var selectionNodeScope = this.section.selectionNode.id;
+			this.commandService.registerCommandContribution(actionsNodeScope, "orion.explorer.expandAll", 200); //$NON-NLS-0$
+			this.commandService.registerCommandContribution(actionsNodeScope, "orion.explorer.collapseAll", 300); //$NON-NLS-0$
+			if (this.prefix === "staged") {
+				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commitCommand", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
+			} else if (this.prefix === "unstaged") {
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.showPatchCommand", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.stageCommand", 200); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
+				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
+
+			}
+			this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this, this, "button"); //$NON-NLS-0$
+		},
+		createSelection: function(){
+			if (!this.selection) {
+				this.selection = new mSelection.Selection(this.registry, "orion.selection." + this.prefix + "Section"); //$NON-NLS-1$ //$NON-NLS-0$
+				this.commandService.registerSelectionService(this.section.selectionNode.id, this.selection);
+				var section = this.section;
+				var commandService = this.commandService;
+				var that = this;
+				this.selection.addEventListener("selectionChanged", this._selectionListener =  function(event) { //$NON-NLS-1$ //$NON-NLS-0$
+					var selectionTools = lib.node(section.selectionNode.id);
+					if (selectionTools) {
+						commandService.destroy(selectionTools);
+						commandService.renderCommands(section.selectionNode.id, selectionTools, event.selections, that,
+							"button", {"Clone" : that.repository}); //$NON-NLS-1$ //$NON-NLS-0$
+					}
+				});
+			}
 		}
 	});
 	

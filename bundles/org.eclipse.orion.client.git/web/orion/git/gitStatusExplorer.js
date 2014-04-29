@@ -337,33 +337,10 @@ define([
 				}
 			});
 
-			this.commandService.registerCommandContribution(unstagedSection.actionsNode.id, "orion.explorer.expandAll", 200); //$NON-NLS-1$ //$NON-NLS-0$
-			this.commandService.registerCommandContribution(unstagedSection.actionsNode.id, "orion.explorer.collapseAll", 300); //$NON-NLS-1$ //$NON-NLS-0$
-
-			this.commandService.registerCommandContribution(unstagedSection.selectionNode.id, "eclipse.orion.git.showPatchCommand", 100); //$NON-NLS-0$
-			this.commandService.registerCommandContribution(unstagedSection.selectionNode.id, "eclipse.orion.git.stageCommand", 200); //$NON-NLS-0$
-			this.commandService.registerCommandContribution(unstagedSection.selectionNode.id, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
-
-			if (!this.unstagedOnce) {
-				if (!this.unstagedSelection) {
-					this.unstagedSelection = new mSelection.Selection(this.registry, "orion.unstagedSection.selection"); //$NON-NLS-0$
-					this.commandService.registerSelectionService(unstagedSection.selectionNode.id, this.unstagedSelection);
-				}
-
-				this.registry.getService("orion.unstagedSection.selection").addEventListener("selectionChanged", function(event) { //$NON-NLS-1$ //$NON-NLS-0$
-					var selectionTools = lib.node(unstagedSection.selectionNode.id);
-					if (selectionTools) {
-						that.commandService.destroy(selectionTools);
-						that.commandService.renderCommands(unstagedSection.selectionNode.id, selectionTools, event.selections, that,
-							"button", {"Clone" : repository}); //$NON-NLS-1$ //$NON-NLS-0$
-					}
-				});
-				this.unstagedOnce = true;
+			if (this.unstagedNavigator) {
+				this.unstagedNavigator.destroy(); 
 			}
-
-			this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
-
-			var unstagedNavigator = new mGitChangeList.GitChangeListExplorer({
+			this.unstagedNavigator = new mGitChangeList.GitChangeListExplorer({
 				serviceRegistry: this.registry,
 				commandRegistry: this.commandService,
 				selection: this.unstagedSelection,
@@ -371,13 +348,14 @@ define([
 				changesModel: this._model,
 				prefix: "unstaged",
 				changes: unstagedSortedChanges,
-				status: status
+				status: status,
+				section: unstagedSection,
+				repository: repository
 			});
-			unstagedNavigator.display();
-			this.commandService.renderCommands(unstagedSection.actionsNode.id, unstagedSection.actionsNode.id, unstagedNavigator, unstagedNavigator, "button"); //$NON-NLS-0$
+			this.unstagedNavigator.display();
 		};
 
-		// Git staged changes
+		// Git staged changes 
 
 		GitStatusExplorer.prototype.displayStaged = function(status, repository) {
 			var that = this;
@@ -396,32 +374,11 @@ define([
 					}
 				}
 			});
-
-			this.commandService.registerCommandContribution(stagedSection.actionsNode.id, "eclipse.orion.git.commitCommand", 100); //$NON-NLS-0$
-			this.commandService.registerCommandContribution(stagedSection.actionsNode.id, "orion.explorer.expandAll", 200); //$NON-NLS-0$
-			this.commandService.registerCommandContribution(stagedSection.actionsNode.id, "orion.explorer.collapseAll", 300); //$NON-NLS-0$
-			this.commandService.registerCommandContribution(stagedSection.selectionNode.id, "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-0$
-
-			if (!this.stagedOnce) {
-				if (!this.stagedSelection) {
-					this.stagedSelection = new mSelection.Selection(this.registry, "orion.stagedSection.selection"); //$NON-NLS-0$
-					this.commandService.registerSelectionService(stagedSection.selectionNode.id, this.stagedSelection);
-				}
-
-				this.registry.getService("orion.stagedSection.selection").addEventListener("selectionChanged", function(event) { //$NON-NLS-1$ //$NON-NLS-0$
-					var selectionTools = lib.node(stagedSection.selectionNode.id);
-					if (selectionTools) {
-						that.commandService.destroy(selectionTools);
-						that.commandService.renderCommands(stagedSection.selectionNode.id, selectionTools, event.selections, that,
-							"button", {"Clone" : repository}); //$NON-NLS-1$ //$NON-NLS-0$
-					}
-				});
-				this.stagedOnce = true;
+			
+			if (this.stagedNavigator) {
+				this.stagedNavigator.destroy(); 
 			}
-
-			this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
-
-			var stagedNavigator = new mGitChangeList.GitChangeListExplorer({
+			this.stagedNavigator = new mGitChangeList.GitChangeListExplorer({
 				serviceRegistry: this.registry,
 				commandRegistry: this.commandService,
 				selection: this.stagedSelection,
@@ -429,10 +386,11 @@ define([
 				changesModel: this._model,
 				prefix: "staged",
 				changes: stagedSortedChanges,
-				status: status
+				status: status,
+				section: stagedSection,
+				repository: repository
 			});
-			stagedNavigator.display();
-			this.commandService.renderCommands(stagedSection.actionsNode.id, stagedSection.actionsNode.id, stagedNavigator, stagedNavigator, "button"); //$NON-NLS-0$
+			this.stagedNavigator.display();
 		};
 
 		// Git commits

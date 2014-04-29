@@ -105,7 +105,7 @@ define([
 														that.initTitleBar(commits[0], repositories[0]);
 														that.displayCommit(commits[0]);
 														that.displayTags(commits[0], repositories[0]);
-														that.displayDiffs(commits[0]);
+														that.displayDiffs(commits[0], repositories[0]);
 
 														commits[0].CloneLocation = repositories[0].Location;
 
@@ -217,7 +217,7 @@ define([
 
 				// Git diffs
 
-				GitCommitExplorer.prototype.displayDiffs = function(commit) {
+				GitCommitExplorer.prototype.displayDiffs = function(commit, repository) {
 
 					var diffs = commit.Diffs;
 
@@ -252,30 +252,28 @@ define([
 					var tableNode = lib.node('table'); //$NON-NLS-0$
 
 					var section = new mSection.Section(tableNode, { id : "diffSection", //$NON-NLS-0$
-					title : messages["Diffs"],
-					content : '<div id="diffNode"></div>', //$NON-NLS-0$
-					canHide : true,
-					preferenceService : this.registry.getService("orion.core.preference") //$NON-NLS-0$
+						title : messages["Diffs"],
+						content : '<div id="diffNode"></div>', //$NON-NLS-0$
+						canHide : true,
+						preferenceService : this.registry.getService("orion.core.preference") //$NON-NLS-0$
 					});
-
-					this.commandService.registerCommandContribution(section.actionsNode.id, "orion.explorer.expandAll", 100); //$NON-NLS-1$ //$NON-NLS-0$
-					this.commandService.registerCommandContribution(section.actionsNode.id, "orion.explorer.collapseAll", 200); //$NON-NLS-1$ //$NON-NLS-0$
-
-					var sectionItemActionScopeId = "diffSectionItemActionArea"; //$NON-NLS-0$
-
-
-					var diffNavigator = new mGitChangeList.GitChangeListExplorer({
+					
+					if (this.diffNavigator) {
+						this.diffNavigator.destroy(); 
+					}
+					this.diffNavigator = new mGitChangeList.GitChangeListExplorer({
 						serviceRegistry: this.registry,
 						commandRegistry: this.commandService,
 						selection: null,
 						parentId:"diffNode",
-						actionScopeId: sectionItemActionScopeId,
+						actionScopeId: "diffSectionItemActionArea",
 						changesModel: changesModel,
 						prefix: "diff",
-						changes: diffs
+						changes: diffs,
+						section: section,
+						repository: repository
 					});
-					diffNavigator.display();
-					this.commandService.renderCommands(section.actionsNode.id, section.actionsNode.id, diffNavigator, diffNavigator, "button"); //$NON-NLS-0$
+					this.diffNavigator.display();
 				};
 
 				return GitCommitExplorer;
