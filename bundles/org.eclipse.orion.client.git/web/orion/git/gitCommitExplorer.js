@@ -17,22 +17,16 @@ define([
 	'orion/section',
 	'orion/git/widgetsTake2/gitChangeList',
 	'orion/git/widgetsTake2/gitTagList',
+	'orion/git/widgetsTake2/gitCommitInfo',
 	'orion/explorers/explorer',
 	'orion/URITemplate',
 	'orion/PageUtil',
-	'orion/i18nUtil',
 	'orion/webui/littlelib',
 	'orion/globalCommands',
-	'orion/git/gitCommands',
-	'orion/git/uiUtil',
-	'orion/Deferred',
-	'orion/webui/tooltip'
-], function(require, messages, mSection, mGitChangeList, mGitTagList, mExplorer, URITemplate, PageUtil, i18nUtil, lib, mGlobalCommands, mGitCommands, mGitUIUtil, Deferred, Tooltip) {
+	'orion/git/gitCommands'
+], function(require, messages, mSection, mGitChangeList, mGitTagList, mGitCommitInfo, mExplorer, URITemplate, PageUtil, lib, mGlobalCommands, mGitCommands) {
 			var exports = {};
-			
 			var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
-			var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
-
 			exports.GitCommitExplorer = (function() {
 
 				/**
@@ -176,89 +170,19 @@ define([
 					commitNode.className = "mainPadding";
 					commitNode.id = "commitNode";
 					contentParent.appendChild(commitNode);
-
+					
 					var detailsView = document.createElement("div");
 					detailsView.className = "sectionTableItem";
 					commitNode.appendChild(detailsView);
 
-					var commitMessages = this._splitCommitMessage(commit.Message);
-
-					var mainCommitMessage = document.createElement("div");
-					mainCommitMessage.style.paddingBottom = "15px";
-					this.registry.getService("orion.core.textlink").addLinks(commitMessages[0], mainCommitMessage); //$NON-NLS-0$
-					detailsView.appendChild(mainCommitMessage);
-
-					if (commitMessages[1] !== null) {
-						var secondaryCommitMessage = document.createElement("pre");
-						secondaryCommitMessage.style.paddingBottom = "15px";
-						secondaryCommitMessage.style.marginTop = "0px";
-						this.registry.getService("orion.core.textlink").addLinks(commitMessages[1], secondaryCommitMessage); //$NON-NLS-0$
-						detailsView.appendChild(secondaryCommitMessage);
-					}
-
-					var commitName = document.createElement("div");
-					commitName.appendChild(document.createTextNode(i18nUtil.formatMessage(messages["commit: 0"], commit.Name)));
-					detailsView.appendChild(commitName);
-
-					if (commit.Parents && commit.Parents.length > 0) {
-						var parentCommitName = document.createElement("div");
-						parentCommitName.style.paddingBottom = "15px";
-						var parentCommitLink = document.createElement("a");
-						parentCommitLink.className = "pnavlinkonpage";
-						parentCommitLink.href = require.toUrl(commitTemplate.expand({resource: commit.Parents[0].Location})); //$NON-NLS-1$ //$NON-NLS-0$
-						parentCommitLink.textContent = i18nUtil.formatMessage(messages["parent: 0"], commit.Parents[0].Name);
-						parentCommitName.appendChild(parentCommitLink);
-						detailsView.appendChild(parentCommitName);
-					}
-
-					if (commit.AuthorImage) {
-						var authorImage = document.createElement("div");
-						authorImage.style['float'] = "left";
-						var image = new Image();
-						image.src = commit.AuthorImage;
-						image.name = commit.AuthorName;
-						image.className = "git-author-icon-small";
-						authorImage.appendChild(image);
-						detailsView.appendChild(authorImage);
-					}
-
-					var author = document.createElement("div");
-
-					var authorName = document.createElement("div");
-					authorName.appendChild(document.createTextNode(i18nUtil.formatMessage(messages["authored by 0 (1) on 2"], commit.AuthorName,
-							commit.AuthorEmail, new Date(commit.Time).toLocaleString())));
-					author.appendChild(authorName);
-
-					var committerName = document.createElement("div");
-					committerName.appendChild(document.createTextNode(i18nUtil.formatMessage(messages["committed by 0 (1)"], commit.CommitterName,
-							commit.CommitterEmail)));
-					author.appendChild(committerName);
-
-					detailsView.appendChild(author);
-				};
-
-				GitCommitExplorer.prototype._splitCommitMessage = function(commitMessage) {
-					var cut = false;
-					var mainMessageMaxLength = 100;
-
-					var commitMessage0 = commitMessage.split(/(\r?\n|$)/)[0].trim();
-					if (commitMessage0.length > mainMessageMaxLength) {
-						var cutPoint = commitMessage0.indexOf(" ", mainMessageMaxLength - 10); //$NON-NLS-0$
-						commitMessage0 = commitMessage0.substring(0, (cutPoint !== -1 ? cutPoint : mainMessageMaxLength));
-						cut = true;
-					}
-					;
-
-					var commitMessage1 = commitMessage.substring(commitMessage0.length + 1, commitMessage.length).trim();
-					if (commitMessage1.length > 0) {
-						commitMessage1 = (cut ? "..." + commitMessage1 : commitMessage1); //$NON-NLS-0$
-					} else {
-						commitMessage1 = null;
-					}
-
-					commitMessage0 += (cut ? "..." : ""); //$NON-NLS-0$
-
-					return [ commitMessage0, commitMessage1 ];
+					var info = new mGitCommitInfo.GitCommitInfo({
+						parent: detailsView,
+						commit: commit,
+						showTags: false,
+						commitLink: false
+					});
+					info.display();
+					
 				};
 
 				// Git tags

@@ -77,6 +77,7 @@ define([
 		this.changesModel = options.changesModel;
 		this.prefix = options.prefix;
 		this.changes = options.changes;
+		this.status = options.status;
 	}
 	GitChangeListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {

@@ -233,8 +233,8 @@ define([
 													var tableNode = lib.node('table'); //$NON-NLS-0$
 													lib.empty(tableNode);
 													that.initTitleBar(status, repositories[0]);
-													that.displayUnstaged(repositories[0]);
-													that.displayStaged(repositories[0]);
+													that.displayUnstaged(status, repositories[0]);
+													that.displayStaged(status, repositories[0]);
 													that.displayCommits(repositories[0]);
 
 													// render
@@ -320,7 +320,7 @@ define([
 
 		// Git unstaged changes
 
-		GitStatusExplorer.prototype.displayUnstaged = function(repository) {
+		GitStatusExplorer.prototype.displayUnstaged = function(status, repository) {
 			var that = this;
 			var unstagedSortedChanges = this._sortBlock(this._model.interestedUnstagedGroup);
 			var tableNode = lib.node('table'); //$NON-NLS-0$
@@ -371,6 +371,7 @@ define([
 				changesModel: this._model,
 				prefix: "unstaged",
 				changes: unstagedSortedChanges,
+				status: status
 			});
 			unstagedNavigator.display();
 			this.commandService.renderCommands(unstagedSection.actionsNode.id, unstagedSection.actionsNode.id, unstagedNavigator, unstagedNavigator, "button"); //$NON-NLS-0$
@@ -378,7 +379,7 @@ define([
 
 		// Git staged changes
 
-		GitStatusExplorer.prototype.displayStaged = function(repository) {
+		GitStatusExplorer.prototype.displayStaged = function(status, repository) {
 			var that = this;
 			var stagedSortedChanges = this._sortBlock(this._model.interestedStagedGroup);
 			var tableNode = lib.node('table'); //$NON-NLS-0$
@@ -428,6 +429,7 @@ define([
 				changesModel: this._model,
 				prefix: "staged",
 				changes: stagedSortedChanges,
+				status: status
 			});
 			stagedNavigator.display();
 			this.commandService.renderCommands(stagedSection.actionsNode.id, stagedSection.actionsNode.id, stagedNavigator, stagedNavigator, "button"); //$NON-NLS-0$
