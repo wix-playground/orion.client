@@ -115,6 +115,10 @@ define([
 				pageContent.style.left = left;
 			}
 		},
+		hideMenu: function (){
+			localStorage.setItem(this.LOCAL_STORAGE_NAME, this.CLOSED_STATE);
+			this.setPageContentLeft("0"); //$NON-NLS-0$
+		},
 		toggleSideMenu: function(){
 			var sideMenuNavigation = this.getDisplayState();
 			
