@@ -159,6 +159,7 @@ define({
 	"wordWrap": "Word Wrap",
 	"showMargin": "Show Margin",
 	"marginOffset": "Margin Column",
+	"encodingCharset": "Encoding",
 	"showTabs": "Show Tabs",
 	"showSpaces": "Show Spaces",
 	"autoSaveTimeoutInvalid": "Invalid save interval.",

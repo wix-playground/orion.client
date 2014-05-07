@@ -75,6 +75,9 @@ define([], function() {
 		showMarginVisible: true,
 		marginOffset: 80,
 		marginOffsetVisible: true,
+		encodingCharset: "UTF-8", //$NON-NLS-0$
+		encodingCharsetVisible: true,
+		encodingCharsetLocalVisible: true,
 		keyBindings: "Default",
 		keyBindingsVisible: true,
 		keyBindingsLocalVisible: true

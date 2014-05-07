@@ -165,6 +165,7 @@ define([
 			inputManager.setAutoLoadEnabled(prefs.autoLoad);
 			inputManager.setAutoSaveTimeout(prefs.autoSave ? prefs.autoSaveTimeout : -1);
 			inputManager.setSaveDiffsEnabled(prefs.saveDiffs);
+			inputManager.setEncodingCharset(prefs.encodingCharset);
 			this.updateStyler(prefs);
 			var textView = editor.getTextView();
 			if (textView) {
