@@ -83,17 +83,17 @@ define([
 		};
 
 		GitStatusExplorer.prototype.display = function(location) {
+			var that = this;
 			var tableNode = lib.node('table'); //$NON-NLS-0$
 			lib.empty(tableNode);
 			var changesModel = new mGitChangeList.GitChangeListModel({registry: this.registry});
-			var that = this;
-			Deferred.all([
-				this.displayUnstaged(location, changesModel),
-				this.displayStaged(location, changesModel),
-				//this.displayCommits()
-			]).then(function() {
-				that.initTitleBar(changesModel, changesModel.repository);
-				mGitCommands.updateNavTools(that.registry, that.commandService, that, "pageActions", "selectionTools", changesModel.status); //$NON-NLS-1$ //$NON-NLS-0$
+			this.displayUnstaged(location, changesModel).then(function() {
+				return that.displayStaged(location, changesModel).then(function() {
+					return that.displayCommits(changesModel.repository).then(function() {
+						that.initTitleBar(changesModel, changesModel.repository);
+						mGitCommands.updateNavTools(that.registry, that.commandService, that, "pageActions", "selectionTools", changesModel.status); //$NON-NLS-1$ //$NON-NLS-0$
+					});
+				});
 			});
 		};
 		

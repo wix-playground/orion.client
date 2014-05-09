@@ -54,11 +54,15 @@ define([
 		getChildren: function(parentItem, onComplete){	
 			if (parentItem instanceof Array && parentItem.length > 0) {
 				onComplete(parentItem);
-			} else if (parentItem.Type = "Root") {
-				var progressService = this.registry.getService("orion.page.progress");
-				var explorer = this.explorer;
-				var location = explorer.location;
+			} else if (parentItem.Type === "Root") {
 				var that = this;
+				var explorer = this.explorer;
+				if (that.status) {
+					onComplete(that._sortBlock(explorer.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup));
+					return;
+				}
+				var progressService = this.registry.getService("orion.page.progress");
+				var location = explorer.location;
 				progressService.progress(this.registry.getService("orion.git.provider").getGitStatus(location), messages['Loading...']).then( //$NON-NLS-0$
 				function(resp) {
 					if (resp.Type === "Status") { //$NON-NLS-0$
