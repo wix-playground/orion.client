@@ -9,31 +9,23 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 
-/*global define document Image*/
+/*global define document */
 
 define([
-/*
-	'require',
-	'i18n!git/nls/gitmessages',
-	'orion/Deferred',
-	'orion/URITemplate',
-	'orion/git/util',
-	'orion/PageUtil',
-	'orion/explorers/navigationUtils',
-	*/
 	'i18n!git/nls/gitmessages',
 	'orion/explorers/explorer',
-	'orion/git/uiUtil',
-	'orion/webui/tooltip',
+	'orion/URITemplate',
 	'orion/i18nUtil',
 	'orion/objects'
-], function(messages, mExplorer, mGitUIUtil, mTooltip, i18nUtil, objects/*require, messages, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, objects*/) {
-		
+], function(messages, mExplorer, URITemplate, i18nUtil, objects) {
+
+	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
+
 	function GitBranchListModel(options) {
 		this.root = options.root;
 		this.registry = options.registry;
 		this.handleError = options.handleError;
-		this.titleWrapper = options.titleWrapper;
+		this.section = options.section;
 	}
 	GitBranchListModel.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitBranchListModel.prototype, /** @lends orion.git.GitBranchListModel.prototype */ {
@@ -45,8 +37,8 @@ define([
 		getChildren: function(parentItem, onComplete){	
 			var that = this;
 			var progress;
-			if (parentItem.Type === "BranchRoot") {
-				progress = this.titleWrapper.createProgressMonitor();
+			if (parentItem.Type === "LocalRoot") {
+				progress = this.section.createProgressMonitor();
 				progress.begin("Getting branches");
 				this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(parentItem.repository.BranchLocation + (parentItem.mode === "full" ? "?commits=1" : "?commits=1&page=1&pageSize=5")), "Getting branches " + parentItem.repository.Name).then(function(resp) { //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 					var branches = resp.Children;
@@ -60,7 +52,7 @@ define([
 					that.handleError(error);
 				});
 			} else if (parentItem.Type === "RemoteRoot") {
-				progress = this.titleWrapper.createProgressMonitor();
+				progress = this.section.createProgressMonitor();
 				progress.begin("Getting remote branches"); //$NON-NLS-0$
 				this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitRemote(parentItem.repository.RemoteLocation), "Getting remote branches " + parentItem.repository.Name).then(function (resp) { //$NON-NLS-0$
 					var remotes = resp.Children;
@@ -69,7 +61,7 @@ define([
 					});
 					progress.done();
 					if (remotes.length === 0){
-						this.titleWrapper.setTitle(messages["No Remote Branches"]);
+						this.section.setTitle(messages["No Remote Branches"]);
 					}
 					onComplete(remotes);
 				}, function(error){
@@ -77,7 +69,7 @@ define([
 					that.handleError(error);
 				});
 			} else if (parentItem.Type === "Remote") {
-				progress = this.titleWrapper.createProgressMonitor();
+				progress = this.section.createProgressMonitor();
 				progress.begin(messages["Rendering branches"]);
 				this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitRemote(parentItem.Location), "Getting remote branches " + parentItem.Name).then(function (resp) { //$NON-NLS-0$
 					var remotes = resp.Children;
@@ -95,8 +87,8 @@ define([
 			}
 		},
 		getId: function(/* item */ item){
-			if (item.Type === "BranchRoot") {
-				return "BranchRoot"; //$NON-NLS-0$
+			if (item.Type === "LocalRoot") {
+				return "LocalRoot"; //$NON-NLS-0$
 			} else {
 				return item.Name;
 			}
@@ -114,21 +106,40 @@ define([
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
 		this.root = options.root;
-		this.titleWrapper = options.titleWrapper;
+		this.section = options.section;
+		this.repository = options.repository;
+		this.mode = options.mode;
 		this.handleError = options.handleError;
 	}
 	GitBranchListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitBranchListExplorer.prototype, /** @lends orion.git.GitBranchListExplorer.prototype */ {
 		display: function() {
-			this.createTree(this.parentId, new GitBranchListModel({root: this.root, registry: this.registry, titleWrapper: this.titleWrapper, handleError: this.handleError}));
+			this.createTree(this.parentId, new GitBranchListModel({root: this.root, registry: this.registry, section: this.section, handleError: this.handleError}));
+			this.updateCommands();
 		},
 		isRowSelectable: function(modelItem) {
 			return false;
-		}
-//		,
+		},
 //		getItemCount: function() {
-//			return this.changes.length;
-//		}
+//			return this.branches.length;
+//		},
+		updateCommands: function() {
+			var section = this.section;
+			var actionsNodeScope = section.actionsNode.id;
+			if (this.root.Type === "LocalRoot") {
+				if (this.mode !== "full" /*&& branches.length !== 0*/){ //$NON-NLS-0$
+					this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
+					this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, 
+						{"ViewAllLink":repoTemplate.expand({resource: this.repository.BranchLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all local and remote tracking branches"]}, this, "button"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				}
+				
+				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.addBranch", 200); //$NON-NLS-0$
+				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this.repository, this, "button"); //$NON-NLS-0$
+			} else {
+				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.addRemote", 100); //$NON-NLS-0$
+				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this.repository, this, "button"); //$NON-NLS-0$
+			}
+		}
 	});
 	
 	function GitBranchListRenderer(options, explorer) {
@@ -149,7 +160,7 @@ define([
 					horizontalBox.style.overflow = "hidden";
 					div.appendChild(horizontalBox);	
 					var actionsArea, detailsView, title, description;
-					if (item.parent.Type === "BranchRoot") {
+					if (item.parent.Type === "LocalRoot") {
 						var branch = item;
 						if (branch.Current){
 							var span = document.createElement("span");

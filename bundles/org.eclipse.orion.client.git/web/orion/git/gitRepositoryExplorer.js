@@ -307,26 +307,17 @@ exports.GitRepositoryExplorer = (function() {
 			canHide: true,
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		});
-
-		//TODO: Move inside gitBranchList
-		if (mode !== "full" /*&& branches.length !== 0*/){ //$NON-NLS-0$
-			this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-			this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, 
-				{"ViewAllLink":repoTemplate.expand({resource: repository.BranchLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all local and remote tracking branches"]}, this, "button"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-		}
-		
-		this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.addBranch", 200); //$NON-NLS-0$
-		this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, this, "button"); //$NON-NLS-0$
-		
 		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
-			parentId:"branchNode", //hack
+			parentId: "branchNode",
 			actionScopeId: this.actionScopeId,
-			titleWrapper: titleWrapper,
+			section: titleWrapper,
+			repository: repository,
+			mode: mode,
 			handleError: this.handleError,
 			root: {
-				Type: "BranchRoot",
+				Type: "LocalRoot",
 				repository: repository,
 				mode: mode
 			}
@@ -354,7 +345,9 @@ exports.GitRepositoryExplorer = (function() {
 			commandRegistry: this.commandService,
 			parentId:"remoteBranchNode", //hack
 			actionScopeId: this.actionScopeId,
-			titleWrapper: titleWrapper,
+			section: titleWrapper,
+			repository: repository,
+			mode: mode,
 			handleError: this.handleError,
 			root: {
 				Type: "RemoteRoot",
@@ -434,17 +427,14 @@ exports.GitRepositoryExplorer = (function() {
 			hidden: true,
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		});
-		
-		//TODO: Move inside widget
-		this.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.addRemote", 100); //$NON-NLS-0$
-		this.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, this, "button"); //$NON-NLS-0$
-		
 		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
-			parentId:"remoteNode", //hack
+			parentId:"remoteNode",
 			actionScopeId: this.actionScopeId,
-			titleWrapper: titleWrapper,
+			section: titleWrapper,
+			repository: repository,
+			mode: mode,
 			handleError: this.handleError,
 			root: {
 				Type: "RemoteRoot",
