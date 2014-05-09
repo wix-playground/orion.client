@@ -206,7 +206,7 @@ define([
 						commandRegistry: this.commandService,
 						parentId:"tagNode",
 						actionScopeId: this.actionScopeId,
-						titleWrapper: titleWrapper,
+						section: titleWrapper,
 						repository: repository,
 						mode: "full",
 						commit: commit

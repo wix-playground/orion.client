@@ -19,10 +19,9 @@ define([
 	'orion/Deferred',
 	'orion/dynamicContent',
 	'orion/webui/littlelib',
-	'orion/section',
 	'orion/git/widgets/CommitTooltipDialog',
 	'orion/objects'
-], function(require, messages, URITemplate, PageUtil, Deferred, mDynamicContent, lib, mSection, mCommitTooltip, objects) {
+], function(require, messages, URITemplate, PageUtil, Deferred, mDynamicContent, lib, mCommitTooltip, objects) {
 		
 	var repoPageTemplate = new URITemplate("git/git-repository.html#{,resource,params*}?page=1&pageSize=20"); //$NON-NLS-0$
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
@@ -38,7 +37,7 @@ define([
 		this.actionScopeId = options.actionScopeId;
 		this.repository = options.repository;
 		this.mode = options.mode;
-		this.titleWrapper = options.titleWrapper;
+		this.section = options.section;
 		this.commit = options.commit;
 	}
 	
@@ -57,16 +56,14 @@ define([
 		},
 		display: function(){
 			var that = this;
-			var titleWrapper = this.titleWrapper;
+			var section = this.section;
 			
 			var url = document.createElement("a");
 			var pageParams = PageUtil.matchResourceParameters();
 			url.href = pageParams.resource;	
 			var pageQuery = (url.search? url.search : "?page=1&pageSize=20");
-			
-			
 							
-			var progress = titleWrapper.createProgressMonitor();
+			var progress = section.createProgressMonitor();
 			progress.begin(messages["Getting tags"]);
 	
 			var tagsContainer = document.createElement("div");
@@ -100,20 +97,20 @@ define([
 							lib.empty(tagNode);
 							tagNode.appendChild(tagsContainer);
 							
-							that.commandService.destroy(titleWrapper.actionsNode.id);
+							that.commandService.destroy(section.actionsNode.id);
 							
 							if (mode !== "full" && tags.length !== 0){ //$NON-NLS-0$
-								that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-								that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id,
+								that.commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
+								that.commandService.renderCommands(section.actionsNode.id, section.actionsNode.id,
 										{"ViewAllLink":require.toUrl(repoPageTemplate.expand({resource: repository.TagLocation})), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all tags"]}, that, "button"); //$NON-NLS-7$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 							} 
 							else if (that.commit) {
-								that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.addTag", 100); //$NON-NLS-0$
-								that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode, that.commit, that, "button"); //$NON-NLS-0$
+								that.commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.addTag", 100); //$NON-NLS-0$
+								that.commandService.renderCommands(section.actionsNode.id, section.actionsNode, that.commit, that, "button"); //$NON-NLS-0$
 							}
 			
 							if (tags.length === 0) {
-								titleWrapper.setTitle(messages['No Tags']);
+								section.setTitle(messages['No Tags']);
 							}
 						},
 						

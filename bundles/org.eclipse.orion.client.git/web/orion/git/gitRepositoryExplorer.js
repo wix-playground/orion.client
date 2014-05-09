@@ -404,7 +404,7 @@ exports.GitRepositoryExplorer = (function() {
 			commandRegistry: this.commandService,
 			parentId:"tagNode",
 			actionScopeId: this.actionScopeId,
-			titleWrapper: titleWrapper,
+			section: titleWrapper,
 			repository: repository,
 			mode: mode
 		});
