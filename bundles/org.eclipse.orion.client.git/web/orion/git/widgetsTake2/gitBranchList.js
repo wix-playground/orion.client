@@ -107,8 +107,6 @@ define([
 		this.actionScopeId = options.actionScopeId;
 		this.root = options.root;
 		this.section = options.section;
-		this.repository = options.repository;
-		this.mode = options.mode;
 		this.handleError = options.handleError;
 	}
 	GitBranchListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
@@ -124,20 +122,21 @@ define([
 //			return this.branches.length;
 //		},
 		updateCommands: function() {
+			var root = this.root;
 			var section = this.section;
 			var actionsNodeScope = section.actionsNode.id;
-			if (this.root.Type === "LocalRoot") {
-				if (this.mode !== "full" /*&& branches.length !== 0*/){ //$NON-NLS-0$
+			if (root.Type === "LocalRoot") {
+				if (root.mode !== "full" /*&& branches.length !== 0*/){ //$NON-NLS-0$
 					this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
 					this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, 
-						{"ViewAllLink":repoTemplate.expand({resource: this.repository.BranchLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all local and remote tracking branches"]}, this, "button"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						{"ViewAllLink":repoTemplate.expand({resource: root.repository.BranchLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all local and remote tracking branches"]}, this, "button"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				}
 				
 				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.addBranch", 200); //$NON-NLS-0$
-				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this.repository, this, "button"); //$NON-NLS-0$
+				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, root.repository, this, "button"); //$NON-NLS-0$
 			} else {
 				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.addRemote", 100); //$NON-NLS-0$
-				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this.repository, this, "button"); //$NON-NLS-0$
+				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, root.repository, this, "button"); //$NON-NLS-0$
 			}
 		}
 	});
