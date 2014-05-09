@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Orion Git Widget Sample</title>
+<script src="require.js"></script>
+<script>
+	/*globals require*/
+	require({
+		baseUrl: '../..',
+		paths: {
+			i18n: 'requirejs/i18n',
+			text: 'requirejs/text',
+			domReady: 'requirejs/domReady'
+		}
+	});
+	require(["git/gitWidget"], function(gitWidget) {
+		gitWidget({
+			parent: "gitDiv"
+		});
+	});
+</script>
+</head>
+<body spellcheck="false">
+<div id="gitDiv" style="width: 100%; height: 600px";>
+</div>
+</body>
+</html>
