@@ -59,15 +59,29 @@ define([
 		this.checkbox = false;
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
+		this.section = options.section;
+		this.root = options.root;
+		this.handleError = options.handleError;
+		this.location = options.location;
 	}
 	GitCommitListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitCommitListExplorer.prototype, /** @lends orion.git.GitCommitListExplorer.prototype */ {
-		displayCommits:function(repository, titleWrapper, handleError) {
+		display: function() {
+			if (this.root.Type === "CommitRoot") {
+				return this.displayCommits();
+			} else {
+				return this.displayLog();
+			}
+		},
+		displayCommits:function() {
 			var that = this;
+			var repository = this.root.repository;
 			var commandService = this.commandService;
-			var progress = titleWrapper.createProgressMonitor();
+			var section = this.section;
+			var handleError = this.handleError;
+			var progress = section.createProgressMonitor();
 			progress.begin(messages['Getting current branch']);
-			this.registry
+			return this.registry
 				.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(repository.BranchLocation), "Getting current branch " + repository.Name).then( //$NON-NLS-0$
 					function(resp) {
 						var branches = resp.Children;
@@ -86,33 +100,33 @@ define([
 
 						var tracksRemoteBranch = (currentBranch.RemoteLocation.length === 1 && currentBranch.RemoteLocation[0].Children.length === 1);
 
-						titleWrapper.setTitle(i18nUtil.formatMessage(messages["Commits for \"${0}\" branch"], currentBranch.Name));
-						commandService.destroy(titleWrapper.actionsNode.id);
-						commandService.registerCommandContribution(titleWrapper.actionsNode.id,
+						section.setTitle(i18nUtil.formatMessage(messages["Commits for \"${0}\" branch"], currentBranch.Name));
+						commandService.destroy(section.actionsNode.id);
+						commandService.registerCommandContribution(section.actionsNode.id,
 								"eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
 						commandService.renderCommands(
-							titleWrapper.actionsNode.id,
-							titleWrapper.actionsNode.id,
+							section.actionsNode.id,
+							section.actionsNode.id,
 							{	"ViewAllLink" : logTemplate.expand({resource: currentBranch.CommitLocation}),
 								"ViewAllLabel" : messages['See Full Log'],
 								"ViewAllTooltip" : messages["See the full log"]
 							}, that, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 						if (tracksRemoteBranch) {
-							commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
-							commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
-							commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
-							commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
-							commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id,
+							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
+							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
+							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
+							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
+							commandService.renderCommands(section.actionsNode.id, section.actionsNode.id,
 								currentBranch.RemoteLocation[0].Children[0], that, "button"); //$NON-NLS-0$
 						}
 
-						commandService.addCommandGroup(titleWrapper.actionsNode.id, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
-						commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
-						commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.pushToGerrit", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
+						commandService.addCommandGroup(section.actionsNode.id, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
+						commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
+						commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.pushToGerrit", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 						
-						commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, currentBranch, that, "button"); //$NON-NLS-0$
+						commandService.renderCommands(section.actionsNode.id, section.actionsNode.id, currentBranch, that, "button"); //$NON-NLS-0$
 
 						if (currentBranch.RemoteLocation[0] === null) {
 							progress.done();
@@ -164,7 +178,7 @@ define([
 				handleError);
 		},
 		//
-		getOutgoingIncomingChanges: function(resource, renderCommands){
+		getOutgoingIncomingChanges: function(resource){
 			var that = this;
 			var d = new Deferred();
 			
@@ -174,8 +188,6 @@ define([
 			var processRemoteTrackingBranch = function(remoteResource) {
 				var newRefEncoded = encodeURIComponent(remoteResource.FullName);
 				
-				// update page navigation
-				renderCommands(remoteResource);
 				var pageParams = PageUtil.matchResourceParameters();
 				
 				that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(remoteResource.HeadLocation, newRefEncoded), "Getting log for " + remoteResource.Name).then(function(scopedCommitsJsonData) {
@@ -259,37 +271,29 @@ define([
 			progressService.showWhile(loadingDeferred, messages['Loading git log...']);
 			return loadingDeferred;
 		},
-		displayLog: function(location, initTitleBar, renderCommands){
+		displayLog: function(){
 			var that = this;
 			var progressService = this.registry.getService("orion.page.message"); //$NON-NLS-0$
 			
 			var loadingDeferred = new Deferred();
 			progressService.showWhile(loadingDeferred, messages['Loading...']);
 			
-			that.loadResource(location).then(
+			that.loadResource(this.location).then(
 				function(resp){
 					var resource = resp;
-					loadingDeferred.resolve();
-					initTitleBar(resource).then(
-						function(){
-							that.getOutgoingIncomingChanges(resource).then(function(items){
-								// update page navigation
-								renderCommands(items);
-								
-							
-								//that.displayLog(items.Children);
-								that.createTree(that.parentId, new GitCommitListModel(items.Children));
-							});
-						}
-					);
+					
+					that.getOutgoingIncomingChanges(resource).then(function(items){
+						that.createTree(that.parentId, new GitCommitListModel(items.Children));
+						loadingDeferred.resolve({resource: resource, items: items});
+					});
 				},
 				function(err){
-					loadingDeferred.resolve();
+					loadingDeferred.reject(err);
 					that.handleError(err);
 				}
 			);
+			return loadingDeferred;
 		}
-		//
 	});
 	
 	function GitCommitListRenderer(options, explorer) {

@@ -9,7 +9,7 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 
-/*global define console document Image */
+/*global define console document */
 
 define([
 	'require',
@@ -26,7 +26,6 @@ define([
 var exports = {};
 
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
-var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 	
 exports.GitLogExplorer = (function() {
 	
@@ -77,32 +76,6 @@ exports.GitLogExplorer = (function() {
 			}
 		}
 		return fileURI;
-	};
-	
-	GitLogExplorer.prototype.makeHref = function(fileClient, seg, location, isRemote) {
-		if (!location) {
-			return;
-		}
-
-		this.registry.getService("orion.page.progress").progress(fileClient.read(location, true), "Getting git informatiob about " + location).then(
-			function(metadata) {
-				if (isRemote) {
-					var gitService = this.registry.getService("orion.git.provider"); //$NON-NLS-0$
-					if (metadata.Git) {
-						this.registry.getService("orion.page.progress").progress(
-								gitService.getDefaultRemoteBranch(metadata.Git.RemoteLocation),
-								"Getting default branch for " + metadata.Name).then(function(defaultRemoteBranchJsonData, secondArg) {
-							seg.href = require.toUrl(logTemplate.expand({resource: defaultRemoteBranchJsonData.Location}));
-						});
-					}
-				} else {
-					if (metadata.Git) {
-						seg.href = require.toUrl(logTemplate.expand({resource: metadata.Git.CommitLocation}));
-					}
-				}
-			}, function(error) {
-				console.error("Error loading file metadata: " + error.message); //$NON-NLS-0$
-			});
 	};
 	
 	GitLogExplorer.prototype.initTitleBar = function(item){
@@ -184,8 +157,6 @@ exports.GitLogExplorer = (function() {
 		this.registry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
 	};
 	
-	
-
 	GitLogExplorer.prototype.display = function(location){
 		
 		var tableNode = lib.node('table'); //$NON-NLS-0$
@@ -202,19 +173,19 @@ exports.GitLogExplorer = (function() {
 			commandRegistry: this.commandService,
 			selection: this.selection,
 			actionScopeId: this.actionScopeId,
-			parentId: logNode
+			parentId: logNode,
+			location: location,
+			handleError: this.handleError,
+			root: {
+				Type: "LogRoot"
+			}
 		});
 		var that = this;
-		var renderCommands = function(items) {
-			if (that.toolbarId && that.selectionToolsId){
-				mGitCommands.updateNavTools(that.registry, that.commandService, that, that.toolbarId, that.selectionToolsId, items, that.pageNavId);
-			}
-		};
 		
-		var initTitleBar = function(resource) {
-			return that.initTitleBar(resource);
-		};
-		explorer.displayLog(location, initTitleBar, renderCommands);
+		explorer.display().then(function(result) {
+			that.initTitleBar(result.resource);
+			mGitCommands.updateNavTools(that.registry, that.commandService, that, that.toolbarId, that.selectionToolsId, result.items, that.pageNavId);
+		});
 	};
 	return GitLogExplorer;
 }());

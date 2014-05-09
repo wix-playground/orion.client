@@ -410,9 +410,15 @@ define([
 				commandRegistry: this.commandService,
 				selection: this.selection,
 				actionScopeId: this.actionScopeId,
-				parentId:"commitNode", //hack
+				parentId:"commitNode",
+				section: titleWrapper,
+				handleError: this.handleError,
+				root: {
+					Type: "CommitRoot",
+					repository: repository
+				}
 			});
-			explorer.displayCommits(repository, titleWrapper, this.handleError.bind(this));
+			explorer.display();
 		};
 		
 		return GitStatusExplorer;

@@ -310,8 +310,6 @@ exports.GitRepositoryExplorer = (function() {
 			parentId: "branchNode",
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,
-			repository: repository,
-			mode: mode,
 			handleError: this.handleError,
 			root: {
 				Type: "LocalRoot",
@@ -343,8 +341,6 @@ exports.GitRepositoryExplorer = (function() {
 			parentId:"remoteBranchNode", //hack
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,
-			repository: repository,
-			mode: mode,
 			handleError: this.handleError,
 			root: {
 				Type: "RemoteRoot",
@@ -358,8 +354,6 @@ exports.GitRepositoryExplorer = (function() {
 	// Git commits
 		
 	GitRepositoryExplorer.prototype.displayCommits = function(repository){	
-		var that = this;
-		
 		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
 
 		var titleWrapper = new mSection.Section(tableNode, {
@@ -376,9 +370,15 @@ exports.GitRepositoryExplorer = (function() {
 			commandRegistry: this.commandService,
 			selection: this.selection,
 			actionScopeId: this.actionScopeId,
-			parentId:"commitNode", //hack
+			parentId:"commitNode",
+			section: titleWrapper,
+			handleError: this.handleError,
+			root: {
+				Type: "CommitRoot",
+				repository: repository
+			}
 		});
-		explorer.displayCommits(repository, titleWrapper, that.handleError.bind(this));
+		explorer.display();
 	};
 	
 	// Git tags
@@ -430,8 +430,6 @@ exports.GitRepositoryExplorer = (function() {
 			parentId:"remoteNode",
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,
-			repository: repository,
-			mode: mode,
 			handleError: this.handleError,
 			root: {
 				Type: "RemoteRoot",
