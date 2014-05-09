@@ -9,31 +9,22 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 
-/*global define document Image*/
+/*global define document*/
 
 define([
-/*
-	'require',
-	'i18n!git/nls/gitmessages',
-	'orion/Deferred',
-	'orion/URITemplate',
-	'orion/git/util',
-	'orion/PageUtil',
-	'orion/explorers/navigationUtils',
-	*/
 	'i18n!git/nls/gitmessages',
 	'orion/explorers/explorer',
-	'orion/git/uiUtil',
-	'orion/webui/tooltip',
-	'orion/i18nUtil',
+	'orion/URITemplate',
 	'orion/objects'
-], function(messages, mExplorer, mGitUIUtil, mTooltip, i18nUtil, objects/*require, messages, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, objects*/) {
+], function(messages, mExplorer, URITemplate, objects) {
+
+	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$		
 		
 	function GitConfigListModel(options) {
 		this.root = options.root;
 		this.registry = options.registry;
 		this.handleError = options.handleError;
-		this.titleWrapper = options.titleWrapper;
+		this.section = options.section;
 	}
 	GitConfigListModel.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitConfigListModel.prototype, /** @lends orion.git.GitConfigListModel.prototype */ {
@@ -46,14 +37,14 @@ define([
 			var that = this;
 			var progress;
 			if (parentItem.Type === "ConfigRoot") {
-				progress = this.titleWrapper.createProgressMonitor();
+				progress = this.section.createProgressMonitor();
 				progress.begin(messages["Getting confituration"]);
 				this.registry.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitCloneConfig(parentItem.repository.ConfigLocation), "Getting configuration of " + parentItem.repository.Name).then( function(resp){  //$NON-NLS-0$
 					progress.worked("Rendering configuration"); //$NON-NLS-0$
 					var configurationEntries = resp.Children;
 					
 					if (configurationEntries.length === 0){
-						that.titleWrapper.setTitle("No Configuration"); //$NON-NLS-0$
+						that.section.setTitle("No Configuration"); //$NON-NLS-0$
 					}
 					
 					var filteredConfig = [];
@@ -72,8 +63,8 @@ define([
 			}
 		},
 		getId: function(/* item */ item){
-			if (item.Type === "BranchRoot") {
-				return "BranchRoot"; //$NON-NLS-0$
+			if (item.Type === "ConfigRoot") {
+				return "ConfigRoot"; //$NON-NLS-0$
 			} else {
 				return item.Name;
 			}
@@ -91,21 +82,33 @@ define([
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
 		this.root = options.root;
-		this.titleWrapper = options.titleWrapper;
+		this.section = options.section;
 		this.handleError = options.handleError;
 	}
 	GitConfigListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitConfigListExplorer.prototype, /** @lends orion.git.GitConfigListExplorer.prototype */ {
 		display: function() {
-			this.createTree(this.parentId, new GitConfigListModel({root: this.root, registry: this.registry, titleWrapper: this.titleWrapper, handleError: this.handleError}));
+			this.createTree(this.parentId, new GitConfigListModel({root: this.root, registry: this.registry, section: this.section, handleError: this.handleError}));
+			this.updateCommands();
 		},
 		isRowSelectable: function(modelItem) {
 			return false;
+		},
+		updateCommands: function() {
+			var root = this.root;
+			var section = this.section;
+			var actionsNodeScope = section.actionsNode.id;
+			if (root.mode !== "full"/* && configurationEntries.length !== 0*/){ //$NON-NLS-0$
+				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
+				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope,
+						{"ViewAllLink":repoTemplate.expand({resource: root.repository.ConfigLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all configuration entries"]}, this, "button"); //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			}
+		
+			if (root.mode === "full"){ //$NON-NLS-0$
+				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.addConfigEntryCommand", 1000); //$NON-NLS-0$
+				this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, root.repository, this, "button"); //$NON-NLS-0$
+			}
 		}
-//		,
-//		getItemCount: function() {
-//			return this.changes.length;
-//		}
 	});
 	
 	function GitConfigListRenderer(options, explorer) {

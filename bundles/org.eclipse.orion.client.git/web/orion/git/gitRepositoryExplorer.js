@@ -32,9 +32,6 @@ define([
 var exports = {};
 	
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
-var repoPageTemplate = new URITemplate("git/git-repository.html#{,resource,params*}?page=1&pageSize=20"); //$NON-NLS-0$
-var statusTemplate = new URITemplate(mGitUtil.statusUILocation + "#{,resource,params*}"); //$NON-NLS-0$
-var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 
 exports.GitRepositoryExplorer = (function() {
 	
@@ -445,14 +442,9 @@ exports.GitRepositoryExplorer = (function() {
 		branchNavigator.display();
 	};
 	
-	
 	// Git Config
 	
 	GitRepositoryExplorer.prototype.displayConfig = function(repository, mode){
-		
-		var configLocation = repository.ConfigLocation;
-	
-		var that = this;
 		
 		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
 		
@@ -465,27 +457,13 @@ exports.GitRepositoryExplorer = (function() {
 			hidden: true,
 			preferenceService: this.registry.getService("orion.core.preference") //$NON-NLS-0$
 		});
-		
-		
-		if (mode !== "full"/* && configurationEntries.length !== 0*/){ //$NON-NLS-0$
-
-			that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
-			that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id,
-					{"ViewAllLink":repoTemplate.expand({resource: configLocation}), "ViewAllLabel":messages['View All'], "ViewAllTooltip":messages["View all configuration entries"]}, that, "button"); //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-		}
-		
-		if (mode === "full"){ //$NON-NLS-0$
-			that.commandService.registerCommandContribution(titleWrapper.actionsNode.id, "eclipse.orion.git.addConfigEntryCommand", 1000); //$NON-NLS-0$
-			that.commandService.renderCommands(titleWrapper.actionsNode.id, titleWrapper.actionsNode.id, repository, that, "button"); //$NON-NLS-0$
-		}
-		
 			
 		var configNavigator = new mGitConfigList.GitConfigListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
 			parentId:"configNode", //hack
 			actionScopeId: this.actionScopeId,
-			titleWrapper: titleWrapper,
+			section: titleWrapper,
 			handleError: this.handleError,
 			root: {
 				Type: "ConfigRoot",
