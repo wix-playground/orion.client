@@ -12,28 +12,95 @@
 /*global define document Image*/
 
 define([
+	'i18n!git/nls/gitmessages',
+	'orion/Deferred',
 	'orion/explorers/explorer',
 	'orion/git/uiUtil',
 	'orion/webui/tooltip',
 	'orion/selection',
 	'orion/webui/littlelib',
 	'orion/objects'
-], function(mExplorer, mGitUIUtil, mTooltip, mSelection , lib, objects) {
-		
-	function GitChangeListModel(changes, prefix) {
-		this.changes = changes;
-		this.prefix = prefix;
+], function(messages, Deferred, mExplorer, mGitUIUtil, mTooltip, mSelection , lib, objects) {
+	
+	var interestedUnstagedGroup = [ "Missing", "Modified", "Untracked", "Conflicting" ]; //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	var interestedStagedGroup = [ "Added", "Changed", "Removed" ]; //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	var conflictType = "Conflicting"; //$NON-NLS-0$
+
+	function isConflict(type) {
+		return type === conflictType;
+	}
+	
+	var statusTypeMap = {
+		"Missing" : { imageClass: "gitImageSprite git-sprite-removal", tooltip: messages['Unstaged removal'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Removed" : { imageClass: "gitImageSprite git-sprite-removal", tooltip: messages['Staged removal'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Modified" : { imageClass: "gitImageSprite git-sprite-file", tooltip: messages['Unstaged change'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Changed" : { imageClass: "gitImageSprite git-sprite-file", tooltip: messages['Staged change'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Untracked" : { imageClass: "gitImageSprite git-sprite-addition", tooltip: messages["Unstaged addition"] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Added" : { imageClass: "gitImageSprite git-sprite-addition", tooltip: messages["Staged addition"] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Conflicting" : { imageClass: "gitImageSprite git-sprite-conflict-file", tooltip: messages['Conflicting'] } //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	};
+			
+	function GitChangeListModel(options) {
+		this.changes = options.changes;
+		this.registry = options.registry;
+		this.prefix = options.prefix;
+		this.location = options.location;
 	}
 	GitChangeListModel.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListModel.prototype, /** @lends orion.git.GitChangeListModel.prototype */ {
 		destroy: function(){
 		},
 		getRoot: function(onItem){
-			onItem(this.changes);
+			onItem(this.changes || {Type: "Root"});
 		},
 		getChildren: function(parentItem, onComplete){	
 			if (parentItem instanceof Array && parentItem.length > 0) {
 				onComplete(parentItem);
+			} else if (parentItem.Type === "Root") {
+				var that = this;
+				if (that.status) {
+					onComplete(that._sortBlock(that.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup));
+					return;
+				}
+				var progressService = this.registry.getService("orion.page.progress");
+				var location = this.location;
+				progressService.progress(this.registry.getService("orion.git.provider").getGitStatus(location), messages['Loading...']).then( //$NON-NLS-0$
+				function(resp) {
+					if (resp.Type === "Status") { //$NON-NLS-0$
+						var status = that.status = that.items = resp;
+						//explorer.status = status;
+						progressService
+							.progress(
+								that.registry.getService("orion.git.provider").getGitClone(status.CloneLocation), "Getting repository information").then( //$NON-NLS-0$
+								function(resp) {
+									var repositories = resp.Children;
+
+									progressService
+										.progress(
+											that.registry
+												.getService("orion.git.provider").getGitCloneConfig(repositories[0].ConfigLocation), "Getting repository configuration ", repositories[0].Name).then( //$NON-NLS-0$
+												function(resp) {
+													var config = resp.Children;
+
+													status.Clone = that.repository = repositories[0];
+													status.Clone.Config = [];
+
+													for (var i = 0; i < config.length; i++) {
+														if (config[i].Key === "user.name" || config[i].Key === "user.email") //$NON-NLS-1$ //$NON-NLS-0$
+															status.Clone.Config.push(config[i]);
+													}
+													onComplete(that._sortBlock(that.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup));
+
+												}, function(error) {
+													//that.handleError(error);
+												});
+								}, function(error) {
+									//that.handleError(error);
+								});
+					}
+				}, function(error) {
+					//that.handleError(error);
+				});
 			} else if (mGitUIUtil.isChange(parentItem) || parentItem.Type === "Diff") {
 			// lazy creation, this is required for selection  model to be able to traverse into children
 				if (!parentItem.children) {
@@ -46,13 +113,118 @@ define([
 			}
 		},
 		getId: function(/* item */ item){
+			var prefix = this.prefix;
 			if (item instanceof Array && item.length > 0) {
-				return this.prefix + "Root"; //$NON-NLS-0$
+				return prefix + "Root"; //$NON-NLS-0$
 			} else if (mGitUIUtil.isChange(item)) {
-				return  this.prefix + item.name; 
+				return  prefix + item.name; 
 			} else {
-				return  this.prefix + item.DiffLocation;
+				return  prefix + item.DiffLocation;
 			}
+		},
+		getModelType: function(groupItem, groupName) {
+			return groupName;
+		},
+		_markConflict: function(conflictPattern) {
+			// if git status server API response a file with "Modified"
+			// ,"Added", "Changed","Missing" states , we treat it as a
+			// conflicting file
+			// And we add additional attribute to that groupItem :
+			// groupItem.Conflicting = true;
+			var baseGroup = this.getGroupData(conflictPattern[1]);
+			if (!baseGroup)
+				return;
+			for (var i = 0; i < baseGroup.length; i++) {
+				if (baseGroup[i].Conflicting)
+					continue;
+				var fileLocation = baseGroup[i].Location;
+				var itemsInDetectGroup = [];
+
+				for (var j = 2; j < conflictPattern.length; j++) {
+					var groupName = conflictPattern[j];
+					var groupData = this.getGroupData(groupName);
+					if (!groupData)
+						continue;
+					var item = this._findSameFile(fileLocation, groupData);
+					if (item) {
+						itemsInDetectGroup.push(item);
+					} else {
+						continue;
+					}
+				}
+
+				// we have the same file at "Modified" ,"Added",
+				// "Changed","Missing" groups
+				if (itemsInDetectGroup.length === (conflictPattern.length - 2)) {
+					baseGroup[i].Conflicting = conflictPattern[0];
+					for (var k = 0; k < itemsInDetectGroup.length; k++) {
+						itemsInDetectGroup[k].Conflicting = "Hide"; //$NON-NLS-0$
+					}
+				}
+			}
+		},
+		_findSameFile: function(fileLocation, groupData) {
+			for (var j = 0; j < groupData.length; j++) {
+				if (groupData[j].Conflicting)
+					continue;
+				if (fileLocation === groupData[j].Location)
+					return groupData[j];
+			}
+			return undefined;
+		},
+		_sortBlock: function(interestedGroup) {
+			var retValue = [];
+			for (var i = 0; i < interestedGroup.length; i++) {
+				var groupName = interestedGroup[i];
+				var groupData = this.getGroupData(groupName);
+				if (!groupData)
+					continue;
+				for (var j = 0; j < groupData.length; j++) {
+					var renderType = this.getModelType(groupData[j], groupName);
+					if (renderType) {
+						retValue.push({
+							name : groupData[j].Name,
+							type : renderType,
+							location : groupData[j].Location,
+							path : groupData[j].Path,
+							commitURI : groupData[j].Git.CommitLocation,
+							indexURI : groupData[j].Git.IndexLocation,
+							DiffLocation : groupData[j].Git.DiffLocation,
+							CloneLocation : this.items.CloneLocation, //will die here
+							conflicting : isConflict(renderType)
+						});
+					}
+				}
+			}
+			retValue.sort(function(a, b) {
+				var n1 = a.name && a.name.toLowerCase();
+				var n2 = b.name && b.name.toLowerCase();
+				if (n1 < n2) {
+					return -1;
+				}
+				if (n1 > n2) {
+					return 1;
+				}
+				return 0;
+			});
+			return retValue;
+		},
+		getGroupData: function(groupName) {
+			return this.items[groupName];
+		},
+		isStaged: function(type) {
+			for (var i = 0; i < interestedStagedGroup.length; i++) {
+				if (type === interestedStagedGroup[i]) {
+					return true;
+				}
+			}
+			return false;
+		},
+		getClass: function(item) {
+			return statusTypeMap[item.type].imageClass;
+		},
+		getTooltip: function(item) {
+			return statusTypeMap[item.type].tooltip;
 		}
 	});
 	
@@ -66,13 +238,12 @@ define([
 		this.checkbox = false;
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
-		this.changesModel = options.changesModel;
 		this.prefix = options.prefix;
 		this.changes = options.changes;
-		this.status = options.status;
 		this.section = options.section;
-		this.repository = options.repository;
+		this.location = options.location;
 		this.createSelection();
+		this.updateCommands();
 	}
 	GitChangeListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {
@@ -83,16 +254,23 @@ define([
 			}
 		},
 		display: function() {
-			this.updateCommands();
-			this.createTree(this.parentId, new GitChangeListModel(this.changes, this.prefix));
+			var that = this;
+			var deferred = new Deferred();
+			var model =  new GitChangeListModel({registry: this.registry, prefix: this.prefix, location: this.location});
+			this.createTree(this.parentId, model, {onComplete: function() {
+				that.status = model.status;
+				deferred.resolve();
+			}});
+			return deferred;
 		},
 		isRowSelectable: function(modelItem) {
 			return mGitUIUtil.isChange(modelItem);
 		},
-		getItemCount: function() {
-			return this.changes.length;
-		},
+//		getItemCount: function() {
+//			return this.changes.length; //TODO: Could be null
+//		},
 		updateCommands: function() {
+			mExplorer.createExplorerCommands(this.commandService);
 			var actionsNodeScope = this.section.actionsNode.id;
 			var selectionNodeScope = this.section.selectionNode.id;
 			this.commandService.registerCommandContribution(actionsNodeScope, "orion.explorer.expandAll", 200); //$NON-NLS-0$
@@ -106,9 +284,9 @@ define([
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.stageCommand", 200); //$NON-NLS-0$
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
 				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
-
 			}
 			this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this, this, "button"); //$NON-NLS-0$
+			
 		},
 		createSelection: function(){
 			if (!this.selection) {
@@ -122,7 +300,7 @@ define([
 					if (selectionTools) {
 						commandService.destroy(selectionTools);
 						commandService.renderCommands(section.selectionNode.id, selectionTools, event.selections, that,
-							"button", {"Clone" : that.repository}); //$NON-NLS-1$ //$NON-NLS-0$
+							"button", {"Clone" : that.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
 					}
 				});
 			}
@@ -159,10 +337,10 @@ define([
 							"DefaultActionWrapper", diffActionWrapper, item, explorer, "tool", null, navGridHolder); //$NON-NLS-1$ //$NON-NLS-0$
 				
 						var icon = document.createElement("span"); //$NON-NLS-0$
-						icon.className = explorer.changesModel.getClass(item);
+						icon.className = explorer.model.getClass(item);
 						icon.commandTooltip = new mTooltip.Tooltip({
 							node: icon,
-							text: explorer.changesModel.getTooltip(item),
+							text: explorer.model.getTooltip(item),
 							position: ["above", "below", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 						});
 						div.appendChild(icon);
@@ -229,7 +407,8 @@ define([
 	
 	return {
 		GitChangeListExplorer: GitChangeListExplorer,
-		GitChangeListRenderer: GitChangeListRenderer
+		GitChangeListRenderer: GitChangeListRenderer,
+		GitChangeListModel: GitChangeListModel
 	};
 
 });
