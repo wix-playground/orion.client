@@ -498,7 +498,7 @@ var exports = {};
 					if (item.Repository) {
 						branchLocation = item.Repository.BranchLocation;
 					} else {
-						branchLocation = item.parent.parent.BranchLocation;
+						branchLocation = item.parent.parent.repository.BranchLocation;
 					}
 					
 					progressService.progress(service.addBranch(branchLocation, null, item.Name), "Adding branch " + item.Name).then(
