@@ -12,7 +12,7 @@
  /*globals define window document Image*/
 
 define([
-	'orion/git/widgetsTake2/gitCommitInfo',
+	'orion/git/widgets/gitCommitInfo',
 	'orion/webui/popupdialog'
 ], function (mGitCommitInfo, popupdialog) {
 

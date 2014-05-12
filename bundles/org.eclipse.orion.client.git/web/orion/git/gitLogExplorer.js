@@ -14,7 +14,7 @@
 define([
 	'require',
 	'i18n!git/nls/gitmessages',
-	'orion/git/widgetsTake2/gitCommitList',
+	'orion/git/widgets/gitCommitList',
 	'orion/Deferred',
 	'orion/URITemplate',
 	'orion/globalCommands', 

@@ -12,8 +12,8 @@
 define([
 	'require',
 	'i18n!git/nls/gitmessages',
-	'orion/git/widgetsTake2/gitCommitList',
-	'orion/git/widgetsTake2/gitChangeList',
+	'orion/git/widgets/gitCommitList',
+	'orion/git/widgets/gitChangeList',
 	'orion/section',
 	'orion/URITemplate',
 	'orion/PageUtil',
