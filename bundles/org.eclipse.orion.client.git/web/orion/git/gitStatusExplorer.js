@@ -88,7 +88,7 @@ define([
 			lib.empty(tableNode);
 			var changesModel = new mGitChangeList.GitChangeListModel({registry: this.registry});
 			this.displayUnstaged(location, changesModel).then(function() {
-				return that.displayStaged(location, changesModel).then(function() {
+				return that.displayStaged(location, new mGitChangeList.GitChangeListModel({registry: that.registry})).then(function() {
 					return that.displayCommits(changesModel.repository).then(function() {
 						that.initTitleBar(changesModel, changesModel.repository);
 						mGitCommands.updateNavTools(that.registry, that.commandService, that, "pageActions", "selectionTools", changesModel.status); //$NON-NLS-1$ //$NON-NLS-0$
