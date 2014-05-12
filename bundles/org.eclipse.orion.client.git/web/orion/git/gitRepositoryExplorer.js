@@ -18,17 +18,13 @@ define([
 	'orion/git/widgets/gitTagList',
 	'orion/git/widgets/gitRepoList',
 	'orion/section',
-	'orion/i18nUtil',
 	'orion/webui/littlelib',
-	'orion/git/util',
 	'orion/URITemplate',
 	'orion/PageUtil',
-	'orion/dynamicContent',
 	'orion/fileUtils',
 	'orion/globalCommands',
-	'orion/Deferred',
-	'orion/git/widgets/CommitTooltipDialog'
-], function(require, messages, mGitCommitList, mGitBranchList, mGitConfigList, mGitTagList, mGitRepoList, mSection, i18nUtil, lib, mGitUtil, URITemplate, PageUtil, mDynamicContent, mFileUtils, mGlobalCommands, Deferred, mCommitTooltip) {
+	'orion/Deferred'
+], function(require, messages, mGitCommitList, mGitBranchList, mGitConfigList, mGitTagList, mGitRepoList, mSection, lib, URITemplate, PageUtil, mFileUtils, mGlobalCommands, Deferred) {
 var exports = {};
 	
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$

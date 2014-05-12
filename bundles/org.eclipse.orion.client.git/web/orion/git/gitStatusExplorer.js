@@ -130,7 +130,7 @@ define([
 			var tableNode = lib.node('table'); //$NON-NLS-0$
 			var unstagedSection = new mSection.Section(tableNode, {
 				id : "unstagedSection", //$NON-NLS-0$
-				title : messages['Unstaged'], //unstagedSortedChanges.length > 0 ? messages['Unstaged'] : messages["No Unstaged Changes"],
+				title : messages['Unstaged'],
 				content : '<div id="unstagedNode"></div>', //$NON-NLS-0$
 				canHide : true,
 				onExpandCollapse : function(isExpanded, section) {
@@ -167,7 +167,7 @@ define([
 			var tableNode = lib.node('table'); //$NON-NLS-0$
 			var stagedSection = new mSection.Section(tableNode, {
 				id : "stagedSection", //$NON-NLS-0$
-				title : messages['Staged'], //stagedSortedChanges.length > 0 ? messages['Staged'] : messages["No Staged Changes"],
+				title : messages['Staged'],
 				content : '<div id="stagedNode"></div>', //$NON-NLS-0$
 				slideout : true,
 				canHide : true,

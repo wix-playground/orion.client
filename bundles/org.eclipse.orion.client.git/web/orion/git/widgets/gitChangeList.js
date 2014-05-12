@@ -74,7 +74,6 @@ define([
 				function(resp) {
 					if (resp.Type === "Status") { //$NON-NLS-0$
 						var status = that.status = that.items = resp;
-						//explorer.status = status;
 						progressService
 							.progress(
 								that.registry.getService("orion.git.provider").getGitClone(status.CloneLocation), "Getting repository information").then( //$NON-NLS-0$
