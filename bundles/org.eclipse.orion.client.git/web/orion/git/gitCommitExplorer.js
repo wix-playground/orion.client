@@ -221,33 +221,13 @@ define([
 
 					var diffs = commit.Diffs;
 
-					var changesModel = {
-						getClass: function (item) {
-							var sprite = "git-sprite-file"; //$NON-NLS-0$
-							if (item.ChangeType === "ADD") { //$NON-NLS-0$
-								sprite = "git-sprite-addition"; //$NON-NLS-0$
-							} else if (item.ChangeType === "DELETE") { //$NON-NLS-0$
-								sprite = "git-sprite-removal"; //$NON-NLS-0$
-							}
-							return sprite;
-						},
-						getTooltip: function(item) {
-							var tooltip = messages["Diffs"]; //$NON-NLS-0$
-							if (item.ChangeType === "ADD") { //$NON-NLS-0$
-								tooltip =  messages["Addition"]; //$NON-NLS-0$
-							} else if (item.ChangeType === "DELETE") { //$NON-NLS-0$
-								tooltip = messages["Deletion"]; //$NON-NLS-0$
-							}
-							return tooltip;
-						}
-					};
-
 					diffs.forEach(function(item) {
 						var path = item.OldPath;
 						if (item.ChangeType === "ADD") { //$NON-NLS-0$
 							path = item.NewPath;
 						} 
 						item.name = path;
+						item.type = item.ChangeType;
 					});
 					var tableNode = lib.node('table'); //$NON-NLS-0$
 
@@ -267,7 +247,6 @@ define([
 						selection: null,
 						parentId:"diffNode",
 						actionScopeId: "diffSectionItemActionArea",
-						changesModel: changesModel,
 						prefix: "diff",
 						changes: diffs,
 						section: section,

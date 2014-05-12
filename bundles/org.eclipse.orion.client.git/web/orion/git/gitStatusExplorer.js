@@ -154,7 +154,8 @@ define([
 				parentId:"unstagedNode", 
 				prefix: "unstaged",
 				location: location,
-				section: unstagedSection
+				section: unstagedSection,
+				handleError: this.handleError
 			});
 			return this.unstagedNavigator.display();
 		};
@@ -191,7 +192,8 @@ define([
 				parentId:"stagedNode", 
 				prefix: "staged",
 				location: location,
-				section: stagedSection
+				section: stagedSection,
+				handleError: this.handleError
 			});
 			return this.stagedNavigator.display();
 		};

@@ -37,7 +37,11 @@ define([
 		"Changed" : { imageClass: "gitImageSprite git-sprite-file", tooltip: messages['Staged change'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		"Untracked" : { imageClass: "gitImageSprite git-sprite-addition", tooltip: messages["Unstaged addition"] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		"Added" : { imageClass: "gitImageSprite git-sprite-addition", tooltip: messages["Staged addition"] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-		"Conflicting" : { imageClass: "gitImageSprite git-sprite-conflict-file", tooltip: messages['Conflicting'] } //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"Conflicting" : { imageClass: "gitImageSprite git-sprite-conflict-file", tooltip: messages['Conflicting'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+
+		"ADD" : { imageClass: "gitImageSprite git-sprite-addition", tooltip: messages['Addition'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"MODIFY" : { imageClass: "gitImageSprite git-sprite-file", tooltip: messages['Deletion'] }, //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		"DELETE" : { imageClass: "gitImageSprite git-sprite-removal", tooltip: messages['Diffs'] } //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 	};
 			
 	function GitChangeListModel(options) {
@@ -45,6 +49,8 @@ define([
 		this.registry = options.registry;
 		this.prefix = options.prefix;
 		this.location = options.location;
+		this.handleError = options.handleError;
+		this.changes = options.changes;
 	}
 	GitChangeListModel.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListModel.prototype, /** @lends orion.git.GitChangeListModel.prototype */ {
@@ -92,14 +98,14 @@ define([
 													onComplete(that._sortBlock(that.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup));
 
 												}, function(error) {
-													//that.handleError(error);
+													that.handleError(error);
 												});
 								}, function(error) {
-									//that.handleError(error);
+									that.handleError(error);
 								});
 					}
 				}, function(error) {
-					//that.handleError(error);
+					that.handleError(error);
 				});
 			} else if (mGitUIUtil.isChange(parentItem) || parentItem.Type === "Diff") {
 			// lazy creation, this is required for selection  model to be able to traverse into children
@@ -242,6 +248,7 @@ define([
 		this.changes = options.changes;
 		this.section = options.section;
 		this.location = options.location;
+		this.handleError = options.handleError;
 		this.createSelection();
 		this.updateCommands();
 	}
@@ -256,7 +263,7 @@ define([
 		display: function() {
 			var that = this;
 			var deferred = new Deferred();
-			var model =  new GitChangeListModel({registry: this.registry, prefix: this.prefix, location: this.location});
+			var model =  new GitChangeListModel({registry: this.registry, prefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes});
 			this.createTree(this.parentId, model, {onComplete: function() {
 				that.status = model.status;
 				deferred.resolve();
