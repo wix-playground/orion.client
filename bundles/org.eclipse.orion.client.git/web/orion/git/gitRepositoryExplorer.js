@@ -389,7 +389,7 @@ exports.GitRepositoryExplorer = (function() {
 			commandRegistry: this.commandService,
 			selection: this.stagedSelection,
 			parentId:"statusNode", 
-			prefix: "unstaged",
+			prefix: "all",
 			location: repository.StatusLocation,
 			section: titleWrapper,
 			editableInComparePage: true,

@@ -24,6 +24,7 @@ define([
 	
 	var interestedUnstagedGroup = [ "Missing", "Modified", "Untracked", "Conflicting" ]; //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 	var interestedStagedGroup = [ "Added", "Changed", "Removed" ]; //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	var allGroups = interestedUnstagedGroup.concat(interestedStagedGroup);
 	var conflictType = "Conflicting"; //$NON-NLS-0$
 
 	function isConflict(type) {
@@ -61,13 +62,23 @@ define([
 		getRoot: function(onItem){
 			onItem(this.changes || {Type: "Root"});
 		},
+		getGroups: function(prefix) {
+			switch(prefix) {
+				case "all":
+					return allGroups;
+				case "staged":
+					return interestedStagedGroup;
+				case "unstaged":
+					return interestedUnstagedGroup;
+			}
+		},
 		getChildren: function(parentItem, onComplete){	
 			if (parentItem instanceof Array && parentItem.length > 0) {
 				onComplete(parentItem);
 			} else if (parentItem.Type === "Root") {
 				var that = this;
 				if (that.status) {
-					onComplete(that._sortBlock(that.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup));
+					onComplete(that._sortBlock(that.getGroups(that.prefix)));
 					return;
 				}
 				var location = this.location;
@@ -97,7 +108,7 @@ define([
 														if (config[i].Key === "user.name" || config[i].Key === "user.email") //$NON-NLS-1$ //$NON-NLS-0$
 															status.Clone.Config.push(config[i]);
 													}
-													var children = parentItem.children = that._sortBlock(that.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup);
+													var children = parentItem.children = that._sortBlock(that.getGroups(that.prefix));
 													children.forEach(function(child) {
 														child.parent = parentItem;
 													});
@@ -271,7 +282,7 @@ define([
 		display: function() {
 			var that = this;
 			var deferred = new Deferred();
-			var model =  new GitChangeListModel({registry: this.registry, progressprefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes, gitClient: this.gitClient, progressService: this.progressService});
+			var model =  new GitChangeListModel({registry: this.registry, progress: this.progressService, prefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes, gitClient: this.gitClient, progressService: this.progressService});
 			this.createTree(this.parentId, model, {onComplete: function() {
 				that.status = model.status;
 				deferred.resolve();
