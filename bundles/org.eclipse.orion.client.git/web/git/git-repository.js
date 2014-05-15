@@ -29,7 +29,7 @@ mBootstrap.startup().then(function(core) {
 	var commandRegistry = new mCommandRegistry.CommandRegistry({selection: selection});
 	var operationsClient = new mOperationsClient.OperationsClient(serviceRegistry);
 	var progress = new mProgress.ProgressService(serviceRegistry, operationsClient, commandRegistry);
-	new mStatus.StatusReportingService(serviceRegistry, operationsClient, "statusPane", "notifications", "notificationArea"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	var statusService = new mStatus.StatusReportingService(serviceRegistry, operationsClient, "statusPane", "notifications", "notificationArea"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 	
 	// ...
 	var linkService = new mLinks.TextLinkService({serviceRegistry: serviceRegistry});
@@ -37,7 +37,21 @@ mBootstrap.startup().then(function(core) {
 	var fileClient = new mFileClient.FileClient(serviceRegistry);
 	var searcher = new mSearchClient.Searcher({serviceRegistry: serviceRegistry, commandService: commandRegistry, fileService: fileClient});
 	
-	var explorer = new mGitRepositoryExplorer.GitRepositoryExplorer(serviceRegistry, commandRegistry, linkService, /* selection */ null, "artifacts", "pageNavigationActions", "itemLevelCommands"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	var explorer = new mGitRepositoryExplorer.GitRepositoryExplorer({
+		parentId: "artifacts", //$NON-NLS-0$
+		registry: serviceRegistry,
+		linkService: linkService,
+		commandService: commandRegistry,
+		fileClient: fileClient,
+		gitClient: gitClient,
+		progressService: progress,
+		preferencesService: preferences,
+		statusService: statusService,
+		selection : null,
+		pageNavId: "pageNavigationActions", //$NON-NLS-0$
+		actionScopeId: "itemLevelCommands"  //$NON-NLS-0$
+	});
+	
 	mGlobalCommands.generateBanner("orion-repository", serviceRegistry, commandRegistry, preferences, searcher, explorer); //$NON-NLS-0$
 	
 	// define commands

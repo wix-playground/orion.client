@@ -76,6 +76,7 @@ define({
 	"Select a file on the left to compare...": "Select a file on the left to compare...",
 	"Unstaged": "Unstaged",
 	"Staged": "Staged",
+	"ChangedFiles": "Changed Files",
 	"Recent commits on": "Recent commits on",
 	"Git Status": "Git Status",
 	"Go to Git Status": "Open the Git Status page for the repository containing this file or folder.",
