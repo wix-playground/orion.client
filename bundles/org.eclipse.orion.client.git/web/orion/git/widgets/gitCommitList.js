@@ -63,11 +63,14 @@ define([
 		this.root = options.root;
 		this.handleError = options.handleError;
 		this.location = options.location;
+		this.gitClient = options.gitClient;
+		this.progressService = options.progressService;
+		this.statusService = options.statusService;
 	}
 	GitCommitListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitCommitListExplorer.prototype, /** @lends orion.git.GitCommitListExplorer.prototype */ {
 		display: function() {
-			if (this.root.Type === "CommitRoot") {
+			if (this.root.Type === "CommitRoot") { //$NON-NLS-0$
 				return this.displayCommits();
 			} else {
 				return this.displayLog();
@@ -81,8 +84,7 @@ define([
 			var handleError = this.handleError;
 			var progress = section.createProgressMonitor();
 			progress.begin(messages['Getting current branch']);
-			return this.registry
-				.getService("orion.page.progress").progress(this.registry.getService("orion.git.provider").getGitBranch(repository.BranchLocation), "Getting current branch " + repository.Name).then( //$NON-NLS-0$
+			return this.progressService.progress(this.gitClient.getGitBranch(repository.BranchLocation), "Getting current branch " + repository.Name).then( //$NON-NLS-0$
 					function(resp) {
 						var branches = resp.Children;
 						var currentBranch;
@@ -136,15 +138,13 @@ define([
 						progress.worked(i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], currentBranch.Name));
 
 						if (tracksRemoteBranch && currentBranch.RemoteLocation[0].Children[0].CommitLocation) {
-							that.registry
-								.getService("orion.page.progress")
+							that.progressService
 								.progress(
-									that.registry.getService("orion.git.provider").getLog(
+									that.gitClient.getLog(
 										currentBranch.RemoteLocation[0].Children[0].CommitLocation + "?page=1&pageSize=20", "HEAD"),
 									i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], currentBranch.Name)).then( //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 									function(outgoingResp) {
-										that.registry
-											.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(currentBranch.CommitLocation + "?page=1&pageSize=20", currentBranch.RemoteLocation[0].Children[0].Id), messages['Getting outgoing commits']).then( //$NON-NLS-1$ //$NON-NLS-0$
+										that.progressService.progress(that.gitClient.getLog(currentBranch.CommitLocation + "?page=1&pageSize=20", currentBranch.RemoteLocation[0].Children[0].Id), messages['Getting outgoing commits']).then( //$NON-NLS-1$ //$NON-NLS-0$
 											function(incomingResp) {
 												progress.worked(messages['Rendering commits']);
 												that.incomingCommits = incomingResp.Children;
@@ -159,8 +159,8 @@ define([
 										progress.done(error);
 									});
 						} else {
-							that.registry.getService("orion.page.progress").progress(
-								that.registry.getService("orion.git.provider").doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20"),
+							that.progressService.progress(
+								that.gitClient.doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20"),
 								i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], currentBranch.Name)).then( //$NON-NLS-1$ //$NON-NLS-0$
 								function(outgoingResp) {
 									progress.worked(messages['Rendering commits']);
@@ -182,7 +182,7 @@ define([
 			var that = this;
 			var d = new Deferred();
 			
-			var progressService = this.registry.getService("orion.page.message");
+			var progressService = this.progressService;
 			progressService.showWhile(d, messages["Getting git incoming changes..."]);
 		
 			var processRemoteTrackingBranch = function(remoteResource) {
@@ -190,14 +190,14 @@ define([
 				
 				var pageParams = PageUtil.matchResourceParameters();
 				
-				that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(remoteResource.HeadLocation, newRefEncoded), "Getting log for " + remoteResource.Name).then(function(scopedCommitsJsonData) {
+				that.progressService.progress(that.gitClient.getLog(remoteResource.HeadLocation, newRefEncoded), "Getting log for " + remoteResource.Name).then(function(scopedCommitsJsonData) {
 					that.incomingCommits = scopedCommitsJsonData.Children;
 					that.outgoingCommits = [];
 					
 					var url = document.createElement("a");
 					url.href = pageParams.resource;	
 					
-					that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").doGitLog(remoteResource.CommitLocation + url.search), "Getting incomming changes for " + remoteResource.Name).then(function(jsonData) { //$NON-NLS-0$
+					that.progressService.progress(that.gitClient.doGitLog(remoteResource.CommitLocation + url.search), "Getting incomming changes for " + remoteResource.Name).then(function(jsonData) { //$NON-NLS-0$
 						remoteResource.Children = jsonData.Children;
 						if(jsonData.NextLocation){
 							var url = document.createElement("a");
@@ -222,9 +222,9 @@ define([
 				processRemoteTrackingBranch(resource.toRef);
 			} else if (resource.toRef){
 				if (resource.toRef.RemoteLocation && resource.toRef.RemoteLocation.length===1 && resource.toRef.RemoteLocation[0].Children && resource.toRef.RemoteLocation[0].Children.length===1){
-					that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getGitRemote(resource.toRef.RemoteLocation[0].Children[0].Location), "Getting log for " + resource.Name).then(
+					that.progressService.progress(that.gitClient.getGitRemote(resource.toRef.RemoteLocation[0].Children[0].Location), "Getting log for " + resource.Name).then(
 						function(remoteJsonData, secondArg) {
-							that.registry.getService("orion.page.progress").progress(that.registry.getService("orion.git.provider").getLog(remoteJsonData.CommitLocation, "HEAD"), "Getting outgoing changes for " + resource.Name).then(function(scopedCommitsJsonData) { //$NON-NLS-0$
+							that.progressService.progress(that.gitClient.getLog(remoteJsonData.CommitLocation, "HEAD"), "Getting outgoing changes for " + resource.Name).then(function(scopedCommitsJsonData) { //$NON-NLS-0$
 								that.incomingCommits = [];
 								that.outgoingCommits = scopedCommitsJsonData.Children;
 								d.resolve(resource);
@@ -242,17 +242,17 @@ define([
 		},
 		loadResource: function(location){
 			var that = this;
-			var progressService = this.registry.getService("orion.page.message");
-			var gitService = this.registry.getService("orion.git.provider"); //$NON-NLS-0$
-			var loadingDeferred = this.registry.getService("orion.page.progress").progress(gitService.doGitLog(location), "Getting git log").then(
+			var progressService = this.progressService;
+			var gitService = this.gitClient; //$NON-NLS-0$
+			var loadingDeferred = this.progressService.progress(gitService.doGitLog(location), "Getting git log").then(
 				function(resp) {
 					var resource = resp;
-					return that.registry.getService("orion.page.progress").progress(gitService.getGitClone(resource.CloneLocation), "Getting repository details for " + resource.Name).then(
+					return that.progressService.progress(gitService.getGitClone(resource.CloneLocation), "Getting repository details for " + resource.Name).then(
 						function(resp){
 							var clone = resp.Children[0];	
 							resource.Clone = clone;
 							resource.ContentLocation = clone.ContentLocation;
-							return that.registry.getService("orion.page.progress").progress(gitService.getGitBranch(clone.BranchLocation), "Getting default branch details for " + resource.Name).then(
+							return that.progressService.progress(gitService.getGitBranch(clone.BranchLocation), "Getting default branch details for " + resource.Name).then(
 								function(branches){
 									for(var i=0; i<branches.Children.length; i++){
 										var branch = branches.Children[i];
@@ -273,7 +273,7 @@ define([
 		},
 		displayLog: function(){
 			var that = this;
-			var progressService = this.registry.getService("orion.page.message"); //$NON-NLS-0$
+			var progressService = this.progressService;
 			
 			var loadingDeferred = new Deferred();
 			progressService.showWhile(loadingDeferred, messages['Loading...']);

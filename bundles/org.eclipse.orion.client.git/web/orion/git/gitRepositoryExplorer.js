@@ -320,6 +320,9 @@ exports.GitRepositoryExplorer = (function() {
 		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
+			fileClient: this.fileClient,
+			gitClient: this.gitClient,
+			progressService: this.progressService,
 			parentId: "branchNode",
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,
@@ -351,7 +354,10 @@ exports.GitRepositoryExplorer = (function() {
 		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
-			parentId:"remoteBranchNode", //hack
+			fileClient: this.fileClient,
+			gitClient: this.gitClient,
+			progressService: this.progressService,
+			parentId:"remoteBranchNode",
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,
 			handleError: this.handleError,
@@ -412,6 +418,10 @@ exports.GitRepositoryExplorer = (function() {
 		var explorer = new mGitCommitList.GitCommitListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
+			fileClient: this.fileClient,
+			gitClient: this.gitClient,
+			progressService: this.progressService,
+			statusService: this.statusService,
 			selection: this.selection,
 			actionScopeId: this.actionScopeId,
 			parentId:"commitNode",
@@ -472,6 +482,9 @@ exports.GitRepositoryExplorer = (function() {
 		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
+			fileClient: this.fileClient,
+			gitClient: this.gitClient,
+			progressService: this.progressService,
 			parentId:"remoteNode",
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,
@@ -504,6 +517,9 @@ exports.GitRepositoryExplorer = (function() {
 		var configNavigator = new mGitConfigList.GitConfigListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
+			fileClient: this.fileClient,
+			gitClient: this.gitClient,
+			progressService: this.progressService,
 			parentId:"configNode",
 			actionScopeId: this.actionScopeId,
 			section: titleWrapper,

@@ -32,26 +32,36 @@ define([
 		 *
 		 * @class Git status explorer
 		 * @name orion.git.GitStatusExplorer
-		 * @param registry
-		 * @param commandService
-		 * @param linkService
-		 * @param selection
-		 * @param parentId
-		 * @param toolbarId
-		 * @param selectionToolsId
-		 * @param actionScopeId
+		 * @param options
+		 * @param options.parentId
+		 * @param options.registry
+		 * @param options.linkService
+		 * @param options.commandService
+		 * @param options.fileClient
+		 * @param options.gitClient
+		 * @param options.progressService
+		 * @param options.preferencesService
+		 * @param options.statusService
+		 * @param options.selection
+	 	 * @param options.pageNavId
+		 * @param options.actionScopeId
 		 */
-		function GitStatusExplorer(registry, commandService, linkService, selection, parentId, toolbarId, selectionToolsId, actionScopeId) {
-			this.parentId = parentId;
-			this.registry = registry;
-			this.commandService = commandService;
-			this.linkService = linkService;
-			this.selection = selection;
-			this.parentId = parentId;
-			this.toolbarId = toolbarId;
-			this.selectionToolsId = selectionToolsId;
+		function GitStatusExplorer(options) {
+			this.parentId = options.parentId;
+			this.registry = options.registry;
+			this.commandService = options.commandService;
+			this.fileClient = options.fileClient;
+			this.gitClient = options.gitClient;
+			this.progressService = options.progressService;
+			this.preferencesService = options.preferencesService;
+			this.statusService = options.statusService;
+			this.linkService = options.linkService;
+			this.selection = options.selection;
+			this.parentId = options.parentId;
+			this.toolbarId = options.toolbarId;
+			this.selectionToolsId = options.selectionToolsId;
+			this.actionScopeId = options.actionScopeId;
 			this.checkbox = false;
-			this.actionScopeId = actionScopeId;
 		}
 
 		GitStatusExplorer.prototype.handleError = function(error) {
@@ -215,6 +225,10 @@ define([
 			var explorer = new mGitCommitList.GitCommitListExplorer({
 				serviceRegistry: this.registry,
 				commandRegistry: this.commandService,
+				fileClient: this.fileClient,
+				gitClient: this.gitClient,
+				progressService: this.progressService,
+				statusService: this.statusService,
 				selection: this.selection,
 				actionScopeId: this.actionScopeId,
 				parentId:"commitNode",
