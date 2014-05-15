@@ -251,6 +251,8 @@ define([
 		this.prefix = options.prefix;
 		this.changes = options.changes;
 		this.section = options.section;
+		this.progressService = options.progressService;
+		this.gitClient = options.gitClient;
 		this.location = options.location;
 		this.editableInComparePage = options.editableInComparePage;
 		this.handleError = options.handleError;

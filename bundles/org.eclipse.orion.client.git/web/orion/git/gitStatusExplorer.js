@@ -160,6 +160,8 @@ define([
 			this.unstagedNavigator = new mGitChangeList.GitChangeListExplorer({
 				serviceRegistry: this.registry,
 				commandRegistry: this.commandService,
+				gitClient: this.gitClient,
+				progressService: this.progressService,
 				selection: this.unstagedSelection,
 				parentId:"unstagedNode", 
 				prefix: "unstaged",
@@ -199,6 +201,8 @@ define([
 			this.stagedNavigator = new mGitChangeList.GitChangeListExplorer({
 				serviceRegistry: this.registry,
 				commandRegistry: this.commandService,
+				gitClient: this.gitClient,
+				progressService: this.progressService,
 				selection: this.stagedSelection,
 				parentId:"stagedNode", 
 				prefix: "staged",
