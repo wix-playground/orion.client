@@ -102,7 +102,7 @@ exports.GitLogExplorer = (function() {
 		var that = this;
 		
 		if(fileURI){		
-			this.registry.getService("orion.page.progress").progress(this.fileClient.read(fileURI, true), "Getting metadata of " + fileURI).then(
+			this.progressService.progress(this.fileClient.read(fileURI, true), "Getting metadata of " + fileURI).then(
 				function(metadata) {
 					this.isDirectory = metadata.Directory;
 					
@@ -161,7 +161,7 @@ exports.GitLogExplorer = (function() {
 		} catch (Exception) {
 			display.Message = error.DetailedMessage || error.Message || error.message;
 		}
-		this.registry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
+		this.statusService.setProgressResult(display); //$NON-NLS-0$
 	};
 	
 	GitLogExplorer.prototype.display = function(location){

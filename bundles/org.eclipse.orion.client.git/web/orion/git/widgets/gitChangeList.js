@@ -50,6 +50,8 @@ define([
 		this.prefix = options.prefix;
 		this.location = options.location;
 		this.handleError = options.handleError;
+		this.progressService = options.progressService;
+		this.gitClient = options.gitClient;
 		this.changes = options.changes;
 	}
 	GitChangeListModel.prototype = Object.create(mExplorer.Explorer.prototype);
@@ -68,22 +70,21 @@ define([
 					onComplete(that._sortBlock(that.prefix === "staged" ? interestedStagedGroup : interestedUnstagedGroup));
 					return;
 				}
-				var progressService = this.registry.getService("orion.page.progress");
+				var progressService = this.progressService;
 				var location = this.location;
-				progressService.progress(this.registry.getService("orion.git.provider").getGitStatus(location), messages['Loading...']).then( //$NON-NLS-0$
+				progressService.progress(this.gitClient.getGitStatus(location), messages['Loading...']).then( //$NON-NLS-0$
 				function(resp) {
 					if (resp.Type === "Status") { //$NON-NLS-0$
 						var status = that.status = that.items = resp;
 						progressService
 							.progress(
-								that.registry.getService("orion.git.provider").getGitClone(status.CloneLocation), "Getting repository information").then( //$NON-NLS-0$
+								that.gitClient.getGitClone(status.CloneLocation), "Getting repository information").then( //$NON-NLS-0$
 								function(resp) {
 									var repositories = resp.Children;
 
 									progressService
 										.progress(
-											that.registry
-												.getService("orion.git.provider").getGitCloneConfig(repositories[0].ConfigLocation), "Getting repository configuration ", repositories[0].Name).then( //$NON-NLS-0$
+											that.gitClient.getGitCloneConfig(repositories[0].ConfigLocation), "Getting repository configuration ", repositories[0].Name).then( //$NON-NLS-0$
 												function(resp) {
 													var config = resp.Children;
 
@@ -267,7 +268,7 @@ define([
 		display: function() {
 			var that = this;
 			var deferred = new Deferred();
-			var model =  new GitChangeListModel({registry: this.registry, prefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes});
+			var model =  new GitChangeListModel({registry: this.registry, prefix: this.prefix, location: this.location, progressService: this.progressService, gitClient: this.gitClient, handleError: this.handleError, changes: this.changes});
 			this.createTree(this.parentId, model, {onComplete: function() {
 				that.status = model.status;
 				deferred.resolve();

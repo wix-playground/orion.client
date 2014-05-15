@@ -74,7 +74,7 @@ define([
 			} catch (Exception) {
 				display.Message = error.DetailedMessage || error.Message || error.message;
 			}
-			this.registry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
+			this.statusService.setProgressResult(display); //$NON-NLS-0$
 
 			if (error.status === 404) {
 				this.initTitleBar();
@@ -220,7 +220,7 @@ define([
 				content : '<div id="commitNode" class="mainPadding"></div>', //$NON-NLS-0$
 				slideout : true,
 				canHide : true,
-				preferenceService : this.registry.getService("orion.core.preference") //$NON-NLS-0$
+				preferenceService : this.preferenceService
 			});
 			var explorer = new mGitCommitList.GitCommitListExplorer({
 				serviceRegistry: this.registry,
