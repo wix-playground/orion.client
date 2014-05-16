@@ -2942,7 +2942,7 @@ var exports = {};
 		commandService.addCommand(openCommitCommand);
 	};
 
-	exports.createGitStatusCommands = function(serviceRegistry, commandService, explorer) {
+	exports.createGitStatusCommands = function(serviceRegistry, commandService, explorer, newLook) {
 		
 		var refresh = function() { explorer.changedItem(); }
 		
@@ -2953,7 +2953,7 @@ var exports = {};
 		
 		var logic = mGitCommitLogic(commitOptions);
 		var commitCallback = logic.perform;
-		var commitMessageParameters = logic.parameters;
+		var commitMessageParameters = logic.createParameters(newLook);
 		var amendEventListener = logic.amendEventListener;
 		var displayErrorOnStatus = logic.displayErrorOnStatus;
 		
@@ -2967,8 +2967,8 @@ var exports = {};
 		var stageCommand = new mCommands.Command({
 			name: messages['Stage'],
 			tooltip: messages['Stage the change'],
-			imageClass: "git-sprite-stage", //$NON-NLS-0$
-			spriteClass: "gitCommandSprite", //$NON-NLS-0$
+			imageClass: newLook ? "core-sprite-check" : "git-sprite-stage", //$NON-NLS-0$ //$NON-NLS-1$
+			spriteClass: newLook ? "commandSprite" : "gitCommandSprite", //$NON-NLS-0$ //$NON-NLS-1$
 			id: "eclipse.orion.git.stageCommand", //$NON-NLS-0$
 			callback: function(data) {
 				var items = forceArray(data.items);
@@ -2983,7 +2983,7 @@ var exports = {};
 						messages["Staging changes"]);
 					deferred.then(
 						function(jsonData){
-							explorer.changedItem(items);
+							newLook? data.handler.changedItem(items) : explorer.changedItem(items);
 						}, displayErrorOnStatus
 					);
 				} else {
@@ -2998,7 +2998,7 @@ var exports = {};
 						"Staging changes");
 					deferred.then( //$NON-NLS-0$
 						function(jsonData){
-							explorer.changedItem(items);
+							newLook? data.handler.changedItem(items) : explorer.changedItem(items);
 						}, displayErrorOnStatus
 					);
 				}			
@@ -3021,8 +3021,8 @@ var exports = {};
 		var unstageCommand = new mCommands.Command({
 			name: messages['Unstage'],
 			tooltip: messages['Unstage the change'],
-			imageClass: "git-sprite-unstage", //$NON-NLS-0$
-			spriteClass: "gitCommandSprite", //$NON-NLS-0$
+			imageClass: newLook ? "core-sprite-check_on" : "git-sprite-unstage", //$NON-NLS-0$  //$NON-NLS-1$
+			spriteClass: newLook ?  "commandSprite" : "gitCommandSprite", //$NON-NLS-0$ //$NON-NLS-1$
 			id: "eclipse.orion.git.unstageCommand", //$NON-NLS-0$
 			callback: function(data) {
 				var items = forceArray(data.items);
@@ -3037,7 +3037,7 @@ var exports = {};
 						messages['Staging changes']);
 					deferred.then(
 						function(jsonData){
-							explorer.changedItem(items);
+							newLook? data.handler.changedItem(items) : explorer.changedItem(items);
 						}, displayErrorOnStatus
 					);
 				} else {
@@ -3052,7 +3052,7 @@ var exports = {};
 						messages['Staging changes']);
 					deferred.then(
 						function(jsonData){
-							explorer.changedItem(items);
+							newLook? data.handler.changedItem(items) : explorer.changedItem(items);
 						}, displayErrorOnStatus
 					);
 				}
@@ -3073,8 +3073,8 @@ var exports = {};
 		commandService.addCommand(unstageCommand);
 		
 		var commitCommand = new mCommands.Command({
-			name: messages["Commit"], //$NON-NLS-0$
-			tooltip: messages["Commit"], //$NON-NLS-0$
+			name: newLook ? messages["SmartCommit"] : messages["Commit"], //$NON-NLS-0$
+			tooltip: newLook ? "" : messages["Commit"], //$NON-NLS-0$
 			id: "eclipse.orion.git.commitCommand", //$NON-NLS-0$
 			parameters: commitMessageParameters,
 			callback: function(data) {
@@ -3323,7 +3323,7 @@ var exports = {};
 		var pushLogic = mGitPushLogic(pushOptions);
 		var commitLogic = mGitCommitLogic(commitOptions);
 		
-		var commitMessageParameters = commitLogic.parameters;
+		var commitMessageParameters = commitLogic.createParameters(false);
 		var commitCallback = commitLogic.perform;
 		var displayErrorOnStatus = commitLogic.displayErrorOnStatus;
 		var pushCallback = pushLogic.perform;

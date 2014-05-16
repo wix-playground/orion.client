@@ -57,6 +57,7 @@ mBootstrap.startup().then(function(core) {
 	// define commands
 	mGitCommands.createFileCommands(serviceRegistry, commandRegistry, explorer, "pageActions", "selectionTools"); //$NON-NLS-1$ //$NON-NLS-0$
 	mGitCommands.createGitClonesCommands(serviceRegistry, commandRegistry, explorer, "pageActions", "selectionTools", fileClient); //$NON-NLS-1$ //$NON-NLS-0$
+	mGitCommands.createGitStatusCommands(serviceRegistry, commandRegistry, explorer, true);
 
 	// define the command contributions - where things appear, first the groups
 	commandRegistry.addCommandGroup("pageActions", "eclipse.gitGroup", 100); //$NON-NLS-1$ //$NON-NLS-0$

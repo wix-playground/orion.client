@@ -1172,6 +1172,8 @@ define([
 	 * @param {Boolean} options.clientCollect specifies whether the client will collect the parameters in its
 	 *			callback.  Default is false, which means the callback will not be called until an attempt has
 	 *			been made to collect parameters.
+	 * @param {Boolean} options.getParameterElement a function used to look up the DOM element for a given parameter.
+	 *
 	 * @param {Function} [getParameters] a function used to define the parameters just before the command is invoked.  This is used
 	 *			when a particular invocation of the command will change the parameters. The function will be passed
 	 *          the CommandInvocation as a parameter. Any stored parameters will be ignored, and
@@ -1188,6 +1190,7 @@ define([
 		this.optionsRequested = false;
 		this.getParameters = getParameters;
 		this.clientCollect = options && options.clientCollect;
+		this.getParameterElement = options && options.getParameterElement;
 
 	}
 	ParametersDescription.prototype = /** @lends orion.commands.ParametersDescription.prototype */ {	

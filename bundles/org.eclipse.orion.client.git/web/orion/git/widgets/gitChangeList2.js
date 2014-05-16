@@ -77,8 +77,8 @@ define([
 				onComplete(parentItem);
 			} else if (parentItem.Type === "Root") {
 				var that = this;
-				if (that.status) {
-					onComplete(that._sortBlock(that.getGroups(that.prefix)));
+				if (parentItem.children) {
+					onComplete(parentItem.children);
 					return;
 				}
 				var location = this.location;
@@ -109,6 +109,9 @@ define([
 															status.Clone.Config.push(config[i]);
 													}
 													var children = parentItem.children = that._sortBlock(that.getGroups(that.prefix));
+													if (that.prefix === "all") {
+														children.unshift({Type: "CommitMsg"});
+													}
 													children.forEach(function(child) {
 														child.parent = parentItem;
 													});
@@ -136,7 +139,7 @@ define([
 		},
 		getId: function(/* item */ item){
 			var prefix = this.prefix;
-			if (item instanceof Array && item.length > 0) {
+			if (item instanceof Array && item.length > 0 || item.Type === "Root") {
 				return prefix + "Root"; //$NON-NLS-0$
 			} else if (mGitUIUtil.isChange(item)) {
 				return  prefix + item.name; 
@@ -273,6 +276,17 @@ define([
 	}
 	GitChangeListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {
+		changedItem: function(items) {
+			var parent = items[0].parent;
+			var that = this;
+			var deferred = new Deferred();
+			parent.children = parent.Children = null;
+			this.model.getChildren(parent, function(children) {
+				that.myTree.refresh.bind(that.myTree)(parent, children, false);
+				deferred.resolve(children);
+			});
+			return deferred;
+		},
 		destroy: function() {
 			if (this._selectionListener) {
 				this.selection.removeEventListener("selectionChanged", this._selectionListener);
@@ -312,6 +326,15 @@ define([
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.stageCommand", 200); //$NON-NLS-0$
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
 				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
+			}  else if (this.prefix === "all") {
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.showPatchCommand", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
+				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				
+				//this.commandService.addCommandGroup(actionsNodeScope, "eclipse.gitCommitGroup", 1000, "Commit", null, null, null, "Commit", null, "eclipse.orion.git.commitCommand"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$ 	549
+				//this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commitCommand", 100, "eclipse.gitCommitGroup"); //$NON-NLS-0$ 	550
+				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commitAndPushCommand", 200, "eclipse.gitCommitGroup"); //$NON-NLS-0$ 
+				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
 			}
 			this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this, this, "button"); //$NON-NLS-0$
 			
@@ -346,11 +369,56 @@ define([
 			var explorer = this.explorer;
 			switch (col_no) {
 				case 0:
-					if (mGitUIUtil.isChange(item) || item.Type === "Diff") {
-						td = document.createElement("td"); //$NON-NLS-0$
-						div = document.createElement("div"); //$NON-NLS-0$
-						div.className = "sectionTableItem"; //$NON-NLS-0$
-						td.appendChild(div);
+					td = document.createElement("td"); //$NON-NLS-0$
+					div = document.createElement("div"); //$NON-NLS-0$
+					div.className = "sectionTableItem"; //$NON-NLS-0$
+					td.appendChild(div);
+					if (item.Type === "CommitMsg") {
+						var outerDiv = document.createElement("div"); //$NON-NLS-0$
+						outerDiv.id = "commitMsg";
+						outerDiv.className = "gitCommitMessage toolComposite";
+						
+						
+						var slideContainer = document.createElement("div");
+						slideContainer.id = "commitMsgslideContainer";
+						slideContainer.className = "slideParameters slideContainer";
+						
+						var topRow = document.createElement("div");
+						
+						var textArea = document.createElement("textarea"); //$NON-NLS-0$
+						textArea.rows = 5;
+						textArea.type = "textarea"; //$NON-NLS-0$
+						textArea.id = "nameparameterCollector";
+						textArea.placeholder = messages["SmartCommit"];
+						topRow.appendChild(textArea);
+												
+						slideContainer.appendChild(topRow);
+						
+						var bottomRow = document.createElement("div");
+
+						var bottomLeft = document.createElement("span");
+						bottomLeft.className = "layoutLeft parameters";
+						var bottomRight = document.createElement("span");
+						bottomRight.className = "layoutRight parametersDismiss";
+						
+						bottomRow.appendChild(bottomLeft);
+						bottomRow.appendChild(bottomRight);
+						
+					 	slideContainer.appendChild(bottomRow);
+						outerDiv.appendChild(slideContainer);
+						div.appendChild(outerDiv);
+						
+						topRow.style.width = "100%";
+						textArea.style.width = "calc(100% - 16px)";
+						bottomRow.style.width = "100%";
+						slideContainer.style.width = "100%";
+						
+						
+						tableRow.classList.remove("selectableNavRow");
+						explorer.commandService.registerCommandContribution(outerDiv.id, "eclipse.orion.git.commitCommand", 100); //$NON-NLS-0$
+						explorer.commandService.renderCommands(outerDiv.id, outerDiv, explorer, explorer, "button"); //$NON-NLS-0$
+					}
+					else if (mGitUIUtil.isChange(item) || item.Type === "Diff") {
 	
 						this.getExpandImage(tableRow, div);
 	
@@ -376,17 +444,9 @@ define([
 						var itemLabel = document.createElement("span"); //$NON-NLS-0$
 						itemLabel.textContent = item.name;
 						div.appendChild(itemLabel);
-	
-						return td;
 					} else {
 						// render the compare widget
-						td = document.createElement("td"); //$NON-NLS-0$
 						td.colSpan = 2;
-	
-						div = document.createElement("div"); //$NON-NLS-0$
-						div.className = "sectionTableItem"; //$NON-NLS-0$
-						td.appendChild(div);
-	
 						var actionsWrapper = document.createElement("div"); //$NON-NLS-0$
 						actionsWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
 						div.appendChild(actionsWrapper);
@@ -426,9 +486,8 @@ define([
 								before : true
 							}
 						);
-						return td;
 					}
-					break;
+					return td;
 			}
 		}
 	});

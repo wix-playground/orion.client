@@ -78,7 +78,8 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 			this._tableRowElement = options.tableRowElement || "tr"; //$NON-NLS-0$
 			
 			// Generate the table
-			this._root = this._treeModel.getRoot(function (root) {
+			this._treeModel.getRoot(function (root) {
+				tree._root = root;
 				if (tree._showRoot) {
 					root._depth = 0;
 					tree._generate([root], 0);
@@ -177,6 +178,10 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 			var tree;
 			if (parentId === this._id) {  // root of tree
 				this._removeChildRows(parentId);
+				this._generateChildren(children, 0);
+				this._rowsChanged();
+			} else if (parentId === this._treeModel.getId(this._root)) {
+				this._removeAllRows();
 				this._generateChildren(children, 0);
 				this._rowsChanged();
 			} else {  // node in the tree
@@ -301,6 +306,13 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 			for (var j=0; j<toRemove.length; j++) {
 				var child = toRemove[j];
 				child.parentNode.removeChild(child);
+			}
+		},
+		
+		_removeAllRows: function() {
+			var rows = lib.$$array(".treeTableRow", this._parent); //$NON-NLS-0$
+			for (var j=0; j<rows.length; j++) {
+				rows[j].parentNode.removeChild(rows[j]);
 			}
 		},
 		

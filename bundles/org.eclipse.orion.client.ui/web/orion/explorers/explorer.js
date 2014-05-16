@@ -717,10 +717,12 @@ exports.ExplorerRenderer = (function() {
 				this.explorer.refreshSelection();
 				this.explorer.initNavHandler();			
 			}
+			var even = "darkSectionTreeTableRow";
+			var odd = "lightSectionTreeTableRow";
 			if(lib.$(".sectionTreeTable", this.tableNode.parentNode) || lib.$(".treetable", this.tableNode.parentNode)) {
 				lib.$$array(".treeTableRow", this.tableNode).forEach(function(node, i) { //$NON-NLS-0$
-					var on = (!(i % 2)) ? "darkSectionTreeTableRow" : "lightSectionTreeTableRow";
-					var off = (on === "darkSectionTreeTableRow") ? "lightSectionTreeTableRow" : "darkSectionTreeTableRow";
+					var on = (!(i % 2)) ? odd : even;
+					var off = (on === odd) ? even : odd;
 					node.classList.add(on);
 					node.classList.remove(off);
 				});

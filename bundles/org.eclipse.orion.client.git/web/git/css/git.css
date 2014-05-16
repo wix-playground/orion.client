@@ -18,6 +18,26 @@
 	background-position: left top; 
 }
 
+.gitCommitMessage .orionButton{
+	margin: 15px;
+	padding: 15px;
+	border: 1px solid #DDD;
+	border-radius: 5px;
+	width: calc(100% - 10px);
+	background-color: transparent;
+	text-align:center;
+}
+
+.gitCommitMessage .orionButton:hover {
+	background-color: transparent;
+	box-shadow: none;
+}
+
+.gitCommitMessage .orionButton:focus {
+	background-color: transparent;
+	box-shadow: none;
+}
+
 .gitAuthorImage {
 	border: 1px solid lightGrey;
 	padding: 2px;

@@ -12,8 +12,8 @@
 /*globals document define*/
 
 define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','orion/git/widgets/CommitDialog',
-        'orion/git/logic/gitCommon', 'orion/i18nUtil'], 
-		function(messages,mCommandRegistry,Deferred,mCommit,mGitCommon,i18nUtil) {
+        'orion/git/logic/gitCommon', 'orion/i18nUtil', 'orion/webui/littlelib'], 
+		function(messages,mCommandRegistry,Deferred,mCommit,mGitCommon,i18nUtil, lib) {
 	
 	var handleProgressServiceResponse = mGitCommon.handleProgressServiceResponse;
 	
@@ -49,11 +49,13 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','ori
 			}
 		});
 		
-		var parameters = new mCommandRegistry.ParametersDescription(
+		var createParameters = function(newLook) {return new mCommandRegistry.ParametersDescription(
 				[new mCommandRegistry.CommandParameter('name', 'text', messages['Commit message:'], "", 4), //$NON-NLS-0$  //$NON-NLS-1$  //$NON-NLS-3$
-				 new mCommandRegistry.CommandParameter('amend', 'boolean', messages['Amend:'], false, null, amendEventListener), //$NON-NLS-0$  //$NON-NLS-1$
-				 new mCommandRegistry.CommandParameter('changeId', 'boolean', messages['ChangeId:'], false)], //$NON-NLS-0$  //$NON-NLS-1$
-				 {hasOptionalParameters: true});
+				 new mCommandRegistry.CommandParameter('amend', 'boolean', newLook ? messages['SmartAmend'] : messages['Amend:'], false, null, amendEventListener), //$NON-NLS-0$  //$NON-NLS-1$
+				 new mCommandRegistry.CommandParameter('changeId', 'boolean', newLook ? messages['SmartChangeId'] : messages['ChangeId:'], false)], //$NON-NLS-0$  //$NON-NLS-1$
+				 {hasOptionalParameters: true, getParameterElement: newLook ? function(parm, parmArea) {
+				 	return lib.$("#"+ parm.name + "parameterCollector", parmArea.parentNode.parentNode);
+				 } : null})};
 		
 		var setGitCloneConfig = function(key,value,location) {
 			var gitService = serviceRegistry.getService("orion.git.provider"); //$NON-NLS-0$
@@ -200,7 +202,7 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','ori
 		};
 		return {
 			perform:perform,
-			parameters:parameters,
+			createParameters:createParameters,
 			displayErrorOnStatus:displayErrorOnStatus,
 			amendEventListener:amendEventListener,
 			setGitCloneConfig: setGitCloneConfig
