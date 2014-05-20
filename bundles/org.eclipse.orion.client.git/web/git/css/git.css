@@ -38,6 +38,10 @@
 	box-shadow: none;
 }
 
+.gitCommitMessage .slideContainerActive + .orionButton {
+	display: none;
+}
+
 .gitAuthorImage {
 	border: 1px solid lightGrey;
 	padding: 2px;
