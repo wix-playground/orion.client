@@ -50,12 +50,23 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','ori
 		});
 		
 		var createParameters = function(newLook) {return new mCommandRegistry.ParametersDescription(
-				[new mCommandRegistry.CommandParameter('name', 'text', messages['Commit message:'], "", 4), //$NON-NLS-0$  //$NON-NLS-1$  //$NON-NLS-3$
-				 new mCommandRegistry.CommandParameter('amend', 'boolean', newLook ? messages['SmartAmend'] : messages['Amend:'], false, null, amendEventListener), //$NON-NLS-0$  //$NON-NLS-1$
-				 new mCommandRegistry.CommandParameter('changeId', 'boolean', newLook ? messages['SmartChangeId'] : messages['ChangeId:'], false)], //$NON-NLS-0$  //$NON-NLS-1$
-				 {hasOptionalParameters: true, getParameterElement: newLook ? function(parm, parmArea) {
-				 	return lib.$("#"+ parm.name + "parameterCollector", parmArea.parentNode.parentNode);
-				 } : null})};
+				[
+					new mCommandRegistry.CommandParameter('name', 'text', messages['Commit message:'], "", 4), //$NON-NLS-0$  //$NON-NLS-1$  //$NON-NLS-3$
+					new mCommandRegistry.CommandParameter('amend', 'boolean', newLook ? messages['SmartAmend'] : messages['Amend:'], false, null, amendEventListener), //$NON-NLS-0$  //$NON-NLS-1$
+					new mCommandRegistry.CommandParameter('changeId', 'boolean', newLook ? messages['SmartChangeId'] : messages['ChangeId:'], false) //$NON-NLS-0$  //$NON-NLS-1$
+				],{
+					hasOptionalParameters: true, 
+					getParameterElement: newLook ? function(parm, parmArea) {
+						return lib.$("#"+ parm.name + "parameterCollector", parmArea.parentNode.parentNode);
+					} : null,
+					getSubmitName: function(commandInvocation) { 
+						var items = commandInvocation.items;
+						if (!Array.isArray(items)) {
+							items = [items];
+						}
+						return i18nUtil.formatMessage(messages['SmartCountCommit'], items.length);
+					}
+				})};
 		
 		var setGitCloneConfig = function(key,value,location) {
 			var gitService = serviceRegistry.getService("orion.git.provider"); //$NON-NLS-0$
@@ -114,7 +125,7 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','ori
 		var perform = function(data) {
 			var d = new Deferred();
 				
-			var item = data.items.status;
+			var item = data.items.status || data.handler.status;
 			var location = item.Clone.ConfigLocation;
 			var handleError = function(error){
 				handleProgressServiceResponse(error, {}, serviceRegistry);

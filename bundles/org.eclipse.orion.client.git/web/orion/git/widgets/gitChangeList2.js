@@ -16,11 +16,13 @@ define([
 	'orion/Deferred',
 	'orion/explorers/explorer',
 	'orion/git/uiUtil',
+	'orion/git/util',
 	'orion/webui/tooltip',
 	'orion/selection',
 	'orion/webui/littlelib',
+	'orion/commands',
 	'orion/objects'
-], function(messages, Deferred, mExplorer, mGitUIUtil, mTooltip, mSelection , lib, objects) {
+], function(messages, Deferred, mExplorer, mGitUIUtil, mGitUtil, mTooltip, mSelection , lib, mCommands, objects) {
 	
 	var interestedUnstagedGroup = [ "Missing", "Modified", "Untracked", "Conflicting" ]; //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 	var interestedStagedGroup = [ "Added", "Changed", "Removed" ]; //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -54,13 +56,14 @@ define([
 		this.changes = options.changes;
 		this.gitClient = options.gitClient;
 		this.progressService = options.progressService;
+		this.section = options.section;
 	}
 	GitChangeListModel.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListModel.prototype, /** @lends orion.git.GitChangeListModel.prototype */ {
 		destroy: function(){
 		},
 		getRoot: function(onItem){
-			onItem(this.changes || {Type: "Root"});
+			onItem(this.changes || (this.root || (this.root = {Type: "Root"})));
 		},
 		getGroups: function(prefix) {
 			switch(prefix) {
@@ -84,6 +87,8 @@ define([
 				var location = this.location;
 				var progressService = this.progressService;
 				var gitClient = this.gitClient;
+				var progress = this.section.createProgressMonitor();
+				progress.begin("Getting changes");
 				progressService.progress(gitClient.getGitStatus(location), messages['Loading...']).then( //$NON-NLS-0$
 				function(resp) {
 					if (resp.Type === "Status") { //$NON-NLS-0$
@@ -110,27 +115,32 @@ define([
 													}
 													var children = parentItem.children = that._sortBlock(that.getGroups(that.prefix));
 													if (that.prefix === "all") {
-														children.unshift({Type: "CommitMsg"});
+														children.unshift({Type: "CommitMsg", selectable: false});
 													}
 													children.forEach(function(child) {
 														child.parent = parentItem;
 													});
+													
+													progress.done();
 													onComplete(children);
 												}, function(error) {
+													progress.done();
 													that.handleError(error);
 												});
 								}, function(error) {
+									progress.done();
 									that.handleError(error);
 								});
 					}
 				}, function(error) {
+					progress.done();
 					that.handleError(error);
 				});
 			} else if (mGitUIUtil.isChange(parentItem) || parentItem.Type === "Diff") {
 			// lazy creation, this is required for selection  model to be able to traverse into children
 				if (!parentItem.children) {
 					parentItem.children = [];
-					parentItem.children.push({ DiffLocation : parentItem.DiffLocation, Type : "Compare", parent : parentItem});//$NON-NLS-0$
+					parentItem.children.push({ DiffLocation : parentItem.DiffLocation, Type : "Compare", parent : parentItem, selectable: false});//$NON-NLS-0$
 				}
 				onComplete(parentItem.children);
 			} else {
@@ -258,9 +268,10 @@ define([
 	 * @extends orion.explorers.Explorer
 	 */
 	function GitChangeListExplorer(options) {
-		var renderer = new GitChangeListRenderer({registry: options.serviceRegistry, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: false}, this); //$NON-NLS-0$
+		var renderer = new GitChangeListRenderer({registry: options.serviceRegistry, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: true}, this); //$NON-NLS-0$
+		//renderer.selectionPolicy = "cursorOnly";
 		mExplorer.Explorer.call(this, options.serviceRegistry, options.selection, renderer, options.commandRegistry);	
-		this.checkbox = false;
+		this.checkbox = true;
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
 		this.prefix = options.prefix;
@@ -271,8 +282,9 @@ define([
 		this.handleError = options.handleError;
 		this.gitClient = options.gitClient;
 		this.progressService = options.progressService;
+		this.commitActionScope = "commitActions"; //$NON-NLS-0$
 		this.createSelection();
-		this.updateCommands();
+		this.createCommands();
 	}
 	GitChangeListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {
@@ -283,6 +295,10 @@ define([
 			parent.children = parent.Children = null;
 			this.model.getChildren(parent, function(children) {
 				that.myTree.refresh.bind(that.myTree)(parent, children, false);
+				var selection = children.filter(function(item) {
+					return that.model.isStaged(item.type);
+				});
+				that.selection.setSelections(selection);
 				deferred.resolve(children);
 			});
 			return deferred;
@@ -296,15 +312,19 @@ define([
 		display: function() {
 			var that = this;
 			var deferred = new Deferred();
-			var model =  new GitChangeListModel({registry: this.registry, progress: this.progressService, prefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes, gitClient: this.gitClient, progressService: this.progressService});
+			var model =  new GitChangeListModel({registry: this.registry, progress: this.progressService, prefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes, gitClient: this.gitClient, progressService: this.progressService, section: this.section});
+//			this.createTree(this.parentId, model, {selectionPolicy: "cursorOnly", onComplete: function() {
 			this.createTree(this.parentId, model, {onComplete: function() {
+				that.updateCommands();
+				var model = that.model;
+				that.selection.setSelections(model._sortBlock(model.getGroups("staged")));
 				that.status = model.status;
 				deferred.resolve();
 			}});
 			return deferred;
 		},
 		isRowSelectable: function(modelItem) {
-			return mGitUIUtil.isChange(modelItem);
+			return false; // mGitUIUtil.isChange(modelItem);
 		},
 //		getItemCount: function() {
 //			return this.changes.length; //TODO: Could be null
@@ -327,17 +347,69 @@ define([
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
 				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
 			}  else if (this.prefix === "all") {
-				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.showPatchCommand", 100); //$NON-NLS-0$
-				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutCommand", 300); //$NON-NLS-0$
-				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.stageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
-				
-				//this.commandService.addCommandGroup(actionsNodeScope, "eclipse.gitCommitGroup", 1000, "Commit", null, null, null, "Commit", null, "eclipse.orion.git.commitCommand"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$ 	549
-				//this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commitCommand", 100, "eclipse.gitCommitGroup"); //$NON-NLS-0$ 	550
-				this.commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commitAndPushCommand", 200, "eclipse.gitCommitGroup"); //$NON-NLS-0$ 
-				this.commandService.registerCommandContribution("DefaultActionWrapper", "eclipse.orion.git.unstageCommand", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.showStagedPatchCommand", 200); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutStagedCommand", 300); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(this.commitActionScope, "eclipse.orion.git.commitCommand", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "orion.explorer.selectAll", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(selectionNodeScope, "orion.explorer.deselectAllCommand", 100); //$NON-NLS-0$
 			}
 			this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this, this, "button"); //$NON-NLS-0$
+			this.commandService.renderCommands(this.commitActionScope, this.commitActionScope, [], this, "button"); //$NON-NLS-0$
+			this.commandService.renderCommands(selectionNodeScope, selectionNodeScope, [], this,
+							"button", {"Clone" : this.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
+		},
+		createCommands: function(){
+			var that = this;
+			var selectAllCommand = new mCommands.Command({
+				tooltip : messages["Select all"],
+				imageClass : "core-sprite-check", //$NON-NLS-0$
+				id: "orion.explorer.selectAll", //$NON-NLS-0$
+				visibleWhen : function(item) {
+					var result = false;
+					that.model.getRoot(function(root) {
+						var selection = root.children.filter(function(item) {
+							return !that.model.isStaged(item.type) && mGitUtil.isChange(item);
+						});
+						result = selection.length > 0;
+					});
+					return result;
+				},
+				callback : function(data) {
+					that.model.getRoot(function(root) {
+						var selection = root.children.filter(function(item) {
+							return !that.model.isStaged(item.type) && mGitUtil.isChange(item);
+						});
+						that.commandService.runCommand("eclipse.orion.git.stageCommand", selection, that, null, that.status);
+					});
+				}
+			});
 			
+			var deselectAllCommand = new mCommands.Command({
+				tooltip : messages["Deselect all"],
+				imageClass : "core-sprite-check_on", //$NON-NLS-0$
+				id: "orion.explorer.deselectAllCommand", //$NON-NLS-0$
+				visibleWhen : function(item) {
+					var result = false;
+					that.model.getRoot(function(root) {
+						var selection = root.children.filter(function(item) {
+							return that.model.isStaged(item.type);
+						});
+						result = selection.length === (root.children.length - 1);
+					});
+					return result;
+				},
+				callback : function(data) {
+					that.model.getRoot(function(root) {
+						var selection = root.children.filter(function(item) {
+							return that.model.isStaged(item.type);
+						});
+						that.commandService.runCommand("eclipse.orion.git.unstageCommand", selection, that, null, that.status);
+					});
+				}
+			});
+			
+			this.commandService.addCommand(selectAllCommand);
+			this.commandService.addCommand(deselectAllCommand);
 		},
 		createSelection: function(){
 			if (!this.selection) {
@@ -350,10 +422,14 @@ define([
 					var selectionTools = lib.node(section.selectionNode.id);
 					if (selectionTools) {
 						commandService.destroy(selectionTools);
-						commandService.renderCommands(section.selectionNode.id, selectionTools, event.selections, that,
-							"button", {"Clone" : that.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
+						commandService.renderCommands(section.selectionNode.id, selectionTools, event.selections, that, "button", {"Clone" : that.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
 					}
+					if (lib.node(that.commitActionScope)) {
+						commandService.destroy(that.commitActionScope);
+					}
+					commandService.renderCommands(that.commitActionScope, that.commitActionScope, event.selections, that, "button"); //$NON-NLS-0$
 				});
+				
 			}
 		}
 	});
@@ -375,12 +451,11 @@ define([
 					td.appendChild(div);
 					if (item.Type === "CommitMsg") {
 						var outerDiv = document.createElement("div"); //$NON-NLS-0$
-						outerDiv.id = "commitMsg";
 						outerDiv.className = "gitCommitMessage toolComposite";
-						
+						td.colSpan = 2;
 						
 						var slideContainer = document.createElement("div");
-						slideContainer.id = "commitMsgslideContainer";
+						slideContainer.id = explorer.commitActionScope + "slideContainer";
 						slideContainer.className = "slideParameters slideContainer";
 						
 						var topRow = document.createElement("div");
@@ -406,6 +481,11 @@ define([
 						
 					 	slideContainer.appendChild(bottomRow);
 						outerDiv.appendChild(slideContainer);
+						
+						var commitActions = document.createElement("div");
+						commitActions.id = commitActions.className = explorer.commitActionScope;
+						outerDiv.appendChild(commitActions);
+						
 						div.appendChild(outerDiv);
 						
 						topRow.style.width = "100%";
@@ -413,10 +493,7 @@ define([
 						bottomRow.style.width = "100%";
 						slideContainer.style.width = "100%";
 						
-						
 						tableRow.classList.remove("selectableNavRow");
-						explorer.commandService.registerCommandContribution(outerDiv.id, "eclipse.orion.git.commitCommand", 100); //$NON-NLS-0$
-						explorer.commandService.renderCommands(outerDiv.id, outerDiv, explorer, explorer, "button"); //$NON-NLS-0$
 					}
 					else if (mGitUIUtil.isChange(item) || item.Type === "Diff") {
 	
@@ -489,6 +566,17 @@ define([
 					}
 					return td;
 			}
+		},
+		onCheckedFunc: function(rowId, checked, manually, item) {
+			//stage or unstage
+			if (checked) {
+				this.explorer.commandService.runCommand("eclipse.orion.git.stageCommand", [item], this.explorer);
+			} else {
+				this.explorer.commandService.runCommand("eclipse.orion.git.unstageCommand", [item], this.explorer);
+			}
+		}, 
+		getCheckedFunc: function(item){
+			return this.explorer.model.isStaged(item.type);
 		}
 	});
 	

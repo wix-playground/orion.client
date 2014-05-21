@@ -38,7 +38,7 @@
 	box-shadow: none;
 }
 
-.gitCommitMessage .slideContainerActive + .orionButton {
+.gitCommitMessage .slideContainerActive + .commitActions {
 	display: none;
 }
 

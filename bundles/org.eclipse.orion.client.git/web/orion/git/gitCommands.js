@@ -3018,6 +3018,31 @@ var exports = {};
 		
 		commandService.addCommand(stageCommand);
 		
+		var doUnstage = function(data) {
+			var items = forceArray(data.items);
+				
+			var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
+			var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+			var deferred;
+			if (items.length === 1){				
+				deferred = progress.progress(serviceRegistry.getService("orion.git.provider").unstage(items[0].indexURI, items[0].name), 'Unstaging changes');
+				progressService.createProgressMonitor(
+					deferred, //$NON-NLS-0$
+					messages['Staging changes']);
+			} else {
+				var paths = [];
+				for (var i = 0; i < items.length; i++) {
+					paths[i] = items[i].name;
+				}
+				
+				deferred = progress.progress(serviceRegistry.getService("orion.git.provider").unstage(data.userData.Clone.IndexLocation, paths), 'Unstaging changes'); //$NON-NLS-0$
+				progressService.createProgressMonitor(
+					deferred,
+					messages['Staging changes']);
+			}
+			return deferred.then(function() {return items;});
+		};
+		
 		var unstageCommand = new mCommands.Command({
 			name: messages['Unstage'],
 			tooltip: messages['Unstage the change'],
@@ -3025,37 +3050,11 @@ var exports = {};
 			spriteClass: newLook ?  "commandSprite" : "gitCommandSprite", //$NON-NLS-0$ //$NON-NLS-1$
 			id: "eclipse.orion.git.unstageCommand", //$NON-NLS-0$
 			callback: function(data) {
-				var items = forceArray(data.items);
-				
-				var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
-				var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
-
-				if (items.length === 1){				
-					var deferred = progress.progress(serviceRegistry.getService("orion.git.provider").unstage(items[0].indexURI, items[0].name), 'Unstaging changes');
-					progressService.createProgressMonitor(
-						deferred, //$NON-NLS-0$
-						messages['Staging changes']);
-					deferred.then(
-						function(jsonData){
-							newLook? data.handler.changedItem(items) : explorer.changedItem(items);
-						}, displayErrorOnStatus
-					);
-				} else {
-					var paths = [];
-					for (var i = 0; i < items.length; i++) {
-						paths[i] = items[i].name;
-					}
-					
-					var deferred = progress.progress(serviceRegistry.getService("orion.git.provider").unstage(data.userData.Clone.IndexLocation, paths), 'Unstaging changes'); //$NON-NLS-0$
-					progressService.createProgressMonitor(
-						deferred,
-						messages['Staging changes']);
-					deferred.then(
-						function(jsonData){
-							newLook? data.handler.changedItem(items) : explorer.changedItem(items);
-						}, displayErrorOnStatus
-					);
-				}
+				doUnstage(data).then(
+					function(items){
+						newLook? data.handler.changedItem(items) : explorer.changedItem(items);
+					}, displayErrorOnStatus
+				);
 			},
 			visibleWhen: function(item) {
 				var items = forceArray(item);
@@ -3177,6 +3176,59 @@ var exports = {};
 		});
 
 		commandService.addCommand(checkoutCommand);
+		
+		var checkoutStagedCommand = new mCommands.Command({
+			name: messages['Discard'],
+			tooltip: messages["Checkout all the selected files, discarding all changes"],
+			imageClass: "git-sprite-checkout", //$NON-NLS-0$
+			spriteClass: "gitCommandSprite", //$NON-NLS-0$
+			id: "eclipse.orion.git.checkoutStagedCommand", //$NON-NLS-0$
+			callback: function(data) {				
+				var dialog = serviceRegistry.getService("orion.page.dialog"); //$NON-NLS-0$
+				dialog.confirm(messages["Your changes to the selected files will be discarded and cannot be recovered."] + "\n" + //$NON-NLS-1$
+					messages['Are you sure you want to continue?'],
+					function(doit) {
+						if (!doit) {
+							return;
+						}
+						
+						doUnstage(data).then(function(items) {
+							var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
+							var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+							
+							var paths = [];
+							for (var i = 0; i < items.length; i++) {
+								paths[i] = items[i].name;
+							}
+							
+							var deferred = progress.progress(serviceRegistry.getService("orion.git.provider").checkoutPath(data.userData.Clone.Location, paths), messages['Resetting local changes']); //$NON-NLS-0$
+							progressService.createProgressMonitor(
+								deferred,
+								messages['Resetting local changes']);
+							return deferred.then(
+								function(jsonData){
+									newLook? data.handler.changedItem(items) : explorer.changedItem(items);
+								}, displayErrorOnStatus
+							);
+						});				
+					}
+				);
+			},
+			visibleWhen: function(item) {
+				var items = forceArray(item);
+				checkoutStagedCommand.name = i18nUtil.formatMessage(messages["Discard"], items.length);
+				if (items.length === 0)
+					return false;
+
+				for (var i = 0; i < items.length; i++) {
+					if (!mGitUtil.isChange(items[i]) || mGitUtil.isUnstaged(items[i]))
+						return false; 
+				}
+				return true;
+			}
+		});
+
+		commandService.addCommand(checkoutStagedCommand);
 
 		var showPatchCommand = new mCommands.Command({
 			name: messages["Show Patch"],
@@ -3206,6 +3258,36 @@ var exports = {};
 		});
 		
 		commandService.addCommand(showPatchCommand);
+		
+		var showStagedPatchCommand = new mCommands.Command({
+			name: messages["Show Patch"],
+			tooltip: messages["Show checked changes as a patch"],
+			id: "eclipse.orion.git.showStagedPatchCommand", //$NON-NLS-0$
+			hrefCallback : function(data) {
+				var items = forceArray(data.items);
+				
+			var url = data.userData.Clone.DiffLocation.replace("\/Default\/", "\/Cached\/") + "?parts=diff"; //$NON-NLS-0$
+				for (var i = 0; i < items.length; i++) {
+					url += "&Path="; //$NON-NLS-0$
+					url += items[i].name;
+				}
+				return url;
+			},
+			visibleWhen: function(item) {
+				var items = forceArray(item);
+				if (items.length === 0)
+					return false;
+					
+				for (var i = 0; i < items.length; i++) {
+					if (!mGitUtil.isChange(items[i]) || mGitUtil.isUnstaged(items[i]))
+						return false; 
+				}
+				
+				return true;
+			}
+		});
+		
+		commandService.addCommand(showStagedPatchCommand);
 		
 		// Rebase commands
 		

@@ -91,17 +91,18 @@ define([
 		 * @param {Object} item the item on which the command should run.
 		 * @param {Object} handler the handler for the command.
 		 * @param {orion.commands.ParametersDescription} parameters used on this invocation.  Optional.
+		 * @param {Object} [userData] Optional user data that should be attached to generated command callbacks
 		 *
 		 * Note:  The current implementation will only run the command if a URL binding has been
 		 * specified, or if an item to run the command against has been specified.  
 		 */
-		runCommand: function(commandId, item, handler, parameters) {
+		runCommand: function(commandId, item, handler, parameters, userData) {
 			var self = this;
 			if (item) {
 				var command = this._commandList[commandId];
 				var enabled = command && (command.visibleWhen ? command.visibleWhen(item) : true);
 				if (enabled && command.callback) {
-					self._invoke(new Commands.CommandInvocation(handler, item, null, command, self), parameters);
+					self._invoke(new Commands.CommandInvocation(handler, item, userData, command, self), parameters);
 				}
 			} else {
 				//TODO should we be keeping invocation context for commands without bindings? 
@@ -1172,7 +1173,8 @@ define([
 	 * @param {Boolean} options.clientCollect specifies whether the client will collect the parameters in its
 	 *			callback.  Default is false, which means the callback will not be called until an attempt has
 	 *			been made to collect parameters.
-	 * @param {Boolean} options.getParameterElement a function used to look up the DOM element for a given parameter.
+	 * @param {Function} options.getParameterElement a function used to look up the DOM element for a given parameter.
+	 * @param {Function} options.getSubmitName a function used to return a name to use for the Submit button.
 	 *
 	 * @param {Function} [getParameters] a function used to define the parameters just before the command is invoked.  This is used
 	 *			when a particular invocation of the command will change the parameters. The function will be passed
@@ -1191,7 +1193,7 @@ define([
 		this.getParameters = getParameters;
 		this.clientCollect = options && options.clientCollect;
 		this.getParameterElement = options && options.getParameterElement;
-
+		this.getSubmitName = options && options.getSubmitName;
 	}
 	ParametersDescription.prototype = /** @lends orion.commands.ParametersDescription.prototype */ {	
 	

@@ -187,7 +187,7 @@ define(['i18n!orion/nls/messages', 'require', 'orion/webui/littlelib'],
 				
 				var parameters = commandInvocation.parameters;
 				parameters.forEach(function(parm) {
-					var field = parameters.getParameterElement(parm, parameterArea);
+					var field = parameters.getParameterElement ? parameters.getParameterElement(parm, parameterArea) : null;
 					var label = null;
 					if (!field && parm.label) {
 						label = document.createElement("label"); //$NON-NLS-0$
@@ -288,7 +288,7 @@ define(['i18n!orion/nls/messages', 'require', 'orion/webui/littlelib'],
 					}, false);
 				}
 				// OK and cancel buttons
-				var ok = makeButton(messages["Submit"], parentDismiss);
+				var ok = makeButton(parameters.getSubmitName ? parameters.getSubmitName(commandInvocation) : messages["Submit"], parentDismiss);
 					ok.addEventListener("click", function() { //$NON-NLS-0$
 					finish(self);
 				}, false);

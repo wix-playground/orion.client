@@ -145,7 +145,7 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 				this._renderer.render(children[i], row);
 				// generate an indent
 				var indent = this._indent * indentLevel;
-				row.childNodes[this._labelColumnIndex].style.paddingLeft = indent +"px";  //$NON-NLS-0$
+				row.childNodes[Math.min(row.childNodes.length - 1, this._labelColumnIndex)].style.paddingLeft = indent +"px";  //$NON-NLS-0$
 				
 				if (this._renderer.rowCallback) {
 					this._renderer.rowCallback(row, children[i]);
