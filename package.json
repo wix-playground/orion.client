@@ -1,7 +1,7 @@
 {
   "name": "orion-test",
   "version": "0.0.0",
-  "description": "Hosts Orion tests and coordinates running them at Sauce Labs.",
+  "description": "Hosts Orion tests and runs them at Sauce Labs.",
   "scripts": {
     "start": "node runtests.js"
   },
@@ -23,12 +23,27 @@
     "grunt-saucelabs": "~5.1.3",
     "q": "~1.0.1"
   },
-  "results": "./target/surefire-reports/",
+  "results": "./target/test-reports/",
   "urls": [
     "js-tests/javascript/JsMochaSuite.html",
     "js-tests/webtools/webtoolsMochaTests.html"
   ],
   "browsers": [
+    {
+      "browserName": "chrome",
+      "platform": "Windows 7",
+      "version": "26"
+    },
+    {
+      "browserName": "internet explorer",
+      "platform": "Windows 7",
+      "version": "10"
+    },
+    {
+      "browserName": "safari",
+      "version": "6",
+      "platform": "macos"
+    },
     {
       "browserName": "firefox",
       "version": "24",
