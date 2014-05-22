@@ -3217,8 +3217,6 @@ var exports = {};
 			visibleWhen: function(item) {
 				var items = forceArray(item);
 				checkoutStagedCommand.name = i18nUtil.formatMessage(messages["Discard"], items.length);
-				if (items.length === 0)
-					return false;
 				return true;
 			}
 		});
@@ -3269,9 +3267,6 @@ var exports = {};
 				return url;
 			},
 			visibleWhen: function(item) {
-				var items = forceArray(item);
-				if (items.length === 0)
-					return false;
 				return true;
 			}
 		});
