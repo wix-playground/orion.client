@@ -290,6 +290,7 @@ define([
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {
 		changedItem: function(items) {
 			var parent = items[0].parent;
+			var open = lib.$(".slideContainerActive", lib.node("gitCommitMessage"));
 			var that = this;
 			var deferred = new Deferred();
 			parent.children = parent.Children = null;
@@ -299,6 +300,9 @@ define([
 					return that.model.isStaged(item.type);
 				});
 				that.selection.setSelections(selection);
+				if (open) {
+					that.commandService.runCommand("eclipse.orion.git.commitCommand", selection, that, null, null, lib.$(".orionButton", lib.node("gitCommitMessage")));
+				}
 				deferred.resolve(children);
 			});
 			return deferred;
@@ -453,6 +457,7 @@ define([
 					td.appendChild(div);
 					if (item.Type === "CommitMsg") {
 						var outerDiv = document.createElement("div"); //$NON-NLS-0$
+						outerDiv.id = "gitCommitMessage";
 						outerDiv.className = "gitCommitMessage toolComposite";
 						td.colSpan = 2;
 						tableRow.classList.remove("selectableNavRow");

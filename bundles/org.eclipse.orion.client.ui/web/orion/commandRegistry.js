@@ -90,19 +90,22 @@ define([
 		 * @param {String} commandId the id of the command to run.
 		 * @param {Object} item the item on which the command should run.
 		 * @param {Object} handler the handler for the command.
-		 * @param {orion.commands.ParametersDescription} parameters used on this invocation.  Optional.
-		 * @param {Object} [userData] Optional user data that should be attached to generated command callbacks
+		 * @param {orion.commands.ParametersDescription} parameters used on this invocation. Optional.
+		 * @param {Object} [userData] Optional user data that should be attached to generated command callbacks.
+		 * @param {DOMElement} [parent] Optional parent for the parameter collector.
 		 *
 		 * Note:  The current implementation will only run the command if a URL binding has been
 		 * specified, or if an item to run the command against has been specified.  
 		 */
-		runCommand: function(commandId, item, handler, parameters, userData) {
+		runCommand: function(commandId, item, handler, parameters, userData, parent) {
 			var self = this;
 			if (item) {
 				var command = this._commandList[commandId];
 				var enabled = command && (command.visibleWhen ? command.visibleWhen(item) : true);
 				if (enabled && command.callback) {
-					self._invoke(new Commands.CommandInvocation(handler, item, userData, command, self), parameters);
+					var commandInvocation = new Commands.CommandInvocation(handler, item, userData, command, self);
+					commandInvocation.domParent = parent;
+					self._invoke(commandInvocation, parameters);
 				}
 			} else {
 				//TODO should we be keeping invocation context for commands without bindings? 

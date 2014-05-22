@@ -76,10 +76,12 @@
 }
 
 .gitCommitMessage .dismissButton {
-	color: #222;
+	color: rgb(102, 102, 102);
 	border: 1px solid #dedede;
 	background-color: #ddd;
 	border-radius: 3px;
+	font-size: 9pt;
+	line-height: 12px;
 	margin: 4px;
 	padding: 4px 6px;
 }
