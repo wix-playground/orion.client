@@ -166,7 +166,7 @@ exports.GitRepositoryExplorer = (function() {
 					repositories = resp.Children;
 					
 					that.initTitleBar(repositories[0]);
-					that.displayRepositories(repositories, "full"); //$NON-NLS-0$
+					that.displayRepositories(repositories, "mini"); //$NON-NLS-0$
 					that.displayStatus(repositories[0]);
 					that.displayCommits(repositories[0]);
 					that.displayBranches(repositories[0]);
