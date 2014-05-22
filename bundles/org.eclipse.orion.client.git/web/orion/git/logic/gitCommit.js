@@ -29,7 +29,7 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','ori
 		/* Fetches the appropriate commit message when the 'amend' flag is used */
 		var amendEventListener = new mCommandRegistry.CommandEventListener('change', function(event, commandInvocation){ //$NON-NLS-0$
 			var target = event.target;
-			var item = commandInvocation.items.status;
+			var item = commandInvocation.items.status || commandInvocation.handler.status;
 			var commitMessageBox = document.getElementById("name" + "parameterCollector"); //$NON-NLS-0$//$NON-NLS-1$
 				
 			if(target.checked){

@@ -453,12 +453,14 @@ define([
 						var outerDiv = document.createElement("div"); //$NON-NLS-0$
 						outerDiv.className = "gitCommitMessage toolComposite";
 						td.colSpan = 2;
+						tableRow.classList.remove("selectableNavRow");
 						
 						var slideContainer = document.createElement("div");
 						slideContainer.id = explorer.commitActionScope + "slideContainer";
 						slideContainer.className = "slideParameters slideContainer";
 						
 						var topRow = document.createElement("div");
+						topRow.className = "gitCommitMessageTopRow";
 						
 						var textArea = document.createElement("textarea"); //$NON-NLS-0$
 						textArea.rows = 5;
@@ -470,6 +472,7 @@ define([
 						slideContainer.appendChild(topRow);
 						
 						var bottomRow = document.createElement("div");
+						bottomRow.className = "gitCommitMessageBottomRow";
 
 						var bottomLeft = document.createElement("span");
 						bottomLeft.className = "layoutLeft parameters";
@@ -487,13 +490,6 @@ define([
 						outerDiv.appendChild(commitActions);
 						
 						div.appendChild(outerDiv);
-						
-						topRow.style.width = "100%";
-						textArea.style.width = "calc(100% - 16px)";
-						bottomRow.style.width = "100%";
-						slideContainer.style.width = "100%";
-						
-						tableRow.classList.remove("selectableNavRow");
 					}
 					else if (mGitUIUtil.isChange(item) || item.Type === "Diff") {
 	
