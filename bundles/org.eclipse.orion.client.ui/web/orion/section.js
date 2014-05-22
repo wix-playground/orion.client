@@ -96,7 +96,13 @@ define(['orion/webui/littlelib', 'orion/selection', 'orion/commandRegistry', 'or
 				this.domNode.classList.add(aClass);
 			}.bind(this));
 		}
-		
+
+		this.titleActionsNode = document.createElement("div"); //$NON-NLS-0$
+		this.titleActionsNode.id = options.id + "TitleActionsArea"; //$NON-NLS-0$
+		this.titleActionsNode.classList.add("layoutLeft"); //$NON-NLS-0$
+		this.titleActionsNode.classList.add("sectionActions"); //$NON-NLS-0$
+		this.domNode.appendChild(this.titleActionsNode);
+
 		this.titleNode = document.createElement("div"); //$NON-NLS-0$
 		this.titleNode.id = options.id + "Title"; //$NON-NLS-0$
 		this.titleNode.classList.add("sectionAnchor"); //$NON-NLS-0$

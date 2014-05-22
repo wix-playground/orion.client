@@ -337,6 +337,7 @@ define([
 			mExplorer.createExplorerCommands(this.commandService);
 			var actionsNodeScope = this.section.actionsNode.id;
 			var selectionNodeScope = this.section.selectionNode.id;
+			var titleActionsNode = this.section.titleActionsNode.id;
 			this.commandService.registerCommandContribution(actionsNodeScope, "orion.explorer.expandAll", 200); //$NON-NLS-0$
 			this.commandService.registerCommandContribution(actionsNodeScope, "orion.explorer.collapseAll", 300); //$NON-NLS-0$
 			if (this.prefix === "staged") {
@@ -354,13 +355,13 @@ define([
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.showStagedPatchCommand", 200); //$NON-NLS-0$
 				this.commandService.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.checkoutStagedCommand", 300); //$NON-NLS-0$
 				this.commandService.registerCommandContribution(this.commitActionScope, "eclipse.orion.git.commitCommand", 100); //$NON-NLS-0$
-				this.commandService.registerCommandContribution(selectionNodeScope, "orion.explorer.selectAll", 100); //$NON-NLS-0$
-				this.commandService.registerCommandContribution(selectionNodeScope, "orion.explorer.deselectAllCommand", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(titleActionsNode, "orion.explorer.selectAll", 100); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(titleActionsNode, "orion.explorer.deselectAllCommand", 100); //$NON-NLS-0$
 			}
 			this.commandService.renderCommands(actionsNodeScope, actionsNodeScope, this, this, "button"); //$NON-NLS-0$
+			this.commandService.renderCommands(titleActionsNode, titleActionsNode, this, this, "button"); //$NON-NLS-0$
 			this.commandService.renderCommands(this.commitActionScope, this.commitActionScope, [], this, "button"); //$NON-NLS-0$
-			this.commandService.renderCommands(selectionNodeScope, selectionNodeScope, [], this,
-							"button", {"Clone" : this.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
+			this.commandService.renderCommands(selectionNodeScope, selectionNodeScope, [], this, "button", {"Clone" : this.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
 		},
 		createCommands: function(){
 			var that = this;
@@ -425,7 +426,7 @@ define([
 				var commandService = this.commandService;
 				var that = this;
 				this.selection.addEventListener("selectionChanged", this._selectionListener =  function(event) { //$NON-NLS-1$ //$NON-NLS-0$
-					var selectionTools = lib.node(section.selectionNode.id);
+					var selectionTools = section.selectionNode;
 					if (selectionTools) {
 						commandService.destroy(selectionTools);
 						commandService.renderCommands(section.selectionNode.id, selectionTools, event.selections, that, "button", {"Clone" : that.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
@@ -434,6 +435,11 @@ define([
 						commandService.destroy(that.commitActionScope);
 					}
 					commandService.renderCommands(that.commitActionScope, that.commitActionScope, event.selections, that, "button"); //$NON-NLS-0$
+					var titleTools = section.titleActionsNode;
+					if (titleTools) {
+						commandService.destroy(titleTools);
+					}
+					commandService.renderCommands(titleTools.id, titleTools, this, this, "button"); //$NON-NLS-0$
 				});
 				
 			}
