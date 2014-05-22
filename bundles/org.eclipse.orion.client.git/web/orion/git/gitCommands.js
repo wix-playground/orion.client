@@ -3219,11 +3219,6 @@ var exports = {};
 				checkoutStagedCommand.name = i18nUtil.formatMessage(messages["Discard"], items.length);
 				if (items.length === 0)
 					return false;
-
-				for (var i = 0; i < items.length; i++) {
-					if (!mGitUtil.isChange(items[i]) || mGitUtil.isUnstaged(items[i]))
-						return false; 
-				}
 				return true;
 			}
 		});
@@ -3277,12 +3272,6 @@ var exports = {};
 				var items = forceArray(item);
 				if (items.length === 0)
 					return false;
-					
-				for (var i = 0; i < items.length; i++) {
-					if (!mGitUtil.isChange(items[i]) || mGitUtil.isUnstaged(items[i]))
-						return false; 
-				}
-				
 				return true;
 			}
 		});
