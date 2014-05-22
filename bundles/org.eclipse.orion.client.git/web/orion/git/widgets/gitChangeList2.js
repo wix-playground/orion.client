@@ -152,9 +152,9 @@ define([
 			if (item instanceof Array && item.length > 0 || item.Type === "Root") {
 				return prefix + "Root"; //$NON-NLS-0$
 			} else if (mGitUIUtil.isChange(item)) {
-				return  prefix + item.name; 
+				return  prefix + item.type + item.name; 
 			} else {
-				return  prefix + item.DiffLocation;
+				return  prefix + + item.type + item.DiffLocation;
 			}
 		},
 		getModelType: function(groupItem, groupName) {
@@ -510,7 +510,7 @@ define([
 	
 						navGridHolder = explorer.getNavDict() ? explorer.getNavDict().getGridNavHolder(item, true) : null;
 						var diffActionWrapper = document.createElement("span"); //$NON-NLS-0$
-						diffActionWrapper.id = explorer.prefix + item.name + "DiffActionWrapper"; //$NON-NLS-0$
+						diffActionWrapper.id = explorer.prefix + item.name + item.type + "DiffActionWrapper"; //$NON-NLS-0$
 						diffActionWrapper.className = "sectionExplorerActions"; //$NON-NLS-0$
 						div.appendChild(diffActionWrapper);
 				
@@ -538,11 +538,12 @@ define([
 						div.appendChild(actionsWrapper);
 
 						var diffActionWrapper = document.createElement("span"); //$NON-NLS-0$
-						diffActionWrapper.id = explorer.prefix + item.parent.name + "DiffActionWrapperChange"; //$NON-NLS-0$
+						var prefix = explorer.prefix + item.parent.name + item.parent.type;
+						diffActionWrapper.id = prefix + "DiffActionWrapperChange"; //$NON-NLS-0$
 						actionsWrapper.appendChild(diffActionWrapper);
 
 						var compareWidgetActionWrapper = document.createElement("span"); //$NON-NLS-0$
-						compareWidgetActionWrapper.id = explorer.prefix + item.parent.name + "CompareWidgetActionWrapper"; //$NON-NLS-0$
+						compareWidgetActionWrapper.id = prefix + "CompareWidgetActionWrapper"; //$NON-NLS-0$
 						actionsWrapper.appendChild(compareWidgetActionWrapper);
 	
 						var diffContainer = document.createElement("div"); //$NON-NLS-0$
