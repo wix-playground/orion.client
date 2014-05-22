@@ -395,7 +395,7 @@ define([
 				visibleWhen : function(item) {
 					var result = false;
 					that.model.getRoot(function(root) {
-						if (root.children.length) {
+						if (root.children.length > 1) {
 							var selection = root.children.filter(function(item) {
 								return that.model.isStaged(item.type);
 							});
