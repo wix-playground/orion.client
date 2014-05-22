@@ -58,7 +58,7 @@
 
 .gitCommitMessage .gitCommitMessageTopRow textarea {
 	width: calc(100% - 16px);
-	border-color: white;
+	border-width: 0;
 }
 
 .gitCommitMessage .gitCommitMessageBottomRow {
