@@ -59,13 +59,13 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/Deferred','ori
 					getParameterElement: newLook ? function(parm, parmArea) {
 						return lib.$("#"+ parm.name + "parameterCollector", parmArea.parentNode.parentNode);
 					} : null,
-					getSubmitName: function(commandInvocation) { 
+					getSubmitName: newLook ? function(commandInvocation) { 
 						var items = commandInvocation.items;
 						if (!Array.isArray(items)) {
 							items = [items];
 						}
 						return i18nUtil.formatMessage(messages['SmartCountCommit'], items.length);
-					}
+					} : null
 				})};
 		
 		var setGitCloneConfig = function(key,value,location) {
