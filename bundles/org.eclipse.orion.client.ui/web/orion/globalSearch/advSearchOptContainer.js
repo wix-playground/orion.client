@@ -94,7 +94,7 @@ define([
 			var resource = ""; //$NON-NLS-0$
 			this._searchLocations.forEach(function(searchLocation){
 				if (resource) {
-					resource = resource.concat(","); //$NON-NLS-0$
+					resource = resource.concat(":"); //$NON-NLS-0$
 				}
 				resource = resource.concat(searchLocation);
 			}, this);
@@ -115,7 +115,9 @@ define([
 		loadSearchParams: function(searchParams){
 			this._searchParams = searchParams;
 			//TODO handle resource parameter containing multiple resources once multiple file/folder search is enabled (see getOptions())
-			this._rootURL = this.fileClient.fileServiceRootURL(this._searchParams.resource);
+			this._rootURL = this.fileClient.fileServiceRootURL(this._searchParams.resource.split(":")[0]);
+			
+			this._searchLocations = this._searchParams.resource.split(":");
 			
 			var loadRootOnly = function() {
 				this._searchLocations = [this._rootURL];
@@ -126,19 +128,17 @@ define([
 			
 			this.dispatchEvent({type: "rootChanged", root: this._rootURL}); //$NON-NLS-0$
 	        if ((this._searchParams.resource.length > 0) && (this._rootURL !== this._searchParams.resource)) {
-	            this._serviceRegistry.getService("orion.page.progress").progress(this.fileClient.read(this._searchParams.resource, true), "Getting file metadata " + this._searchParams.resource).then( //$NON-NLS-1$ //$NON-NLS-0$
-	            function(meta) {
-					if (this._searchScopeSection) {
-						this._searchLocations = [this._searchParams.resource];
-						
-						if (this._searchScopeExplorer) {
-							this._searchScopeExplorer.loadRoot(this._rootURL).then(function(){
-								this._searchScopeExplorer.reveal(meta);
-							}.bind(this));	
-						}
-					}
-	            }.bind(this),
-	            loadRootOnly);
+	        	if (this._searchScopeSection && this._searchScopeExplorer) {
+					this._searchScopeExplorer.loadRoot(this._rootURL).then(function(){
+						this._searchLocations.forEach(function(resource){
+			        		this._serviceRegistry.getService("orion.page.progress").progress(this.fileClient.read(resource, true), "Getting file metadata " + resource).then( //$NON-NLS-1$ //$NON-NLS-0$
+		    		            function(meta) {
+									this._searchScopeExplorer.reveal(meta);
+		    		            }.bind(this),
+		    		            loadRootOnly);
+			        	}, this);
+					}.bind(this));	
+				}
 	        } else {
 	        	loadRootOnly();
 	        }
@@ -387,8 +387,11 @@ define([
 			}.bind(this));
 			
 			this._fileNamePatternsInput.addEventListener("blur", function(){
-				var correctedPatterns = mSearchUtils.getFileNamePatternsArray(this._fileNamePatternsInput.value).join(", ");
-				this._fileNamePatternsInput.value = correctedPatterns;
+				var patternString = this._fileNamePatternsInput.value;
+				if (patternString) {
+					var correctedPatterns = mSearchUtils.getFileNamePatternsArray(patternString).join(", ");
+					this._fileNamePatternsInput.value = correctedPatterns;
+				}
 				this._fileNamePatternsHint.classList.remove("fileNamePatternsHintVisible"); //$NON-NLS-0$
 			}.bind(this));
 			
@@ -405,14 +408,13 @@ define([
 		},
 		
 		_initSearchScope: function() {
-			this._searchLocations = [];
 			var resource = mPageUtil.matchResourceParameters().resource;
 			this._rootURL = this.fileClient.fileServiceRootURL(resource);
 			
 			if (resource) {
-				this._searchLocations.push(resource);
+				this._searchLocations = resource.split(":"); //$NON-NLS-0$
 			} else {
-				this._searchLocations.push(this._rootURL);
+				this._searchLocations = [this._rootURL];
 			}
 			
 			this._searchScopeDiv = lib.$("#searchScope", this._parentDiv); //$NON-NLS-0$
@@ -442,7 +444,7 @@ define([
 				}
 				
 				if (this._searchLocations) {
-					this._searcher.setLocationbyURL(this._searchLocations.join(","));
+					this._searcher.setLocationbyURL(this._searchLocations.join(":"));
 				}
 				
 				this._setSearchScopeTitle();		
@@ -460,7 +462,7 @@ define([
 			});
 			
 			this._searchScopeSection.embedExplorer(this._searchScopeExplorer, scopeExplorerNode);	
-			this._searchScopeExplorer.setCommandsVisible(true, "singleSelection"); //$NON-NLS-0$ //TODO remove "singleSelection" once multiple selection is supported
+			this._searchScopeExplorer.setCommandsVisible(true);
 			this._searchScopeExplorer.loadRoot(this._rootURL);
 		},
 		
@@ -627,6 +629,30 @@ define([
 		loadRoot: function(root) {
 			var path = root || this.fileClient.fileServiceRootURL();
 			return this.loadResourceList(path);
+		},
+		// Overrides FileExplorer.reveal(item, root)
+		reveal: function(item, reroot) {
+			return this.showItem(item, reroot).then(function(result) {
+				var navHandler = this.getNavHandler();
+				if (navHandler) {
+					navHandler.cursorOn(result, true);
+					
+					var selections = this.selection.getSelections();
+					var model = null;
+					var alreadySelected = selections.some(function(selection){
+						if (selection.Location === result.Location){
+							return true; //found it, stop iterating
+						}
+						return false;
+					});
+					
+					if (!alreadySelected) {
+						//select model
+						navHandler.setSelection(result, true, true);	
+					}
+				}
+				return result;
+			}.bind(this));
 		}
 	});
 	ScopeExplorer.prototype.constructor = ScopeExplorer;

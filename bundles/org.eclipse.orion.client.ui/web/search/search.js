@@ -19,22 +19,30 @@ define(['i18n!orion/search/nls/messages', 'require', 'orion/browserCompatibility
 				mSearchClient, mFileClient, mOperationsClient, mSearchResults, mGlobalCommands, mContentTypes, mSearchUtils, PageUtil, lib, mAdvSearchOptContainer) {
 	
 	function setPageInfo(serviceRegistry, fileClient, commandService, searcher, searchResultsGenerator, searchBuilder, searchParams, progress){
-		var searchLoc = searchParams.resource;
+		var searchLoc = searchParams.resource.split(":");
 		var title = searchParams.replace ? messages["Replace All Matches"] : messages["Search Results"];
-		if(searchLoc){
-			if(searchLoc === fileClient.fileServiceRootURL(searchLoc)){
-				searcher.setRootLocationbyURL(searchLoc);
-				searcher.setLocationbyURL(searchLoc);
+		if(searchLoc && searchLoc[0]){
+			var rootURL = fileClient.fileServiceRootURL(searchLoc[0]);
+			if(searchLoc[0] === rootURL){
+				searcher.setRootLocationbyURL(rootURL);
+				searcher.setLocationbyURL(searchParams.resource);
 				mGlobalCommands.setPageTarget({task: "Search", title: title, serviceRegistry: serviceRegistry, //$NON-NLS-0$
 					commandService: commandService, searchService: searcher, fileService: fileClient, breadcrumbRootName: "Search", staticBreadcrumb: true}); //$NON-NLS-0$
-				searcher.setChildrenLocationbyURL(searchLoc);
+				searcher.setChildrenLocationbyURL(searchParams.resource);
 				searchBuilder.loadSearchParams(searchParams);
 				searchResultsGenerator.loadResults(searchParams);
 			} else {
-				(progress ? progress.progress(fileClient.read(searchLoc, true), "Loading file metadata " + searchLoc) : fileClient.read(searchLoc, true)).then( //$NON-NLS-0$
+				(progress ? progress.progress(fileClient.read(searchLoc[0], true), "Loading file metadata " + searchLoc[0]) : fileClient.read(searchLoc[0], true)).then( //$NON-NLS-0$
 					function(metadata) {
-						mGlobalCommands.setPageTarget({task: "Search", title: title, target: metadata, serviceRegistry: serviceRegistry,  //$NON-NLS-0$
-							fileService: fileClient, commandService: commandService, searchService: searcher, staticBreadcrumb: true, breadcrumbRootName: "Search"}); //$NON-NLS-0$
+//						mGlobalCommands.setPageTarget({task: "Search", title: title, target: metadata, serviceRegistry: serviceRegistry,  //$NON-NLS-0$
+//							fileService: fileClient, commandService: commandService, searchService: searcher, staticBreadcrumb: true, breadcrumbRootName: "Search"}); //$NON-NLS-0$
+//						searchBuilder.loadSearchParams(searchParams);
+//						searchResultsGenerator.loadResults(searchParams);
+						searcher.setRootLocationbyURL(rootURL);
+						searcher.setLocationbyURL(searchParams.resource);
+						mGlobalCommands.setPageTarget({task: "Search", title: title, serviceRegistry: serviceRegistry,  //$NON-NLS-0$
+							commandService: commandService, searchService: searcher, fileService: fileClient, staticBreadcrumb: true, breadcrumbRootName: "Search"}); //$NON-NLS-0$
+						searcher.setChildrenLocationbyURL(searchParams.resource);
 						searchBuilder.loadSearchParams(searchParams);
 						searchResultsGenerator.loadResults(searchParams);
 					}.bind(this),

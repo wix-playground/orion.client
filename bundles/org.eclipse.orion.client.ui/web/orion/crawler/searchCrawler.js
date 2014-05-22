@@ -38,7 +38,7 @@ define(['i18n!orion/crawler/nls/messages', 'require', 'orion/i18nUtil', 'orion/s
 		this._searchParams = searchParams;
 		this.searchHelper = (this._searchOnName || this._buildSkeletonOnly) ? null: mSearchUtils.generateSearchHelper(searchParams);
 		this._location = options && options.location;
-		this._childrenLocation = options && options.childrenLocation ? options.childrenLocation : this._location;   
+		this._childrenLocation = options && options.childrenLocation ? options.childrenLocation : this._location;
 		this._reportOnCancel = options && options.reportOnCancel;   
 		this._cancelled = false;
 		this._statusService = this.registry.getService("orion.page.message"); //$NON-NLS-0$
@@ -192,39 +192,48 @@ define(['i18n!orion/crawler/nls/messages', 'require', 'orion/i18nUtil', 'orion/s
 		return matches;
 	};
 	
-	SearchCrawler.prototype._visitRecursively = function(directoryLocation){
-		var results = [];
+	SearchCrawler.prototype._visitRecursively = function(directoryLocations){
+		var allDeferreds = [];
 		var _this = this;
-		if(this._fetchChildrenCallBack){
-			this._fetchChildrenCallBack(directoryLocation);
-		}
-		return (_this._progressService ? this._progressService.progress(_this.fileClient.fetchChildren(directoryLocation), "Crawling search for children of " + directoryLocation) : _this.fileClient.fetchChildren(directoryLocation)).then(function(children) { //$NON-NLS-0$
-			for (var i = 0; i < children.length ; i++){
-				if(children[i].Directory!==undefined && children[i].Directory===false){
-					if(_this._searchOnName){
-						results.push(_this._buildSingleSkeleton(children[i]));
-					} else if(_this._buildSkeletonOnly){
-						results.push(_this._buildSingleSkeleton(children[i]));
-					}else if(!_this._cancelled) {
-						var contentType = mContentTypes.getFilenameContentType(children[i].Name, _this.contentTypesCache);
-						if(contentType && (contentType['extends'] === "text/plain" || contentType.id === "text/plain") && _this._fileNameMatches(children[i].Name)){ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-							var fileDeferred = _this._sniffSearch(children[i]);
-							results.push(fileDeferred);
-							_this._deferredArray.push(fileDeferred);
+		
+		directoryLocations.forEach(function(directoryLocation){
+			var results = [];
+			if(this._fetchChildrenCallBack){
+				this._fetchChildrenCallBack(directoryLocation);
+			}
+			
+			var directoryDeferred = (_this._progressService ? this._progressService.progress(_this.fileClient.fetchChildren(directoryLocation), "Crawling search for children of " + directoryLocation) : _this.fileClient.fetchChildren(directoryLocation)).then(function(children) { //$NON-NLS-0$
+				for (var i = 0; i < children.length ; i++){
+					if(children[i].Directory!==undefined && children[i].Directory===false){
+						if(_this._searchOnName){
+							results.push(_this._buildSingleSkeleton(children[i]));
+						} else if(_this._buildSkeletonOnly){
+							results.push(_this._buildSingleSkeleton(children[i]));
+						}else if(!_this._cancelled) {
+							var contentType = mContentTypes.getFilenameContentType(children[i].Name, _this.contentTypesCache);
+							if(contentType && (contentType['extends'] === "text/plain" || contentType.id === "text/plain") && _this._fileNameMatches(children[i].Name)){ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+								var fileDeferred = _this._sniffSearch(children[i]);
+								results.push(fileDeferred);
+								_this._deferredArray.push(fileDeferred);
+							}
+						}
+					} else if (children[i].Location) {
+						if(_this._cancelled) {
+							break;
+						} else {
+							var folderDeferred = _this._visitRecursively([children[i].ChildrenLocation]);
+							results.push(folderDeferred);
+							_this._deferredArray.push(folderDeferred);
 						}
 					}
-				} else if (children[i].Location) {
-					if(_this._cancelled) {
-						break;
-					} else {
-						var folderDeferred = _this._visitRecursively(children[i].ChildrenLocation);
-						results.push(folderDeferred);
-						_this._deferredArray.push(folderDeferred);
-					}
 				}
-			}
-			return Deferred.all(results);
-		});
+				return Deferred.all(results);
+			});
+		
+			allDeferreds.push(directoryDeferred);
+		}, this);
+		
+		return Deferred.all(allDeferreds);
 	};
 
 	SearchCrawler.prototype._hitOnceWithinFile = function( fileContentText){

@@ -90,7 +90,7 @@ define(['i18n!orion/search/nls/messages', 'orion/i18nUtil','require', 'orion/web
 			if(this.crawling){
 				lib.empty(parent);
 				parent.appendChild(document.createTextNode(""));
-				crawler = new mSearchCrawler.SearchCrawler(this.registry, this.fileService, searchParams, {childrenLocation: this.searcher.getChildrenLocation()});
+				crawler = new mSearchCrawler.SearchCrawler(this.registry, this.fileService, searchParams, {location: this.searcher.getSearchLocation()});
 				crawler.search(function(jsonData, incremental){that._renderSearchResult(true, resultsNode, searchParams, jsonData, incremental);});
 			} else {
 				lib.empty(parent);

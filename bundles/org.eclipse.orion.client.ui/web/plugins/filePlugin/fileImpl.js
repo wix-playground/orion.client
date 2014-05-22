@@ -125,7 +125,9 @@ define(["orion/Deferred", "orion/xhr", "orion/URL-shim", "orion/operation", "ori
 				newKeyword = encodeURIComponent(newKeyword);
 			}
 		}
-		return "?" + "sort=" + newSort + "&rows=" + searchParams.rows + "&start=" + searchParams.start + "&q=" + newKeyword + "+Location:" + searchParams.resource + "*";
+		var location = searchParams.resource.split(":");
+		location = location.join("*:") + "*";
+		return "?" + "sort=" + newSort + "&rows=" + searchParams.rows + "&start=" + searchParams.start + "&q=" + newKeyword + "+Location:" + location;
 	}
 	
 	/**
