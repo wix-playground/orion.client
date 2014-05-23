@@ -22,8 +22,9 @@ define([
 	'orion/PageUtil',
 	'orion/explorers/navigationUtils',
 	'orion/git/widgets/CommitTooltipDialog',
+	'orion/webui/littlelib',
 	'orion/objects'
-], function(require, messages, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, mCommitTooltip, objects) {
+], function(require, messages, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, mCommitTooltip, lib, objects) {
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 	var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 		
@@ -104,6 +105,12 @@ define([
 							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseSkipPatchCommand", 300); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseAbortCommand", 400); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 							commandService.renderCommands(actionsNodeScope, actionsNodeScope, repository.status, that, "button"); //$NON-NLS-0$
+							
+							var div = document.createElement("div");
+							div.className = "sectionTableItem";
+							div.style.whiteSpace = "pre";
+							div.appendChild(document.createTextNode(messages["RebaseProgressDetails"]));
+							lib.node(that.parentId).appendChild(div);
 							progress.done();
 							return;
 						}
