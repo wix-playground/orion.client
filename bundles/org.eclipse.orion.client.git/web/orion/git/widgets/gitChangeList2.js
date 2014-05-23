@@ -140,7 +140,7 @@ define([
 			// lazy creation, this is required for selection  model to be able to traverse into children
 				if (!parentItem.children) {
 					parentItem.children = [];
-					parentItem.children.push({ DiffLocation : parentItem.DiffLocation, Type : "Compare", parent : parentItem, selectable: false});//$NON-NLS-0$
+					parentItem.children.push({ DiffLocation : parentItem.DiffLocation, Type : "Compare", parent : parentItem, selectable: this.prefix !== "all"});//$NON-NLS-0$
 				}
 				onComplete(parentItem.children);
 			} else {
@@ -268,10 +268,9 @@ define([
 	 * @extends orion.explorers.Explorer
 	 */
 	function GitChangeListExplorer(options) {
-		var renderer = new GitChangeListRenderer({registry: options.serviceRegistry, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: true}, this); //$NON-NLS-0$
-		//renderer.selectionPolicy = "cursorOnly";
+		this.checkbox = options.prefix === "all";
+		var renderer = new GitChangeListRenderer({registry: options.serviceRegistry, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: this.checkbox}, this); //$NON-NLS-0
 		mExplorer.Explorer.call(this, options.serviceRegistry, options.selection, renderer, options.commandRegistry);	
-		this.checkbox = true;
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
 		this.prefix = options.prefix;
@@ -290,22 +289,26 @@ define([
 	GitChangeListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitChangeListExplorer.prototype, /** @lends orion.git.GitChangeListExplorer.prototype */ {
 		changedItem: function(items) {
-			var parent = items[0].parent;
-			var open = lib.$(".slideContainerActive", lib.node("gitCommitMessage"));
-			var that = this;
 			var deferred = new Deferred();
-			parent.children = parent.Children = null;
-			this.model.getChildren(parent, function(children) {
-				that.myTree.refresh.bind(that.myTree)(parent, children, false);
-				var selection = children.filter(function(item) {
-					return that.model.isStaged(item.type);
+			if (this.prefix === "all") {
+				var parent = items[0].parent;
+				var open = lib.$(".slideContainerActive", lib.node("gitCommitMessage"));
+				var that = this;
+				parent.children = parent.Children = null;
+				this.model.getChildren(parent, function(children) {
+					that.myTree.refresh.bind(that.myTree)(parent, children, false);
+					var selection = children.filter(function(item) {
+						return that.model.isStaged(item.type);
+					});
+					that.selection.setSelections(selection);
+					if (open) {
+						that.commandService.runCommand("eclipse.orion.git.commitCommand", selection, that, null, null, lib.$(".orionButton", lib.node("gitCommitMessage")));
+					}
+					deferred.resolve(children);
 				});
-				that.selection.setSelections(selection);
-				if (open) {
-					that.commandService.runCommand("eclipse.orion.git.commitCommand", selection, that, null, null, lib.$(".orionButton", lib.node("gitCommitMessage")));
-				}
-				deferred.resolve(children);
-			});
+			} else {
+				deferred.resolve();
+			}
 			return deferred;
 		},
 		destroy: function() {
@@ -321,14 +324,16 @@ define([
 			this.createTree(this.parentId, model, {onComplete: function() {
 				that.updateCommands();
 				var model = that.model;
-				that.selection.setSelections(model._sortBlock(model.getGroups("staged")));
+				if (that.prefix === "all") {
+					that.selection.setSelections(model._sortBlock(model.getGroups("staged")));
+				}
 				that.status = model.status;
 				deferred.resolve();
 			}});
 			return deferred;
 		},
 		isRowSelectable: function(modelItem) {
-			return false; // mGitUIUtil.isChange(modelItem);
+			return this.prefix === "all" ? false : mGitUIUtil.isChange(modelItem);
 		},
 //		getItemCount: function() {
 //			return this.changes.length; //TODO: Could be null
@@ -364,6 +369,9 @@ define([
 			this.commandService.renderCommands(selectionNodeScope, selectionNodeScope, [], this, "button", {"Clone" : this.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
 		},
 		createCommands: function(){
+			if (this.prefix !== "all") {
+				return;
+			}
 			var that = this;
 			var selectAllCommand = new mCommands.Command({
 				tooltip : messages["Select all"],
