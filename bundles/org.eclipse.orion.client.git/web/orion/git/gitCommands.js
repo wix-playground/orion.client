@@ -3119,6 +3119,9 @@ var exports = {};
 			},
 			
 			visibleWhen: function(item) {
+				if (item.Type !== "Status") {
+					return false;
+				}
 				return mGitUtil.hasStagedChanges(item) || mGitUtil.hasUnstagedChanges(item);;
 			}
 		});

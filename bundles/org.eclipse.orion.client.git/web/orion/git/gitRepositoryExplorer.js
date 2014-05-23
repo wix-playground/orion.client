@@ -12,7 +12,7 @@
 define([
 	'require',
 	'i18n!git/nls/gitmessages',
-	'orion/git/widgets/gitChangeList2',
+	'orion/git/widgets/gitChangeList',
 	'orion/git/widgets/gitCommitList',
 	'orion/git/widgets/gitBranchList',
 	'orion/git/widgets/gitConfigList',
