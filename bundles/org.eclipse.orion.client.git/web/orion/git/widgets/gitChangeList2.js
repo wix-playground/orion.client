@@ -443,6 +443,9 @@ define([
 				});
 				
 			}
+		},
+		refreshSelection: function() {
+			//Do nothing
 		}
 	});
 	
