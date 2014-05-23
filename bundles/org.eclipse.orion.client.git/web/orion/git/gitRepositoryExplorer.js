@@ -167,7 +167,7 @@ exports.GitRepositoryExplorer = (function() {
 					
 					that.initTitleBar(repositories[0]);
 					that.displayRepositories(repositories, "mini"); //$NON-NLS-0$
-					that.displayStatus(repositories[0]);
+					that.statusDeferred = that.displayStatus(repositories[0]);
 					that.displayCommits(repositories[0]);
 					that.displayBranches(repositories[0]);
 					that.displayTags(repositories[0]);
@@ -391,13 +391,14 @@ exports.GitRepositoryExplorer = (function() {
 			parentId:"statusNode", 
 			prefix: "all",
 			location: repository.StatusLocation,
+			repository: repository,
 			section: titleWrapper,
 			editableInComparePage: true,
 			handleError: this.handleError,
 			gitClient: this.gitClient,
 			progressService: this.progressService
 		});
-		explorer.display();
+		return explorer.display();
 	};
 	
 
@@ -432,8 +433,9 @@ exports.GitRepositoryExplorer = (function() {
 				repository: repository
 			}
 		});
-		
-		explorer.display();
+		this.statusDeferred.then(function() {
+			explorer.display();
+		});
 	};
 	
 	// Git tags

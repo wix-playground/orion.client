@@ -57,10 +57,10 @@ define([
 		_repositorySorter: function(repo1, repo2) {
 			return repo1.Name.localeCompare(repo2.Name);
 		},
-		decorateRepository: function(repository, mode, deferred){
+		decorateRepository: function(repository){
 			var that = this;
-			deferred = deferred || new Deferred();
-			
+			var deferred = new Deferred();
+			var mode = this.mode;
 			if(!mode){
 				mode = "full";
 			}

@@ -72,6 +72,7 @@ define({
 	"Amend last commit": "Amend last commit",
 	" Amend": " Amend",
 	"Rebase in progress. Choose action:": "Rebase in progress. Choose action:",
+	"RebaseProgress": "Rebase in progress",
 	"Committer name:": "Committer name:",
 	"email:": "email:",
 	"Author name: ": "Author name: ",

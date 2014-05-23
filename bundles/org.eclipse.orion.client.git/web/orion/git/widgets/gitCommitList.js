@@ -94,41 +94,48 @@ define([
 								break;
 							}
 						}
-
+						
+						var actionsNodeScope = section.actionsNode.id;
+						
 						if (!currentBranch){
+							section.setTitle(messages["RebaseProgress"]);
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.resetCommand", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseContinueCommand", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseSkipPatchCommand", 300); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseAbortCommand", 400); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							commandService.renderCommands(actionsNodeScope, actionsNodeScope, repository.status, that, "button"); //$NON-NLS-0$
 							progress.done();
 							return;
 						}
 
 						var tracksRemoteBranch = (currentBranch.RemoteLocation.length === 1 && currentBranch.RemoteLocation[0].Children.length === 1);
-
+						
 						section.setTitle(i18nUtil.formatMessage(messages["Commits for \"${0}\" branch"], currentBranch.Name));
-						commandService.destroy(section.actionsNode.id);
-						commandService.registerCommandContribution(section.actionsNode.id,
+						commandService.destroy(actionsNodeScope);
+						commandService.registerCommandContribution(actionsNodeScope,
 								"eclipse.orion.git.repositories.viewAllCommand", 10); //$NON-NLS-0$
 						commandService.renderCommands(
-							section.actionsNode.id,
-							section.actionsNode.id,
+							actionsNodeScope,
+							actionsNodeScope,
 							{	"ViewAllLink" : logTemplate.expand({resource: currentBranch.CommitLocation}),
 								"ViewAllLabel" : messages['See Full Log'],
 								"ViewAllTooltip" : messages["See the full log"]
 							}, that, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 						if (tracksRemoteBranch) {
-							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
-							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
-							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
-							commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
-							commandService.renderCommands(section.actionsNode.id, section.actionsNode.id,
-								currentBranch.RemoteLocation[0].Children[0], that, "button"); //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
+							commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
+							commandService.renderCommands(actionsNodeScope, actionsNodeScope, currentBranch.RemoteLocation[0].Children[0], that, "button"); //$NON-NLS-0$
 						}
 
-						commandService.addCommandGroup(section.actionsNode.id, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
-						commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
-						commandService.registerCommandContribution(section.actionsNode.id, "eclipse.orion.git.pushToGerrit", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
+						commandService.addCommandGroup(actionsNodeScope, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
+						commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
+						commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.pushToGerrit", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 						
-						commandService.renderCommands(section.actionsNode.id, section.actionsNode.id, currentBranch, that, "button"); //$NON-NLS-0$
+						commandService.renderCommands(actionsNodeScope, actionsNodeScope, currentBranch, that, "button"); //$NON-NLS-0$
 
 						if (currentBranch.RemoteLocation[0] === null) {
 							progress.done();

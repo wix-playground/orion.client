@@ -52,6 +52,7 @@ define([
 		this.registry = options.registry;
 		this.prefix = options.prefix;
 		this.location = options.location;
+		this.repository = options.repository;
 		this.handleError = options.handleError;
 		this.changes = options.changes;
 		this.gitClient = options.gitClient;
@@ -93,20 +94,19 @@ define([
 				function(resp) {
 					if (resp.Type === "Status") { //$NON-NLS-0$
 						var status = that.status = that.items = resp;
-						progressService
-							.progress(
-								gitClient.getGitClone(status.CloneLocation), "Getting repository information").then( //$NON-NLS-0$
+						Deferred.when(that.repository || progressService.progress(gitClient.getGitClone(status.CloneLocation), "Getting repository information"), //$NON-NLS-0$
 								function(resp) {
-									var repositories = resp.Children;
-
+									var repository = resp.Children ? resp.Children[0] : resp;
+									that.repository = repository;
+									repository.status = status;
 									progressService
 										.progress(
 											that.registry
-												.getService("orion.git.provider").getGitCloneConfig(repositories[0].ConfigLocation), "Getting repository configuration ", repositories[0].Name).then( //$NON-NLS-0$
+												.getService("orion.git.provider").getGitCloneConfig(repository.ConfigLocation), "Getting repository configuration ", repository.Name).then( //$NON-NLS-0$
 												function(resp) {
 													var config = resp.Children;
-
-													status.Clone = that.repository = repositories[0];
+													
+													status.Clone = repository;
 													status.Clone.Config = [];
 
 													for (var i = 0; i < config.length; i++) {
@@ -278,6 +278,7 @@ define([
 		this.changes = options.changes;
 		this.section = options.section;
 		this.location = options.location;
+		this.repository = options.repository;
 		this.editableInComparePage = options.editableInComparePage;
 		this.handleError = options.handleError;
 		this.gitClient = options.gitClient;
@@ -316,8 +317,7 @@ define([
 		display: function() {
 			var that = this;
 			var deferred = new Deferred();
-			var model =  new GitChangeListModel({registry: this.registry, progress: this.progressService, prefix: this.prefix, location: this.location, handleError: this.handleError, changes: this.changes, gitClient: this.gitClient, progressService: this.progressService, section: this.section});
-//			this.createTree(this.parentId, model, {selectionPolicy: "cursorOnly", onComplete: function() {
+			var model =  new GitChangeListModel({registry: this.registry, progress: this.progressService, prefix: this.prefix, location: this.location, repository: this.repository, handleError: this.handleError, changes: this.changes, gitClient: this.gitClient, progressService: this.progressService, section: this.section});
 			this.createTree(this.parentId, model, {onComplete: function() {
 				that.updateCommands();
 				var model = that.model;

@@ -3326,7 +3326,7 @@ var exports = {};
 			},
 			
 			visibleWhen: function(item) {
-				return item.RepositoryState.indexOf("REBASING") !== -1; //$NON-NLS-0$
+				return item.RepositoryState && item.RepositoryState.indexOf("REBASING") !== -1; //$NON-NLS-0$
 			}
 		});
 		
@@ -3342,7 +3342,7 @@ var exports = {};
 			},
 			
 			visibleWhen: function(item) {
-				return item.RepositoryState.indexOf("REBASING") !== -1; //$NON-NLS-0$
+				return item.RepositoryState && item.RepositoryState.indexOf("REBASING") !== -1; //$NON-NLS-0$
 			}
 		});
 		
@@ -3358,7 +3358,7 @@ var exports = {};
 			},
 			
 			visibleWhen: function(item) {
-				return item.RepositoryState.indexOf("REBASING") !== -1; //$NON-NLS-0$
+				return item.RepositoryState && item.RepositoryState.indexOf("REBASING") !== -1; //$NON-NLS-0$
 			}
 		});
 		
