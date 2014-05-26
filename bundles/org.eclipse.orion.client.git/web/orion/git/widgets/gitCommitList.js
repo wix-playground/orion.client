@@ -297,7 +297,6 @@ define([
 					var resource = resp;
 					
 					that.getOutgoingIncomingChanges(resource).then(function(items){
-						that.incomingCommits = that.outgoingCommits = [];
 						that.createTree(that.parentId, new GitCommitListModel(items.Children));
 						loadingDeferred.resolve({resource: resource, items: items});
 					});
