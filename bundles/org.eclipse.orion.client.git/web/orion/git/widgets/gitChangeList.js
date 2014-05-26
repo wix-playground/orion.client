@@ -295,7 +295,13 @@ define([
 			var deferred = new Deferred();
 			if (this.prefix === "all") {
 				var parent = items[0].parent;
-				var open = lib.$(".slideContainerActive", lib.node("gitCommitMessage"));
+				var commitDiv = lib.node("gitCommitMessage");
+				var open = lib.$(".slideContainerActive", commitDiv);
+				var commitMessage = "";
+				if (open) {
+					var textarea = lib.$("#nameparameterCollector", commitDiv);
+					commitMessage = textarea.value;
+				}
 				var that = this;
 				parent.children = parent.Children = null;
 				this.model.getChildren(parent, function(children) {
@@ -305,7 +311,10 @@ define([
 					});
 					that.selection.setSelections(selection);
 					if (open) {
-						that.commandService.runCommand("eclipse.orion.git.commitCommand", selection, that, null, null, lib.$(".orionButton", lib.node("gitCommitMessage")));
+						var commitDiv = lib.node("gitCommitMessage");
+						that.commandService.runCommand("eclipse.orion.git.commitCommand", selection, that, null, null, lib.$(".orionButton", commitDiv));
+						var textarea = lib.$("#nameparameterCollector", commitDiv);
+						textarea.value = commitMessage;
 					}
 					deferred.resolve(children);
 				});
