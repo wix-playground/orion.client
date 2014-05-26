@@ -344,7 +344,8 @@ define([
 			if (model) {
 				model.getRoot(function(root) {
 					model.getChildren(root, function(children) {
-						result = children.length;
+						// -1 for the commit message item
+						result = children.length - 1;
 					});
 				});
 			}
