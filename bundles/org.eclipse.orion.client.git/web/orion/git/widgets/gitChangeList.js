@@ -338,9 +338,18 @@ define([
 		isRowSelectable: function(modelItem) {
 			return this.prefix === "all" ? false : mGitUIUtil.isChange(modelItem);
 		},
-//		getItemCount: function() {
-//			return this.changes.length; //TODO: Could be null
-//		},
+		getItemCount: function() {
+			var result = 0;
+			var model = this.model;
+			if (model) {
+				model.getRoot(function(root) {
+					model.getChildren(root, function(children) {
+						result = children.length;
+					});
+				});
+			}
+			return result;
+		},
 		updateCommands: function() {
 			mExplorer.createExplorerCommands(this.commandService);
 			var actionsNodeScope = this.section.actionsNode.id;
@@ -453,7 +462,7 @@ define([
 						if (titleTools) {
 							commandService.destroy(titleTools);
 						}
-						commandService.renderCommands(titleTools.id, titleTools, this, this, "button"); //$NON-NLS-0$
+						commandService.renderCommands(titleTools.id, titleTools, that, that, "button"); //$NON-NLS-0$
 					}
 				});
 				
