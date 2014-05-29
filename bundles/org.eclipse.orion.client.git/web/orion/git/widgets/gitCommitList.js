@@ -69,26 +69,20 @@ define([
 		},
 		_getOutgoing: function() {
 			var that = this;
-			var location, id, ref, method;
+			var location, id, ref;
 			if (that.log) {
 				ref = that.log.toRef;
-//				location = ref.RemoteLocation[0].Children[0].Location;
-//				id = "silenio%252FgitStatus_testing";
-
-				//WORKS
-				location = "/gitapi/commit/origin%252Fsilenio%252FgitStatus_testing..silenio%252FgitStatus_testing/file/silenio-OrionContent/org.eclipse.orion.client-2/"
-				method = "doGitLog";
-				
-//				location = ref.RemoteLocation[0].Children[0].Location;
-//				id = "silenio%2FgitStatus_testing";
-//				method = "getLog";
 			} else {
 				ref = that.currentBranch;
-				location = that.currentBranch.RemoteLocation[0].Children[0].CommitLocation;
-				id = "HEAD"; //$NON-NLS-0$
-				method = "getLog";
 			}
-			return that.progressService.progress(that.gitClient[method](location + "?page=1&pageSize=20", id), i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], ref.Name)).then(function(resp) {//$NON-NLS-1$ //$NON-NLS-0$
+			if (ref.Type === "RemoteTrackingBranch") {
+				location = ref.CommitLocation;
+				id = that.trackingBranch.Name;
+			} else {
+				location = ref.RemoteLocation[0].Children[0].CommitLocation;
+				id = ref.Name;
+			}
+			return that.progressService.progress(that.gitClient.getLog(location + "?page=1&pageSize=20", id), i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], ref.Name)).then(function(resp) {//$NON-NLS-1$ //$NON-NLS-0$
 				return that.outgoingCommits = resp.Children;
 			});
 		},
@@ -97,19 +91,42 @@ define([
 			var location, id, ref;
 			if (that.log) {
 				ref = that.log.toRef;
-				location = that.log.Location;
 			} else {
 				ref = that.currentBranch;
-				location = ref.CommitLocation;
 			}
-			id = ref.RemoteLocation[0].Children[0].Id;
+			if (ref.Type === "RemoteTrackingBranch") {
+				location = this.trackingBranch.CommitLocation;
+				id = ref.Name;
+			} else {
+				location = ref.CommitLocation;
+				id = ref.RemoteLocation[0].Children[0].Name;
+			}
 			return that.progressService.progress(that.gitClient.getLog(location + "?page=1&pageSize=20", id), messages['Getting outgoing commits']).then(function(resp) { //$NON-NLS-1$ //$NON-NLS-0$
 				return that.incomingCommits = resp.Children;
 			});
 		},
+		tracksRemoteBranch: function(){
+			var ref = (this.log && this.log.toRef) || this.currentBranch ;
+			if (ref && ref.Type === "RemoteTrackingBranch" && (this.root.repository && this.root.repository.Branches)) {
+				var result = false;
+				var that = this;
+				this.root.repository.Branches.some(function(branch){
+					if (branch.RemoteLocation && branch.RemoteLocation.length === 1 && branch.RemoteLocation[0].Children.length === 1) {
+						if (branch.RemoteLocation[0].Children[0].Name === ref.Name) {
+							that.trackingBranch = branch;
+							result = true;
+							return true;
+						}
+					}
+					return false;
+				});
+				return result;
+			} 
+			return ref && ref.RemoteLocation && ref.RemoteLocation.length === 1 && ref.RemoteLocation[0].Children.length === 1;
+		},
 		getChildren: function(parentItem, onComplete) {
 			var that = this, currentBranch = this.currentBranch;
-			var tracksRemoteBranch = currentBranch && currentBranch.RemoteLocation.length === 1 && currentBranch.RemoteLocation[0].Children.length === 1;
+			var tracksRemoteBranch = this.tracksRemoteBranch();
 			if (parentItem instanceof Array && parentItem.length > 0) {
 				onComplete(parentItem);
 			} else if (parentItem.Type === "CommitRoot") { //$NON-NLS-0$
@@ -136,6 +153,7 @@ define([
 							return;
 						}
 						repository.ActiveBranch = currentBranch.CommitLocation;
+						repository.Branches = resp.Children;
 						section.setTitle(i18nUtil.formatMessage(messages["Commits for \"${0}\" branch"], that.log ? that.log.toRef.Name : currentBranch.Name));
 						progress.done();
 						onComplete([
@@ -165,9 +183,17 @@ define([
 						that.handleError(error);
 					});
 				} else {
-					onComplete([{
-						Type: "Nothing"
-					}]);
+					return Deferred.when(that.log || that._getLog(), function(log) {
+						if (log.toRef.Type === "RemoteTrackingBranch") {
+							onComplete(log.Children);
+						} else {
+							onComplete([{
+								Type: "Nothing"
+							}]);
+						}
+					}, function(error){
+						that.handleError(error);
+					});
 				}
 			} else if (parentItem.Type === "Outgoing") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
@@ -177,8 +203,14 @@ define([
 						that.handleError(error);
 					});
 				} else {
-					that.progressService.progress(that.gitClient.doGitLog(currentBranch.CommitLocation + "?page=1&pageSize=20"), i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], currentBranch.Name)).then(function(resp) { //$NON-NLS-1$ //$NON-NLS-0$
-						onComplete(resp.Children);
+					return Deferred.when(that.log || that._getLog(), function(log) {
+						if (log.toRef.Type === "Branch") {
+							onComplete(log.Children);
+						} else {
+							onComplete([{
+								Type: "Nothing"
+							}]);
+						}
 					}, function(error){
 						that.handleError(error);
 					});
@@ -186,10 +218,11 @@ define([
 			} else if (parentItem.Type === "In Sync") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					return Deferred.when(that.log || that._getLog(), function(log) {
-						Deferred.when(that.outgoingCommits || that._getOutgoing(), function(outgoingCommits) {
+						var remoteBranch = log.toRef.Type === "RemoteTrackingBranch";
+						Deferred.when(remoteBranch ? that.incomingCommits || that._getIncoming() : that.outgoingCommits || that._getOutgoing(), function(filterCommits) {
 							var children = [];
 							log.Children.forEach(function(commit) {
-								if (!outgoingCommits.some(function(com) { return com.Name === commit.Name; })) {
+								if (!filterCommits.some(function(com) { return com.Name === commit.Name; })) {
 									children.push(commit);
 								}
 							});
@@ -277,7 +310,7 @@ define([
 //					"ViewAllTooltip" : messages["See the full log"]
 //				}, this, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 	
-				var tracksRemoteBranch = (currentBranch.RemoteLocation.length === 1 && currentBranch.RemoteLocation[0].Children.length === 1);
+				var tracksRemoteBranch = this.model.tracksRemoteBranch();
 				if (tracksRemoteBranch) {
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
@@ -301,6 +334,7 @@ define([
 	GitCommitListRenderer.prototype = Object.create(mExplorer.SelectionRenderer.prototype);
 	objects.mixin(GitCommitListRenderer.prototype, {
 		getCellElement: function(col_no, item, tableRow){
+			var explorer = this.explorer;
 			var commit = item;
 			switch(col_no){
 			case 0:	
@@ -367,6 +401,13 @@ define([
 					description.textContent = messages[" (SHA "] + commit.Name + messages[") by "] + commit.AuthorName + messages[" on "]
 							+ new Date(commit.Time).toLocaleString();
 					detailsView.appendChild(description);
+					
+					var itemActionScope = "itemLevelCommands";
+					var actionsArea = document.createElement("ul");
+					actionsArea.className = "layoutRight commandList";
+					actionsArea.id = itemActionScope;
+					horizontalBox.appendChild(actionsArea);
+					explorer.commandService.renderCommands(itemActionScope, actionsArea, item, explorer, "tool"); //$NON-NLS-0$
 				}
 
 				return td;
