@@ -15,6 +15,7 @@ define([
 	'require',
 	'i18n!git/nls/gitmessages',
 	'orion/git/widgets/gitCommitList',
+	'orion/section',
 	'orion/Deferred',
 	'orion/URITemplate',
 	'orion/globalCommands', 
@@ -22,7 +23,7 @@ define([
 	'orion/i18nUtil',
 	'orion/PageUtil',
 	'orion/webui/littlelib'
-], function(require, messages, mGitCommitList, Deferred, URITemplate, mGlobalCommands, mGitCommands, i18nUtil, PageUtil, lib) {
+], function(require, messages, mGitCommitList, mSection, Deferred, URITemplate, mGlobalCommands, mGitCommands, i18nUtil, PageUtil, lib) {
 var exports = {};
 
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
@@ -166,14 +167,16 @@ exports.GitLogExplorer = (function() {
 	
 	GitLogExplorer.prototype.display = function(location){
 		
-		var tableNode = lib.node('table'); //$NON-NLS-0$
-		var contentParent = document.createElement("div");
-		contentParent.className = "sectionTable";
-		tableNode.appendChild(contentParent);
-		var logNode  = document.createElement("div");
-		logNode.id = "logNode";
-		logNode.className = "mainPadding";
-		contentParent.appendChild(logNode);
+		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
+
+		var titleWrapper = new mSection.Section(tableNode, {
+			id: "commitSection", //$NON-NLS-0$
+			title: messages["Commits"],
+			slideout: true,
+			content: '<div class="mainPadding" id="logNode"></div>', //$NON-NLS-0$
+			canHide: true,
+			preferenceService: this.preferencesService
+		}); 
 		
 		var explorer = new mGitCommitList.GitCommitListExplorer({
 			serviceRegistry: this.registry,
@@ -184,18 +187,19 @@ exports.GitLogExplorer = (function() {
 			statusService: this.statusService,
 			selection: this.selection,
 			actionScopeId: this.actionScopeId,
-			parentId: logNode,
+			parentId: "logNode",
 			location: location,
+			section: titleWrapper,
 			handleError: this.handleError,
 			root: {
-				Type: "LogRoot"
+				Type: "CommitRoot"
 			}
 		});
 		var that = this;
 		
 		explorer.display().then(function(result) {
-			that.initTitleBar(result.resource);
-			mGitCommands.updateNavTools(that.registry, that.commandService, that, that.toolbarId, that.selectionToolsId, result.items, that.pageNavId);
+			that.initTitleBar(result);
+			mGitCommands.updateNavTools(that.registry, that.commandService, that, that.toolbarId, that.selectionToolsId, result, that.pageNavId);
 		});
 	};
 	return GitLogExplorer;
