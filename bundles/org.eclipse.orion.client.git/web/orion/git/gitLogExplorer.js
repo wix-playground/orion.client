@@ -105,7 +105,7 @@ exports.GitLogExplorer = (function() {
 		if(fileURI){		
 			this.progressService.progress(this.fileClient.read(fileURI, true), "Getting metadata of " + fileURI).then(
 				function(metadata) {
-					this.isDirectory = metadata.Directory;
+					this.isDirectory = this.commitNavigator.isDirectory = metadata.Directory;
 					
 					/* breadcrumb target item */
 					var breadcrumbItem = {};
@@ -178,7 +178,7 @@ exports.GitLogExplorer = (function() {
 			preferenceService: this.preferencesService
 		}); 
 		
-		var explorer = new mGitCommitList.GitCommitListExplorer({
+		var explorer = this.commitNavigator = new mGitCommitList.GitCommitListExplorer({
 			serviceRegistry: this.registry,
 			commandRegistry: this.commandService,
 			fileClient: this.fileClient,
