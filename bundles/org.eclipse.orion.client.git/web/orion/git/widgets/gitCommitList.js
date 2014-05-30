@@ -79,7 +79,7 @@ define([
 				location = ref.CommitLocation;
 				id = that.trackingBranch.Name;
 			} else {
-				location = ref.RemoteLocation[0].Children[0].CommitLocation;
+				location = ref.RemoteLocation[0].Children[0].CommitLocation + (that.log ? that.log.RepositoryPath : "");
 				id = ref.Name;
 			}
 			return that.progressService.progress(that.gitClient.getLog(location + "?page=1&pageSize=20", id), i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], ref.Name)).then(function(resp) {//$NON-NLS-1$ //$NON-NLS-0$
@@ -98,7 +98,7 @@ define([
 				location = this.trackingBranch.CommitLocation;
 				id = ref.Name;
 			} else {
-				location = ref.CommitLocation;
+				location = ref.CommitLocation + (that.log ? that.log.RepositoryPath : "");
 				id = ref.RemoteLocation[0].Children[0].Name;
 			}
 			return that.progressService.progress(that.gitClient.getLog(location + "?page=1&pageSize=20", id), messages['Getting outgoing commits']).then(function(resp) { //$NON-NLS-1$ //$NON-NLS-0$
