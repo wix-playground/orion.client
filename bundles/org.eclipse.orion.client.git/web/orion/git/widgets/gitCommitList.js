@@ -124,6 +124,10 @@ define([
 			} 
 			return ref && ref.RemoteLocation && ref.RemoteLocation.length === 1 && ref.RemoteLocation[0].Children.length === 1;
 		},
+		isRebasing: function() {
+			var repository = this.root.repository;
+			return repository && repository.status && repository.status.RepositoryState === "REBASING_INTERACTIVE";
+		},
 		getChildren: function(parentItem, onComplete) {
 			var that = this, currentBranch = this.currentBranch;
 			var tracksRemoteBranch = this.tracksRemoteBranch();
@@ -145,11 +149,14 @@ define([
 						});
 						that.currentBranch = currentBranch;
 						if (!that.currentBranch || !currentBranch.RemoteLocation[0]) {
-							section.setTitle(messages["RebaseProgress"]);
+							if (that.isRebasing()) {
+								section.setTitle(messages["RebaseProgress"]);
+								onComplete([]);
+							} else {
+								section.setTitle(messages["NoBranch"]);
+								onComplete(that.checkEmptyList([]));
+							}
 							progress.done();
-							onComplete([
-							//TODO help message
-							]);
 							return;
 						}
 						repository.ActiveBranch = currentBranch.CommitLocation;
@@ -287,13 +294,13 @@ define([
 			var commandService = this.commandService;
 			var section = this.section;
 			var actionsNodeScope = section.actionsNode.id;
-			if (!currentBranch){
+			if (!currentBranch && this.model.isRebasing()) {
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.resetCommand", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseContinueCommand", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseSkipPatchCommand", 300); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseAbortCommand", 400); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.renderCommands(actionsNodeScope, actionsNodeScope, repository.status, this, "button"); //$NON-NLS-0$
-			} else {
+			} else if (currentBranch) {
 				var incomingActionScope = this.incomingActionScope;
 				var outgoingActionScope = this.outgoingActionScope;
 				if (lib.node(incomingActionScope)) {
@@ -426,16 +433,22 @@ define([
 			var tr = document.createElement("tr"); //$NON-NLS-0$
 			var td = document.createElement("td"); //$NON-NLS-0$
 			td.colSpan = 1;
+		
 			var noCommit = document.createElement("div"); //$NON-NLS-0$
 			noCommit.classList.add("sectionTableItem"); //$NON-NLS-0$
 			
-			var title = document.createElement("div");
-			title.textContent = messages["The branch is up to date."];
-			noCommit.appendChild(title);
-			
-			var description = document.createElement("div");
-			description.textContent = messages["You have no outgoing or incoming commits."];
-			noCommit.appendChild(description);
+			if (this.explorer.model.isRebasing()) {
+				noCommit.style.whiteSpace = "pre";
+				noCommit.appendChild(document.createTextNode(messages["RebaseProgressDetails"]));
+			} else {
+				var title = document.createElement("div");
+				title.textContent = messages["The branch is up to date."];
+				noCommit.appendChild(title);
+				
+				var description = document.createElement("div");
+				description.textContent = messages["You have no outgoing or incoming commits."];
+				noCommit.appendChild(description);
+			}
 			
 			td.appendChild(noCommit);
 			tr.appendChild(td);

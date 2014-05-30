@@ -422,5 +422,6 @@ define({
 	"NoCommits" : "No Commits",
 	"Incoming" : "Incoming",
 	"Outgoing" : "Outgoing",
-	"Sync" : "Synchronized"
+	"Sync" : "Synchronized",
+	"NoBranch" : "No Branch"
 });
