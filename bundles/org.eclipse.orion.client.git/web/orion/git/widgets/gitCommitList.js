@@ -340,27 +340,35 @@ define([
 			case 0:	
 				var td = document.createElement("td"); //$NON-NLS-0$
 				var sectionItem = document.createElement("div");
-				sectionItem.className = "sectionTableItem";
 				td.appendChild(sectionItem);
 				var horizontalBox = document.createElement("div");
+				horizontalBox.style.overflow = "hidden";
 				sectionItem.appendChild(horizontalBox);	
 				var description;
-				if (item.Type === "Incoming" || item.Type === "Outgoing" || item.Type === "Sync" || item.Type === "NoCommits") {
+				if (item.Type !== "Commit") {
 					if (item.Type !== "NoCommits") {
+						sectionItem.className = "gitCommitSectionTableItem";
 						var expandContainer = document.createElement("div");
 						expandContainer.style.display = "inline-block";
 						expandContainer.style.styleFloat = "left";
 						expandContainer.style.cssFloat = "left";
 						this.getExpandImage(tableRow, expandContainer);
 						horizontalBox.appendChild(expandContainer);
+						tableRow.classList.add("gitCommitListSection");
+					} else {
+						tableRow.classList.add("gitComitListNoCommit");
+						sectionItem.classList.add("sectionTableItem");
 					}
-						
+					
 					detailsView = document.createElement("div");
 					detailsView.className = "stretch";
 					horizontalBox.appendChild(detailsView);
 					
 					var title = document.createElement("div");
 					title.textContent = messages[item.Type];
+					if (item.Type !== "NoCommits") {
+						title.classList.add("gitComitListSectionTitle");
+					}
 					detailsView.appendChild(title);
 			
 					var actionsArea = document.createElement("ul");
@@ -368,6 +376,7 @@ define([
 					actionsArea.id = item.Type + "Actions";
 					horizontalBox.appendChild(actionsArea);
 				} else {
+					sectionItem.className = "sectionTableItem";
 					if (commit.AuthorImage) {
 						var authorImage = document.createElement("div");
 						authorImage.style["float"] = "left";
