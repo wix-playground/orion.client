@@ -164,7 +164,7 @@ define([
 								Type: "Incoming"
 							},
 							{
-								Type: "In Sync"
+								Type: "Sync"
 							}
 						]);
 					}, function(error){
@@ -178,19 +178,17 @@ define([
 			} else if (parentItem.Type === "Incoming") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					Deferred.when(that.incomingCommits || that._getIncoming(), function(incomingCommits) {
-						onComplete(incomingCommits);
+						onComplete(that.checkEmptyList(incomingCommits));
 					}, function(error) {
 						that.handleError(error);
 					});
 				} else {
 					return Deferred.when(that.log || that._getLog(), function(log) {
+						var children = [];
 						if (log.toRef.Type === "RemoteTrackingBranch") {
-							onComplete(log.Children);
-						} else {
-							onComplete([{
-								Type: "Nothing"
-							}]);
+							children = log.Children;
 						}
+						onComplete(that.checkEmptyList(children));
 					}, function(error){
 						that.handleError(error);
 					});
@@ -198,24 +196,22 @@ define([
 			} else if (parentItem.Type === "Outgoing") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					Deferred.when(that.outgoingCommits || that._getOutgoing(), function(outgoingCommits) {
-						onComplete(outgoingCommits);
+						onComplete(that.checkEmptyList(outgoingCommits));
 					}, function(error){
 						that.handleError(error);
 					});
 				} else {
 					return Deferred.when(that.log || that._getLog(), function(log) {
+						var children = [];
 						if (log.toRef.Type === "Branch") {
-							onComplete(log.Children);
-						} else {
-							onComplete([{
-								Type: "Nothing"
-							}]);
-						}
+							children = log.Children;
+						} 
+						onComplete(that.checkEmptyList(children));
 					}, function(error){
 						that.handleError(error);
 					});
 				}
-			} else if (parentItem.Type === "In Sync") { //$NON-NLS-0$
+			} else if (parentItem.Type === "Sync") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					return Deferred.when(that.log || that._getLog(), function(log) {
 						var remoteBranch = log.toRef.Type === "RemoteTrackingBranch";
@@ -226,7 +222,7 @@ define([
 									children.push(commit);
 								}
 							});
-							onComplete(children);
+							onComplete(that.checkEmptyList(children));
 						}, function(error){
 							that.handleError(error);
 						});
@@ -234,9 +230,7 @@ define([
 						that.handleError(error);
 					});
 				} else {
-					onComplete([{
-						Type: "Nothing"
-					}]);
+					onComplete(that.checkEmptyList([]));
 				}
 			} else {
 				onComplete([]);
@@ -244,6 +238,12 @@ define([
 		},
 		getId: function(/* item */ item){
 			return item.Name || item.Type;
+		},
+		checkEmptyList: function(items) {
+			if (items.length === 0) {
+				return [{Type: "NoCommits"}];
+			}
+			return items;
 		}
 	});
 	
@@ -345,8 +345,8 @@ define([
 				var horizontalBox = document.createElement("div");
 				sectionItem.appendChild(horizontalBox);	
 				var description;
-				if (item.Type === "Incoming" || item.Type === "Outgoing" || item.Type === "In Sync" || item.Type === "Nothing") {
-					if (item.Type !== "Nothing") {
+				if (item.Type === "Incoming" || item.Type === "Outgoing" || item.Type === "Sync" || item.Type === "NoCommits") {
+					if (item.Type !== "NoCommits") {
 						var expandContainer = document.createElement("div");
 						expandContainer.style.display = "inline-block";
 						expandContainer.style.styleFloat = "left";
@@ -360,7 +360,7 @@ define([
 					horizontalBox.appendChild(detailsView);
 					
 					var title = document.createElement("div");
-					title.textContent = item.Type;//TODO nls
+					title.textContent = messages[item.Type];
 					detailsView.appendChild(title);
 			
 					var actionsArea = document.createElement("ul");

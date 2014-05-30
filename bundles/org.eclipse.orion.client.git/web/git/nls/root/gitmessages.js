@@ -418,5 +418,9 @@ define({
 	"Signed-off-by: ":"Signed-off-by: ",
 	"Change-Id: ":"Change-Id: ",
 	"REJECTED_NONFASTFORWARD":"Push is non-fastforward and was rejected. Use Fetch to see new commits that must be merged.",
-	"Commit and Push" : "Commit and Push"
+	"Commit and Push" : "Commit and Push",
+	"NoCommits" : "No Commits",
+	"Incoming" : "Incoming",
+	"Outgoing" : "Outgoing",
+	"Sync" : "Synchronized"
 });
