@@ -1,99 +1,69 @@
 /*******************************************************************************
  * @license
  * Copyright (c) 2012 IBM Corporation and others.
- * All rights reserved. This program and the accompanying materials are made 
- * available under the terms of the Eclipse Public License v1.0 
- * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
- * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html). 
- * 
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License v1.0
+ * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution
+ * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html).
+ *
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*jslint amd:true browser:true mocha:true */
 define([
 	'chai/chai',
+	'js-tests/core/config/mockPrefs',
 	'orion/Deferred',
 	'orion/config',
 	'orion/serviceregistry',
 	'orion/pluginregistry',
 	'mocha/mocha',
-], function(chai, Deferred, config, mServiceRegistry, mPluginRegistry) {
-	var assert = chai.assert;
-	var ConfigAdminFactory = config.ConfigurationAdminFactory;
-	var MANAGED_SERVICE = 'orion.cm.managedservice';
+], function(chai, MockPrefsService, Deferred, config, mServiceRegistry, mPluginRegistry) {
+	var assert = chai.assert,
+	    ConfigAdminFactory = config.ConfigurationAdminFactory,
+	    MANAGED_SERVICE = 'orion.cm.managedservice';
 
-	function MockPrefsService() {
-		function PrefNode() {
-			this.map = Object.create(null);
-		}
-		PrefNode.prototype = {
-			clear: function() {
-				this.map = Object.create(null);
-			},
-			keys: function() {
-				return Object.keys(this.map);
-			},
-			get: function(key) {
-				var value = this.map[key];
-				return typeof value === 'object' ? JSON.parse(value) : undefined;
-			},
-			put: function(key, value) {
-				if (value === null) {
-					throw new Error('Preferences does not allow null values');
-				}
-				this.map[key] = JSON.stringify(value);
-			},
-			remove: function(key) {
-				delete this.map[key];
-			}
-		};
-		this.prefNodes = Object.create(null);
-		this.getPreferences = function(name/*, scope*/) {
-			var d = new Deferred();
-			var self = this;
-			setTimeout(function() {
-				var prefNode = self.prefNodes[name] = new PrefNode();
-				d.resolve(prefNode);
-			}, 100);
-			return d;
-		};
-		// Search for a string in the preferences JSON.
-		this._contains = function(str) {
-			var prefNodes = this.prefNodes;
-			return Object.keys(prefNodes).some(function(name) {
-				return JSON.stringify(prefNodes[name].map).indexOf(str) !== -1;
-			});
-		};
-	}
+	var serviceRegistry, prefsService, pluginRegistry, configAdmin;
 
-	var serviceRegistry, preferences, pluginRegistry, pluginStorage, configAdmin;
+	function doSetUp(factories) {
+		factories = factories || {};
+		var storageFactory = factories.storage || Object.create.bind(Object, Object.prototype);
+		var pluginRegistryFactory = factories.pluginRegistry || function(storage) {
+			return (window.pluginregistry = new mPluginRegistry.PluginRegistry(serviceRegistry, {storage: storage}));
+		};
+		var prefsServiceFactory = factories.prefs || function() {
+			return new MockPrefsService();
+		};
+		var configAdminFactoryFactory = factories.config || function (serviceRegistry, pluginRegistry, prefsService) {
+			return new ConfigAdminFactory(serviceRegistry, pluginRegistry, prefsService);
+		};
 
-	function setUpCustom(storage, omitConfigAdmin) {
 		serviceRegistry = new mServiceRegistry.ServiceRegistry();
-		preferences = new MockPrefsService();
-		pluginStorage = arguments.length ? storage : {};
-		pluginRegistry = window.pluginregistry = new mPluginRegistry.PluginRegistry(serviceRegistry, {storage: pluginStorage});
-		return pluginRegistry.start().then(function(){
-			if (typeof omitConfigAdmin === 'undefined' || !omitConfigAdmin) {
-				return new ConfigAdminFactory(serviceRegistry, pluginRegistry, preferences).getConfigurationAdmin().then(
-					function(createdConfigAdmin) {
-						configAdmin = createdConfigAdmin;
-					});
-			}
+		pluginRegistry = pluginRegistryFactory(storageFactory());
+		return pluginRegistry.start().then(function() {
+			prefsService = prefsServiceFactory();
+			var configAdminFactory = configAdminFactoryFactory(serviceRegistry, pluginRegistry, prefsService);
+			if (!configAdminFactory)
+				return new Deferred().resolve();
+			return configAdminFactory.getConfigurationAdmin().then(
+				function(createdConfigAdmin) {
+					configAdmin = createdConfigAdmin;
+					return new Deferred().resolve();
+				});
 		});
 	}
 
-	// Hook for before(Each)
+	// Hook for before/beforeEach. MUST have 0 declared params, otherwise Mocha thinks you want an async callback
 	function setUp() {
-		return setUpCustom(null, null);
+		if (arguments.length)
+			throw new Error("Do not call this function with parameters, they won't work");
+		return doSetUp();
 	}
 
-	// Hook for after(Each)
 	function tearDown() {
-		return pluginRegistry.stop().then(function(){
+		return pluginRegistry.stop().then(function() {
 			serviceRegistry = null;
-			preferences = null;
+			prefsService = null;
 			pluginRegistry = null;
-			pluginStorage = null;
 			configAdmin = null;
 		});
 	}
@@ -154,7 +124,7 @@ define([
 				assert.strictEqual(properties.pid, pid);
 				assert.strictEqual(properties.str, 'blort');
 				configuration.remove();
-		
+
 				var listedConfigs = configAdmin.listConfigurations();
 				assert.ok(listedConfigs.every(function(config) {
 						return config !== null;
@@ -162,19 +132,21 @@ define([
 				assert.ok(listedConfigs.every(function(config) {
 					return config && pid !== config.getPid();
 				}), 'Removed configuration is not in list');
-		
+
 				configuration = configAdmin.getConfiguration(pid);
 				assert.strictEqual(configuration.getProperties(), null);
 			});
 			it("should use lazy Pref storage for Configurations", function() {
 				var pid = 'GRUNNUR';
 				var configuration = configAdmin.getConfiguration(pid);
-				assert.equal(preferences._contains(pid), false, 'config data exists in Prefs');
-				configuration.update({foo: 'bar'});
-				assert.equal(preferences._contains(pid), true, 'config data exists in Prefs');
+				return prefsService.getPreferences().then(function(preferences) {
+					assert.equal(preferences._contains(pid), false, 'config data exists in Prefs');
+					configuration.update({foo: 'bar'});
+					assert.equal(preferences._contains(pid), true, 'config data exists in Prefs');
+				});
 			});
 		}); // ConfigurationAdmin
-	
+
 		describe("ManagedService", function() {
 			beforeEach(setUp);
 			afterEach(tearDown);
@@ -182,7 +154,7 @@ define([
 			describe("#updated", function() {
 				it("should be called with `null` for nonexistent config", function() {
 					var d = new Deferred();
-					serviceRegistry.registerService(MANAGED_SERVICE, 
+					serviceRegistry.registerService(MANAGED_SERVICE,
 						{	updated: function(properties) {
 								try {
 									assert.strictEqual(properties, null);
@@ -229,7 +201,7 @@ define([
 					var pid = 'orion.test.pid';
 					var count = 0;
 					// 1st call happens right after registration
-					serviceRegistry.registerService(MANAGED_SERVICE, 
+					serviceRegistry.registerService(MANAGED_SERVICE,
 						{	updated: function(properties) {
 								if (++count === 2) {
 									try {
@@ -255,7 +227,7 @@ define([
 					var pid = 'orion.test.pid';
 					var count = 0;
 					// 1st call happens right after registration
-					serviceRegistry.registerService(MANAGED_SERVICE, 
+					serviceRegistry.registerService(MANAGED_SERVICE,
 						{	updated: function(properties) {
 								if (++count === 3) {
 									try {
@@ -303,13 +275,19 @@ define([
 			});
 
 			describe("late registration", function() {
-				before(setUpCustom.bind(null, {} /*no storage*/, true /*no config admin*/));
+				before(doSetUp.bind(null, {
+					config: function() {
+						// Don't create config admin in setUp
+						return null;
+					}
+				}));
 
 				// Similar to previous test, but ConfigAdmin is registered after PluginRegistry has started up.
 				it("should have correct updated() call ordering", function() {
 					return pluginRegistry.installPlugin('config/testManagedServicePlugin.html').then(function(plugin) {
 						return plugin.start({lazy:true}).then(function() {
-							return new ConfigAdminFactory(serviceRegistry, pluginRegistry, preferences).getConfigurationAdmin().then(function(createdConfigAdmin) {
+							// Now that the plugin is started, create the config admin
+							return new ConfigAdminFactory(serviceRegistry, pluginRegistry, prefsService).getConfigurationAdmin().then(function(createdConfigAdmin) {
 								configAdmin = createdConfigAdmin;
 								var testService = serviceRegistry.getService('test.bogus');
 								return testService.test().then(function() {
@@ -323,5 +301,79 @@ define([
 				});
 			});
 		}); // on plugin load
+
+		describe("cascading", function() {
+			function putAll(provider, pids) {
+				Object.keys(pids).forEach(function(pid) {
+					provider.put(pid, pids[pid]);
+				});
+			}
+			function setUpWithPrefs(prefData) {
+				var prefsServiceFactory = function() {
+					var ps = new MockPrefsService();
+					prefData.defaults && putAll(ps._defaultsProvider, prefData.defaults);
+					prefData.user && putAll(ps._userProvider, prefData.user);
+					return ps;
+				};
+				return doSetUp({
+					prefs: prefsServiceFactory
+				});
+			}
+			afterEach(tearDown);
+
+			it("PID cascades from default provider", function() {
+				return setUpWithPrefs({
+					defaults: {
+						some_pid: { gak: 42 }
+					}
+				}).then(function() {
+					var configuration = configAdmin.getConfiguration("some_pid");
+					var props = configuration.getProperties();
+					assert.equal(props.gak, 42);
+				});
+			});
+			it("on collision, user sub-prop overrides default", function() {
+				return(setUpWithPrefs({
+					defaults: {
+						some_pid: { gak: 42 }
+					},
+					user: {
+						some_pid: { gak: -1 }
+					}
+				})).then(function() {
+					var configuration = configAdmin.getConfiguration("some_pid"),
+					    props = configuration.getProperties();
+					assert.equal(props.gak, -1, "user overrides default");
+				});
+			});
+			// Tests that sub-properties contributed to a PID from defaults provider are visible when user provider
+			// defines the same PID
+			it("sub-prop cascades from default provider", function() {
+				return setUpWithPrefs({
+					defaults: {
+						some_pid: { gak: 42 }
+					},
+					user: {
+						some_pid: { buzz: 0 }
+					}
+				}).then(function() {
+					var configuration = configAdmin.getConfiguration("some_pid"),
+					    props = configuration.getProperties();
+					assert.equal(props.gak, 42, "gak is visible");
+					assert.equal(props.buzz, 0, "buzz is visible");
+				});
+			});
+			// A setting's value set in the default prefs provider should be observed as the default value of the setting
+			it("default value should cascade downwards", function() {
+				return setUpWithPrefs({
+					defaults: {
+						some_pid: { gak: 42 }
+					}
+				}).then(function() {
+					// TODO move this to SettingsRegistry test
+					assert.ok(false, "test not finished");
+				});
+			});
+		}); // cascading
 	}); // config
 });
