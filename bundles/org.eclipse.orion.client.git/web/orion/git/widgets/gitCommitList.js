@@ -14,6 +14,7 @@
 define([
 	'require',
 	'i18n!git/nls/gitmessages',
+	'orion/commands',
 	'orion/Deferred',
 	'orion/explorers/explorer',
 	'orion/URITemplate',
@@ -24,7 +25,7 @@ define([
 	'orion/git/widgets/CommitTooltipDialog',
 	'orion/webui/littlelib',
 	'orion/objects'
-], function(require, messages, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, mCommitTooltip, lib, objects) {
+], function(require, messages, mCommands, Deferred, mExplorer, URITemplate, util, i18nUtil, PageUtil, mNavUtils, mCommitTooltip, lib, objects) {
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 	var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 
@@ -38,6 +39,7 @@ define([
 		this.statusService = options.statusService;
 		this.gitClient = options.gitClient;
 		this.progressService = options.progressService;
+		this.logDeferred = new Deferred();
 	}
 	GitCommitListModel.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitCommitListModel.prototype, /** @lends orion.git.GitCommitListModel.prototype */ {
@@ -129,7 +131,7 @@ define([
 			return repository && repository.status && repository.status.RepositoryState === "REBASING_INTERACTIVE";
 		},
 		getChildren: function(parentItem, onComplete) {
-			var that = this, currentBranch = this.currentBranch;
+			var that = this;
 			var tracksRemoteBranch = this.tracksRemoteBranch();
 			if (parentItem instanceof Array && parentItem.length > 0) {
 				onComplete(parentItem);
@@ -221,6 +223,8 @@ define([
 			} else if (parentItem.Type === "Sync") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					return Deferred.when(that.log || that._getLog(), function(log) {
+						parentItem.log = log;
+						that.logDeferred.resolve(log);
 						var remoteBranch = log.toRef.Type === "RemoteTrackingBranch";
 						Deferred.when(remoteBranch ? that.incomingCommits || that._getIncoming() : that.outgoingCommits || that._getOutgoing(), function(filterCommits) {
 							var children = [];
@@ -274,9 +278,28 @@ define([
 		
 		this.incomingActionScope = "IncomingActions"; //$NON-NLS-0$
 		this.outgoingActionScope = "OutgoingActions"; //$NON-NLS-0$
+		this.syncActionScope = "SyncActions"; //$NON-NLS-0$
+		this.createCommands();
 	}
 	GitCommitListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitCommitListExplorer.prototype, /** @lends orion.git.GitCommitListExplorer.prototype */ {
+		changedItem: function(item) {
+			var deferred = new Deferred();
+			if (item.Type === "Sync") {
+				var that = this;
+				var model = this.model;
+				model.log = item.log = null;
+				model.logDeferred = new Deferred();
+				model.getChildren(item, function(children) {
+					that.myTree.refresh.bind(that.myTree)(item, children, false);
+					that.updatePageCommands(item);
+					deferred.resolve(children);
+				});
+			} else {
+				deferred.resolve();
+			}
+			return deferred;
+		},
 		display: function() {
 			var that = this;
 			var deferred = new Deferred();
@@ -287,6 +310,42 @@ define([
 				deferred.resolve(model.log);
 			}});
 			return deferred;
+		},
+		createCommands: function() {
+			var commandService = this.commandService;
+			var nextPageCommand = new mCommands.Command({
+				name: "Next Page",//messages['Next Page'],
+//				tooltip: messages["Checkout all the selected files, discarding all changes"],
+//				imageClass: "git-sprite-checkout", //$NON-NLS-0$
+//				spriteClass: "gitCommandSprite", //$NON-NLS-0$
+				id: "eclipse.orion.git.commit.nextPage", //$NON-NLS-0$
+				callback: function(data) {
+					var item = data.items;
+					data.handler.model.location = item.log.NextLocation;
+					data.handler.changedItem(item);
+				},
+				visibleWhen: function(item) {
+					return !!item.log.NextLocation;
+				}
+			});
+			commandService.addCommand(nextPageCommand);
+
+			var previousPageCommand = new mCommands.Command({
+				name: "Previous Page",//messages['Next Page'],
+//				tooltip: messages["Checkout all the selected files, discarding all changes"],
+//				imageClass: "git-sprite-checkout", //$NON-NLS-0$
+//				spriteClass: "gitCommandSprite", //$NON-NLS-0$
+				id: "eclipse.orion.git.commit.previousPage", //$NON-NLS-0$
+				callback: function(data) {
+					var item = data.items;
+					data.handler.model.location = item.log.PreviousLocation;	
+					data.handler.changedItem(item);
+				},
+				visibleWhen: function(item) {
+					return !!item.log.PreviousLocation;
+				}
+			});
+			commandService.addCommand(previousPageCommand);
 		},
 		updateCommands: function() {
 			var currentBranch = this.model.currentBranch;
@@ -325,7 +384,6 @@ define([
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
 					commandService.renderCommands(incomingActionScope, incomingActionScope, currentBranch.RemoteLocation[0].Children[0], this, "button"); //$NON-NLS-0$
 				}
-	
 				commandService.addCommandGroup(outgoingActionScope, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
@@ -333,6 +391,18 @@ define([
 				commandService.renderCommands(outgoingActionScope, outgoingActionScope, currentBranch, this, "button"); //$NON-NLS-0$
 			}
 		},
+		updatePageCommands: function(item) {
+			var that = this;
+			this.model.logDeferred.then(function() {
+				var commandService = that.commandService;
+				if (lib.node(that.syncActionScope)) {
+					commandService.destroy(that.syncActionScope);
+				}
+				commandService.registerCommandContribution(that.syncActionScope, "eclipse.orion.git.commit.nextPage", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandService.registerCommandContribution(that.syncActionScope, "eclipse.orion.git.commit.previousPage", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandService.renderCommands(that.syncActionScope, that.syncActionScope, item, that, "button"); //$NON-NLS-0$
+			});
+		}
 	});
 	
 	function GitCommitListRenderer(options, explorer) {
@@ -359,7 +429,12 @@ define([
 						expandContainer.style.display = "inline-block";
 						expandContainer.style.styleFloat = "left";
 						expandContainer.style.cssFloat = "left";
-						this.getExpandImage(tableRow, expandContainer);
+						var expandImage = this.getExpandImage(tableRow, expandContainer);
+						if (item.Type === "Sync") {
+							expandImage.addEventListener("click",function() {
+								explorer.updatePageCommands(item);
+							});
+						}
 						horizontalBox.appendChild(expandContainer);
 						tableRow.classList.add("gitCommitListSection");
 					} else {
