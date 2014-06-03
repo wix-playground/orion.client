@@ -290,9 +290,12 @@ define([
 				var model = this.model;
 				model.log = item.log = null;
 				model.logDeferred = new Deferred();
+				var progress = this.section.createProgressMonitor();
+				progress.begin(messages["Getting git log"]);
 				model.getChildren(item, function(children) {
 					that.myTree.refresh.bind(that.myTree)(item, children, false);
 					that.updatePageCommands(item);
+					progress.done();
 					deferred.resolve(children);
 				});
 			} else {
@@ -314,15 +317,15 @@ define([
 		createCommands: function() {
 			var commandService = this.commandService;
 			var nextPageCommand = new mCommands.Command({
-				name: "Next Page",//messages['Next Page'],
-//				tooltip: messages["Checkout all the selected files, discarding all changes"],
-//				imageClass: "git-sprite-checkout", //$NON-NLS-0$
-//				spriteClass: "gitCommandSprite", //$NON-NLS-0$
+				name: messages['Next Page >'],
+				tooltip: messages["Show next page of git log"],
 				id: "eclipse.orion.git.commit.nextPage", //$NON-NLS-0$
 				callback: function(data) {
 					var item = data.items;
-					data.handler.model.location = item.log.NextLocation;
-					data.handler.changedItem(item);
+					if (item.log) {
+						data.handler.model.location = item.log.NextLocation;
+						data.handler.changedItem(item);
+					}
 				},
 				visibleWhen: function(item) {
 					return !!item.log.NextLocation;
@@ -331,15 +334,15 @@ define([
 			commandService.addCommand(nextPageCommand);
 
 			var previousPageCommand = new mCommands.Command({
-				name: "Previous Page",//messages['Next Page'],
-//				tooltip: messages["Checkout all the selected files, discarding all changes"],
-//				imageClass: "git-sprite-checkout", //$NON-NLS-0$
-//				spriteClass: "gitCommandSprite", //$NON-NLS-0$
+				name: messages['< Previous Page'],
+				tooltip: messages["Show previous page of git log"],
 				id: "eclipse.orion.git.commit.previousPage", //$NON-NLS-0$
 				callback: function(data) {
 					var item = data.items;
-					data.handler.model.location = item.log.PreviousLocation;	
-					data.handler.changedItem(item);
+					if (item.log) {
+						data.handler.model.location = item.log.PreviousLocation;	
+						data.handler.changedItem(item);
+					}
 				},
 				visibleWhen: function(item) {
 					return !!item.log.PreviousLocation;
@@ -398,7 +401,7 @@ define([
 				if (lib.node(that.syncActionScope)) {
 					commandService.destroy(that.syncActionScope);
 				}
-				commandService.registerCommandContribution(that.syncActionScope, "eclipse.orion.git.commit.nextPage", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandService.registerCommandContribution(that.syncActionScope, "eclipse.orion.git.commit.nextPage", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(that.syncActionScope, "eclipse.orion.git.commit.previousPage", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.renderCommands(that.syncActionScope, that.syncActionScope, item, that, "button"); //$NON-NLS-0$
 			});
