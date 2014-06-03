@@ -1518,11 +1518,10 @@ var exports = {};
 										commandInvocation.targetBranch.Location = remoteLocation;
 										commandInvocation.targetBranch.Name = destination;
 
-										dialog = new mConfirmPush.ConfirmPushDialog({
+										var dialog = new mConfirmPush.ConfirmPushDialog({
 											title: messages["Choose Branch"],
 											serviceRegistry: serviceRegistry,
 											gitClient: gitService,
-											dialog: null,
 											location: destination,
 											func: function(){
 												handlePush(options, remoteLocation, "HEAD", destination, false);

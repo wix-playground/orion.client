@@ -25,38 +25,105 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 		
 		var serviceRegistry = dependencies.serviceRegistry;
 		var commandService = dependencies.commandService;
-		var explorer = dependencies.explorer;
-		var toolbarId = dependencies.toolbarId; 
 		var tags = dependencies.tags;
 		
 		//Callbacks
-		var success = dependencies.success;
-		var error = dependencies.error;
 		var confirmCallback = dependencies.confirmDialogCloseCallback;
 		var remoteCallback = dependencies.remotePrompterDialogCloseCallback;
 		var sshCredentialsCallback = dependencies.sshCredentialsDialogCloseCallback;
 		var sshSlideoutCallback = dependencies.sshSlideoutCloseCallback;
-        
+		
+		var chooseRemote = function(repository, branch, updateConfig) {
+			var result = new Deferred();
+			var remotes = new Deferred();
+			var gitService = serviceRegistry.getService("orion.git.provider"); //$NON-NLS-0$
+			var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+			if (branch.RemoteLocation.length === 1 && branch.RemoteLocation[0].Children.length === 1) { //when we push next time - chance to switch saved remote
+				remotes = progress.progress(gitService.getGitRemote(repository.RemoteLocation), "Getting git remote details " + branch.Name);
+			} else {
+				remotes.resolve({Children: branch.RemoteLocation});
+			}
+			remotes.then(function(remotes) {
+				
+				var handleError = function(error){
+					handleProgressServiceResponse(error, {}, serviceRegistry);
+					result.reject(error);
+				};
+						
+				var dialog = new mRemotePrompter.RemotePrompterDialog({
+					title: messages["Choose Branch"],
+					serviceRegistry: serviceRegistry,
+					gitClient: gitService,
+					closeCallback: function() {
+						result.reject();
+					},
+					treeRoot: {
+						Children: remotes.Children
+					},
+					hideNewBranch: false,
+					func: function(targetBranch, remote, optional) {
+						var target;
+						if(targetBranch === null){
+							target = optional;
+						}
+						else{
+							target = targetBranch;
+						}
+						if (updateConfig === undefined || updateConfig) {
+							var configKey = "branch." + branch.Name + ".remote"; //$NON-NLS-1$ //$NON-NLS-0$
+							progress.progress(gitService.addCloneConfigurationProperty(repository.ConfigLocation, configKey ,target.parent.Name), "Adding git configuration property "+ branch.Name).then(function(){
+								result.resolve(target);
+							}, function(err){
+								if(err.status === 409){ //when confing entry is already defined we have to edit it
+									gitService.getGitCloneConfig(repository.ConfigLocation).then(function(config){
+										if(config.Children){
+											for(var i=0; i<config.Children.length; i++){
+												if(config.Children[i].Key===configKey){
+													var locationToUpdate = config.Children[i].Location;
+													progress.progress(gitService.editCloneConfigurationProperty(locationToUpdate,target.parent.Name), "Updating configuration property " + target.parent.Name).then(function(){
+														result.resolve(target);
+													},
+													handleError);
+													break;
+												}
+											}
+										}
+										
+									}, handleError);
+								} else {
+									handleError(err);
+								}
+							});
+						} else {
+							result.resolve(target);
+						}
+					}
+				});
+				dialog.show();
+			});
+			return result;
+		};
+		
 		var perform = function(data) {
 			var d = new Deferred();
 				
 			var confirmDialogCallback = function () {
-				if (typeof(confirmCallback) == "function") confirmCallback();
+				if (typeof(confirmCallback) === "function") confirmCallback(); //$NON-NLS-0$
 				d.reject();
 			};
 				
 			var remotePrompterDialogCallback = function () {
-				if (typeof(remoteCallback) == "function") remoteCallback();
+				if (typeof(remoteCallback) === "function") remoteCallback(); //$NON-NLS-0$
 				d.reject();
 			};
 				
 			var sshCredentialsDialogCallback = function () {
-				if (typeof(sshCredentialsCallback) == "function") sshCredentialsCallback();
+				if (typeof(sshCredentialsCallback) === "function") sshCredentialsCallback(); //$NON-NLS-0$
 				d.reject();
 			};
 				
 			var sshSlideoutCloseCallback = function () {
-				if (typeof(sshSlideoutCallback) == "function") sshSlideoutCallback();
+				if (typeof(sshSlideoutCallback) === "function") sshSlideoutCallback(); //$NON-NLS-0$
 				d.reject();
 			};
 				
@@ -64,7 +131,6 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 				//previously saved target branch
 				var itemTargetBranch = data.targetBranch;
 			
-				var target;
 				var item = data.items;
 				if (item.toRef) {
 					item = item.toRef;
@@ -75,8 +141,6 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 					commandInvocation.command.callback = command;
 				}
 
-				var parts = item.CloneLocation.split("/");
-				
 				var handleResponse = function(jsonData, commandInvocation){
 					if (jsonData.JsonData.HostKey){
 						commandInvocation.parameters = null;
@@ -117,7 +181,7 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 					commandService.collectParameters(commandInvocation,sshSlideoutCloseCallback);
 					return;
 				}
-				var gitService = serviceRegistry.getService("orion.git.provider");
+				var gitService = serviceRegistry.getService("orion.git.provider"); //$NON-NLS-0$
 				var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
 				
 				if(commandInvocation.errorData && commandInvocation.errorData.failedOperation){
@@ -139,7 +203,7 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 									handleResponse(jsonData, commandInvocation);
 								}
 							);
-						}, function(jsonData, secondArg) {
+						}, function(jsonData) {
 							handleGitServiceResponse(jsonData, serviceRegistry, 
 								function() {
 									d.resolve();
@@ -153,114 +217,52 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 
 				progress.progress(gitService.getGitClone(item.CloneLocation), "Getting git repository details " + item.Name).then(
 					function(clone){
-						var remoteLocation = clone.Children[0].RemoteLocation;
-						var locationToChange = clone.Children[0].ConfigLocation;
-						
-						var handleError = function(error){
-							handleProgressServiceResponse(error, {}, serviceRegistry);
-							d.reject(error);
-						};
-						
+						var repository = clone.Children[0];
 						gatherSshCredentials(serviceRegistry, commandInvocation,null,sshCredentialsDialogCallback).then(
 							function(options) {
-								var result = new Deferred();
-								
-								if (item.RemoteLocation.length === 1 && item.RemoteLocation[0].Children.length === 1) { //when we push next time - chance to switch saved remote
-									result = progress.progress(gitService.getGitRemote(remoteLocation), "Getting git remote details " + item.Name);
-								} else {
-									var remotes = {};
-									remotes.Children = item.RemoteLocation;
-									result.resolve(remotes);
-									
+								if(itemTargetBranch){
+									handlePush(options, itemTargetBranch.Location, "HEAD", itemTargetBranch.Name, false); //$NON-NLS-0$
+									return;
 								}
-						
-								result.then(
-									function(remotes) {
-										if(itemTargetBranch){
-											handlePush(options, itemTargetBranch.Location, "HEAD", itemTargetBranch.Name, false);
-											return;
-										}
-
-										var dialog = new mRemotePrompter.RemotePrompterDialog({
-											title: messages["Choose Branch"],
-											serviceRegistry: serviceRegistry,
-											gitClient: gitService,
-											closeCallback : remotePrompterDialogCallback,
-											treeRoot: {
-												Children: remotes.Children
-											},
-											hideNewBranch: false,
-											func: function(targetBranch, remote, optional) {
-												if(targetBranch === null){
-													target = optional;
-												}
-												else{
-													target = targetBranch;
-												}
-												var configKey = "branch." + item.Name + ".remote";
-												progress.progress(gitService.addCloneConfigurationProperty(locationToChange, configKey ,target.parent.Name), "Adding git configuration property "+ item.Name).then(
-													function(){
-														commandInvocation.targetBranch = target;
-														handlePush(options, target.Location, "HEAD",target.Name, false);
-													}, function(err){
-														if(err.status === 409){ //when confing entry is already defined we have to edit it
-															gitService.getGitCloneConfig(locationToChange).then(function(config){
-																if(config.Children){
-																	for(var i=0; i<config.Children.length; i++){
-																		if(config.Children[i].Key===configKey){
-																			var locationToUpdate = config.Children[i].Location;
-																			progress.progress(gitService.editCloneConfigurationProperty(locationToUpdate,target.parent.Name), "Updating configuration property " + target.parent.Name).then(
-																					function(){
-																						commandInvocation.targetBranch = target;
-																						handlePush(options, target.Location, "HEAD",target.Name, false);
-																					},
-																					handleError
-																			);
-																			break;
-																		}
-																	}
-																}
-																
-															}, handleError);
-														} else {
-															handleError(err);
-														}
-													}
-												);
-											}
-										});
-										
-										if (item.RemoteLocation.length === 1 && item.RemoteLocation[0].Children.length === 1) { //when we push next time - chance to switch saved remote
-											var dialog2 = dialog;
-											
-											dialog = new mConfirmPush.ConfirmPushDialog({
-												title: messages["Choose Branch"],
-												serviceRegistry: serviceRegistry,
-												gitClient: gitService,
-												dialog: dialog2,
-												location: item.RemoteLocation[0].Children[0].Name,
-												func: function(){
-													commandInvocation.targetBranch = item.RemoteLocation[0].Children[0];
-													handlePush(options,item.RemoteLocation[0].Children[0].Location, "HEAD", item.Name, false);
-												},
-												closeCallback : confirmDialogCallback
-											});
-										}
-										
-										dialog.show();
-									}
-								);
-						
+								var choosingRemote = function() {
+									chooseRemote(repository, item).then(function(target) {
+										commandInvocation.targetBranch = target;
+										handlePush(options, target.Location, "HEAD",target.Name, false); //$NON-NLS-0$
+									}, function() {
+										remotePrompterDialogCallback();
+									});
+								}
+								if (item.RemoteLocation.length === 1 && item.RemoteLocation[0].Children.length === 1) { //when we push next time - chance to switch saved remote
+									var dialog = new mConfirmPush.ConfirmPushDialog({
+										title: messages["Choose Branch"],
+										serviceRegistry: serviceRegistry,
+										gitClient: gitService,
+										moreCallback: function() {
+											choosingRemote();
+										},
+										location: item.RemoteLocation[0].Children[0].Name,
+										func: function(){
+											commandInvocation.targetBranch = item.RemoteLocation[0].Children[0];
+											handlePush(options,item.RemoteLocation[0].Children[0].Location, "HEAD", item.Name, false); //$NON-NLS-0$
+										},
+										closeCallback : confirmDialogCallback
+									});
+									dialog.show();
+								} else {
+									choosingRemote();
+								}
+								
 							}
 						);
 					}
 				);
-			};
+			}
 			command(data);
 			return d;
 		};
 		return {
-			perform:perform
+			perform:perform,
+			chooseRemote: chooseRemote
 		};
 	};
 });
