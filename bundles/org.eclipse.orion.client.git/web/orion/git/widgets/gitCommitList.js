@@ -461,66 +461,66 @@ define([
 			switch(col_no){
 			case 0:	
 				var td = document.createElement("td"); //$NON-NLS-0$
-				var sectionItem = document.createElement("div");
+				var sectionItem = document.createElement("div"); //$NON-NLS-0$
 				td.appendChild(sectionItem);
-				var horizontalBox = document.createElement("div");
-				horizontalBox.style.overflow = "hidden";
+				var horizontalBox = document.createElement("div"); //$NON-NLS-0$
+				horizontalBox.style.overflow = "hidden"; //$NON-NLS-0$
 				sectionItem.appendChild(horizontalBox);	
-				var description;
-				if (item.Type !== "Commit") {
-					if (item.Type !== "NoCommits") {
-						sectionItem.className = "gitCommitSectionTableItem";
-						var expandContainer = document.createElement("div");
-						expandContainer.style.display = "inline-block";
-						expandContainer.style.styleFloat = "left";
-						expandContainer.style.cssFloat = "left";
+				var description, detailsView, actionsArea;
+				if (item.Type !== "Commit") { //$NON-NLS-0$
+					if (item.Type !== "NoCommits") { //$NON-NLS-0$
+						sectionItem.className = "gitCommitSectionTableItem"; //$NON-NLS-0$
+						var expandContainer = document.createElement("div"); //$NON-NLS-0$
+						expandContainer.style.display = "inline-block"; //$NON-NLS-0$
+						expandContainer.style.styleFloat = "left"; //$NON-NLS-0$
+						expandContainer.style.cssFloat = "left"; //$NON-NLS-0$
 						var expandImage = this.getExpandImage(tableRow, expandContainer);
-						if (item.Type === "Sync") {
-							expandImage.addEventListener("click",function() {
+						if (item.Type === "Sync") { //$NON-NLS-0$
+							expandImage.addEventListener("click",function() { //$NON-NLS-0$
 								explorer.updatePageCommands(item);
 							});
 						}
 						horizontalBox.appendChild(expandContainer);
-						tableRow.classList.add("gitCommitListSection");
+						tableRow.classList.add("gitCommitListSection"); //$NON-NLS-0$
 					} else {
-						tableRow.classList.add("gitComitListNoCommit");
-						sectionItem.classList.add("sectionTableItem");
+						tableRow.classList.add("gitComitListNoCommit"); //$NON-NLS-0$
+						sectionItem.classList.add("sectionTableItem"); //$NON-NLS-0$
 					}
 					
-					detailsView = document.createElement("div");
-					detailsView.className = "stretch";
+					detailsView = document.createElement("div"); //$NON-NLS-0$
+					detailsView.className = "stretch"; //$NON-NLS-0$
 					horizontalBox.appendChild(detailsView);
 					
-					var title = document.createElement("div");
+					var title = document.createElement("div"); //$NON-NLS-0$
 					title.textContent = messages[item.Type];
-					if (item.Type !== "NoCommits") {
-						title.classList.add("gitComitListSectionTitle");
+					if (item.Type !== "NoCommits") { //$NON-NLS-0$
+						title.classList.add("gitComitListSectionTitle"); //$NON-NLS-0$
 					}
 					detailsView.appendChild(title);
 			
-					var actionsArea = document.createElement("ul");
-					actionsArea.className = "layoutRight commandList";
-					actionsArea.id = item.Type + "Actions";
+					actionsArea = document.createElement("ul"); //$NON-NLS-0$
+					actionsArea.className = "layoutRight commandList"; //$NON-NLS-0$
+					actionsArea.id = item.Type + "Actions"; //$NON-NLS-0$
 					horizontalBox.appendChild(actionsArea);
 				} else {
-					sectionItem.className = "sectionTableItem";
+					sectionItem.className = "sectionTableItem"; //$NON-NLS-0$
 					if (commit.AuthorImage) {
-						var authorImage = document.createElement("div");
-						authorImage.style["float"] = "left";
+						var authorImage = document.createElement("div"); //$NON-NLS-0$
+						authorImage.style["float"] = "left"; //$NON-NLS-1$ //$NON-NLS-0$
 						var image = new Image();
 						image.src = commit.AuthorImage;
 						image.name = commit.AuthorName;
-						image.className = "git-author-icon";
+						image.className = "git-author-icon"; //$NON-NLS-0$
 						authorImage.appendChild(image);
 						horizontalBox.appendChild(authorImage);
 					}
 					
-					var detailsView = document.createElement("div");
-					detailsView.className = "stretch";
+					detailsView = document.createElement("div"); //$NON-NLS-0$
+					detailsView.className = "stretch"; //$NON-NLS-0$
 					horizontalBox.appendChild(detailsView);
 	
-					var titleLink = document.createElement("a");
-					titleLink.className = "navlinkonpage";
+					var titleLink = document.createElement("a"); //$NON-NLS-0$
+					titleLink.className = "navlinkonpage"; //$NON-NLS-0$
 					titleLink.href = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
 					titleLink.textContent = util.trimCommitMessage(commit.Message);
 					detailsView.appendChild(titleLink);
@@ -530,17 +530,17 @@ define([
 					
 					new mCommitTooltip.CommitTooltipDialog({commit: commit, triggerNode: titleLink});
 	
-					var d = document.createElement("div");
+					var d = document.createElement("div"); //$NON-NLS-0$
 					detailsView.appendChild(d);
 	
-					description = document.createElement("span");
+					description = document.createElement("span"); //$NON-NLS-0$
 					description.textContent = messages[" (SHA "] + commit.Name + messages[") by "] + commit.AuthorName + messages[" on "]
 							+ new Date(commit.Time).toLocaleString();
 					detailsView.appendChild(description);
 					
-					var itemActionScope = "itemLevelCommands";
-					var actionsArea = document.createElement("ul");
-					actionsArea.className = "layoutRight commandList";
+					var itemActionScope = "itemLevelCommands"; //$NON-NLS-0$
+					actionsArea = document.createElement("ul"); //$NON-NLS-0$
+					actionsArea.className = "layoutRight commandList"; //$NON-NLS-0$
 					actionsArea.id = itemActionScope;
 					horizontalBox.appendChild(actionsArea);
 					explorer.commandService.renderCommands(itemActionScope, actionsArea, item, explorer, "tool"); //$NON-NLS-0$
@@ -558,14 +558,14 @@ define([
 			noCommit.classList.add("sectionTableItem"); //$NON-NLS-0$
 			
 			if (this.explorer.model.isRebasing()) {
-				noCommit.style.whiteSpace = "pre";
+				noCommit.style.whiteSpace = "pre"; //$NON-NLS-0$
 				noCommit.appendChild(document.createTextNode(messages["RebaseProgressDetails"]));
 			} else {
-				var title = document.createElement("div");
+				var title = document.createElement("div"); //$NON-NLS-0$
 				title.textContent = messages["The branch is up to date."];
 				noCommit.appendChild(title);
 				
-				var description = document.createElement("div");
+				var description = document.createElement("div"); //$NON-NLS-0$
 				description.textContent = messages["You have no outgoing or incoming commits."];
 				noCommit.appendChild(description);
 			}
