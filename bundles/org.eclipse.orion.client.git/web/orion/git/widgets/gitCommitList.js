@@ -29,6 +29,8 @@ define([
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 //	var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 
+	var pageSizeQuery = "?page=1&pageSize=20"; //$NON-NLS-0$
+
 	function GitCommitListModel(options) {
 		this.root = options.root;
 		this.section = options.section;
@@ -63,7 +65,7 @@ define([
 		},
 		_getLog: function() {
 			var that = this;
-			return that.progressService.progress(that.gitClient.doGitLog(that.location || (that.currentBranch.CommitLocation + "?page=1&pageSize=20")), that.location ? "Getting git log" : i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], that.currentBranch.Name)).then(function(resp) { //$NON-NLS-1$ //$NON-NLS-0$
+			return that.progressService.progress(that.gitClient.doGitLog(that.location || (that.currentBranch.CommitLocation + pageSizeQuery)), that.location ? "Getting git log" : i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], that.currentBranch.Name)).then(function(resp) { //$NON-NLS-0$
 				return that.log = resp;
 			}, function(error){
 				that.handleError(error);
@@ -75,7 +77,7 @@ define([
 			var remoteBranch = this.getRemoteBranch();
 			var location = remoteBranch.CommitLocation + (that.log ? that.log.RepositoryPath : "");
 			var id = localBranch.Name;
-			return that.progressService.progress(that.gitClient.getLog(location + "?page=1&pageSize=20", id), messages['Getting outgoing commits']).then(function(resp) { //$NON-NLS-0$
+			return that.progressService.progress(that.gitClient.getLog(location + pageSizeQuery, id), messages['Getting outgoing commits']).then(function(resp) {
 				return that.outgoingCommits = resp.Children;
 			});
 		},
@@ -85,7 +87,7 @@ define([
 			var remoteBranch = this.getRemoteBranch();
 			var location = localBranch.CommitLocation + (that.log ? that.log.RepositoryPath : "");
 			var id = remoteBranch.Name;
-			return that.progressService.progress(that.gitClient.getLog(location + "?page=1&pageSize=20", id), messages['Getting git incoming changes...']).then(function(resp) { //$NON-NLS-0$
+			return that.progressService.progress(that.gitClient.getLog(location + pageSizeQuery, id), messages['Getting git incoming changes...']).then(function(resp) {
 				return that.incomingCommits = resp.Children;
 			});
 		},
@@ -99,6 +101,9 @@ define([
 			}
 		},
 		getRemoteBranch: function() {
+			if (this.remoteBranch) {
+				return this.remoteBranch;
+			}
 			var ref = this.log ? this.log.toRef : this.currentBranch;
 			if (ref.Type === "RemoteTrackingBranch") { //$NON-NLS-0$
 				return ref;
@@ -286,7 +291,7 @@ define([
 			var deferred = new Deferred();
 			var that = this;
 			var model = this.model;
-			if (item.Type === "CommitRoot") {
+			if (item.Type === "CommitRoot") { //$NON-NLS-0$
 				model.incomingCommits = model.outgoingCommits = null;
 			}
 			model.log = null;
@@ -353,10 +358,10 @@ define([
 			});
 			commandService.addCommand(previousPageCommand);
 			
-			var pickBranchCommand = new mCommands.Command({
-				name: "Pick Branch",//messages['Next Page >'],
-//				tooltip: messages["Show next page of git log"],
-				id: "eclipse.orion.git.commit.pickBranch", //$NON-NLS-0$
+			var chooseBranchCommand = new mCommands.Command({
+				name: messages["Choose Branch"],
+				tooltip: messages["Choose the remote branch."],
+				id: "eclipse.orion.git.commit.chooseBranch", //$NON-NLS-0$
 				callback: function(data) {
 					var explorer = data.handler;
 					var model = explorer.model;
@@ -364,27 +369,29 @@ define([
 						serviceRegistry: explorer.registry,
 						commandService: explorer.commandService
 					}).chooseRemote(model.root.repository, model.log ? model.log.toRef : model.currentBranch).then(function(branch) {
-						//TODO remember branch
-						data.handler.model.getRoot(function(root) {
+						var model = data.handler.model;
+						model.remoteBranch = branch;
+						model.getRoot(function(root) {
 							data.handler.changedItem(root);
 						});	
-					})
+					});
 				},
 				visibleWhen: function(item) {
-					pickBranchCommand.name = that.model.getRemoteBranch().Name;
+					chooseBranchCommand.name = that.model.getRemoteBranch().Name;
 					return true;
 				}
 			});
-			commandService.addCommand(pickBranchCommand);
+			commandService.addCommand(chooseBranchCommand);
 		},
 		updateCommands: function() {
-			var currentBranch = this.model.currentBranch;
+			var model = this.model;
+			var currentBranch = model.currentBranch;
 			var repository = this.root.repository;
 			var commandService = this.commandService;
 			var section = this.section;
 			var actionsNodeScope = section.actionsNode.id;
 			var titleLeftActionsNodeScope = section.titleLeftActionsNode.id;
-			if (!currentBranch && this.model.isRebasing()) {
+			if (!currentBranch && model.isRebasing()) {
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.resetCommand", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseContinueCommand", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseSkipPatchCommand", 300); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -411,22 +418,22 @@ define([
 //					"ViewAllTooltip" : messages["See the full log"]
 //				}, this, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
-				commandService.registerCommandContribution(titleLeftActionsNodeScope, "eclipse.orion.git.commit.pickBranch", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandService.registerCommandContribution(titleLeftActionsNodeScope, "eclipse.orion.git.commit.chooseBranch", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.renderCommands(titleLeftActionsNodeScope, titleLeftActionsNodeScope, this, this, "button"); //$NON-NLS-0$
 	
-				var tracksRemoteBranch = this.model.tracksRemoteBranch();
+				var tracksRemoteBranch = model.tracksRemoteBranch();
 				if (tracksRemoteBranch) {
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
-					commandService.renderCommands(incomingActionScope, incomingActionScope, currentBranch.RemoteLocation[0].Children[0], this, "button"); //$NON-NLS-0$
+					commandService.renderCommands(incomingActionScope, incomingActionScope, model.getRemoteBranch(), this, "button"); //$NON-NLS-0$
 				}
 				commandService.addCommandGroup(outgoingActionScope, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.pushToGerrit", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
-				commandService.renderCommands(outgoingActionScope, outgoingActionScope, currentBranch, this, "button"); //$NON-NLS-0$
+				commandService.renderCommands(outgoingActionScope, outgoingActionScope, {LocalBranch: model.getLocalBranch(), RemoteBranch: model.getRemoteBranch()}, this, "button"); //$NON-NLS-0$
 			}
 		},
 		updatePageCommands: function(item) {

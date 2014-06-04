@@ -295,6 +295,7 @@ define({
 	"Push commits without tags from your local branch into the remote branch overriding its current content": "Push commits without tags from your local branch into the remote branch overriding its current content",
 	"Pushing remote: ": "Pushing remote: ",
 	"Choose Branch": "Choose Branch",
+	"Choose the remote branch.": "Choose the remote branch.",
 	"Force Push All": "Force Push All",
 	"Push commits and tags from your local branch into the remote branch overriding its current content": "Push commits and tags from your local branch into the remote branch overriding its current content",
 	"You're going to override content of the remote branch. This can cause the remote repository to lose commits.": "You're going to override content of the remote branch. This can cause the remote repository to lose commits.",

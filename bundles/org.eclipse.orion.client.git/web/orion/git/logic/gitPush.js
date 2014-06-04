@@ -132,6 +132,10 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 				var itemTargetBranch = data.targetBranch;
 			
 				var item = data.items;
+				if (item.LocalBranch && item.RemoteBranch) {
+					itemTargetBranch = item.RemoteBranch;
+					item = item.LocalBranch;
+				}
 				if (item.toRef) {
 					item = item.toRef;
 				}
@@ -231,7 +235,7 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 									}, function() {
 										remotePrompterDialogCallback();
 									});
-								}
+								};
 								if (item.RemoteLocation.length === 1 && item.RemoteLocation[0].Children.length === 1) { //when we push next time - chance to switch saved remote
 									var dialog = new mConfirmPush.ConfirmPushDialog({
 										title: messages["Choose Branch"],

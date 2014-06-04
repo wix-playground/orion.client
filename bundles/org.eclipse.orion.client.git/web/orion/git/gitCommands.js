@@ -1358,6 +1358,9 @@ var exports = {};
 				});
 			},
 			visibleWhen : function(item) {
+				if (item.LocalBranch && item.RemoteBranch) {
+					item = item.LocalBranch;
+				}
 				if (item.toRef)
 					// for action in the git log
 					return item.RepositoryPath === "" && item.toRef.Type === "Branch" && item.toRef.Current && item.toRef.RemoteLocation; //$NON-NLS-0$
@@ -1377,6 +1380,9 @@ var exports = {};
 			id : "eclipse.orion.git.pushBranch", //$NON-NLS-0$
 			callback: pushCallbackNoTags,
 			visibleWhen : function(item) {
+				if (item.LocalBranch && item.RemoteBranch) {
+					item = item.LocalBranch;
+				}
 				if (item.toRef)
 					// for action in the git log
 					return item.RepositoryPath === "" && item.toRef.Type === "Branch" && item.toRef.Current && item.toRef.RemoteLocation; //$NON-NLS-0$
@@ -1398,14 +1404,15 @@ var exports = {};
 				//previously saved target branch
 				var itemTargetBranch = data.targetBranch;
 
-				var target;
 				var item = data.items;
+				if (item.LocalBranch && item.RemoteBranch) {
+//					itemTargetBranch = item.RemoteBranch;
+					item = item.LocalBranch;
+				}
 				if (item.toRef) {
 					item = item.toRef;
 				}
 				var commandInvocation = data;
-
-				var parts = item.CloneLocation.split("/");
 
 				var handleResponse = function(jsonData, commandInvocation){
 					if (jsonData.JsonData.HostKey){
@@ -1538,6 +1545,9 @@ var exports = {};
 				);
 			},
 			visibleWhen : function(item) {
+				if (item.LocalBranch && item.RemoteBranch) {
+					item = item.LocalBranch;
+				}
 				if (item.toRef)
 					// for action in the git log
 					return item.RepositoryPath === "" && item.toRef.Type === "Branch" && item.toRef.Current && item.toRef.RemoteLocation //$NON-NLS-0$
