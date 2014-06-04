@@ -2004,6 +2004,33 @@ var exports = {};
 		});
 		commandService.addCommand(nextTagPage);
 
+		var resetCallback = function(data, location, refId, mode, message) {
+			var item = data.items;
+			if(confirm(i18nUtil.formatMessage(message, refId))) { //$NON-NLS-0$
+				var service = serviceRegistry.getService("orion.git.provider"); //$NON-NLS-0$
+				var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
+				var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+				var deferred = progress.progress(service.resetIndex(location, refId, mode), "Resetting git index for " + refId);
+				progressService.createProgressMonitor(deferred, messages["Resetting index..."]);
+				deferred.then(
+					function(result){
+						var display = {};
+						display.Severity = "Info"; //$NON-NLS-0$
+						display.HTML = false;
+						display.Message = "Ok"; //$NON-NLS-0$
+						explorer.changedItem(item);
+						progressService.setProgressResult(display);
+					}, function (error){
+						var display = {};
+						display.Severity = "Error"; //$NON-NLS-0$
+						display.HTML = false;
+						display.Message = error.message;
+						progressService.setProgressResult(display);
+					}
+				);
+			}
+		};
+		
 		var resetIndexCommand = new mCommands.Command({
 			name : messages['Reset'],
 			tooltip: messages["Reset your active branch to the state of the selected branch. Discard all staged and unstaged changes."],
@@ -2011,30 +2038,7 @@ var exports = {};
 			imageClass: "git-sprite-reset", //$NON-NLS-0$
 			spriteClass: "gitCommandSprite", //$NON-NLS-0$
 			callback: function(data) {
-				var item = data.items;
-				if(confirm(i18nUtil.formatMessage(messages["GitResetIndexConfirm"], item.Name))) { //$NON-NLS-0$
-					var service = serviceRegistry.getService("orion.git.provider"); //$NON-NLS-0$
-					var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
-					var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
-					var deferred = progress.progress(service.resetIndex(item.IndexLocation, item.Name), "Resetting git index for " + item.Name);
-					progressService.createProgressMonitor(deferred, messages["Resetting index..."]);
-					deferred.then(
-						function(result){
-							var display = {};
-							display.Severity = "Info"; //$NON-NLS-0$
-							display.HTML = false;
-							display.Message = "Ok"; //$NON-NLS-0$
-							explorer.changedItem(item);
-							progressService.setProgressResult(display);
-						}, function (error){
-							var display = {};
-							display.Severity = "Error"; //$NON-NLS-0$
-							display.HTML = false;
-							display.Message = error.message;
-							progressService.setProgressResult(display);
-						}
-					);
-				}
+				resetCallback(data, data.items.IndexLocation, data.items.Name, "HARD", messages["GitResetIndexConfirm"]);
 			},
 			visibleWhen : function(item) {
 				return item.Type === "RemoteTrackingBranch"; //$NON-NLS-0$
@@ -2042,6 +2046,19 @@ var exports = {};
 		});
 		commandService.addCommand(resetIndexCommand);
 
+		var undoCommand = new mCommands.Command({
+			name : messages['Undo'],
+			tooltip: messages["UndoTooltip"],
+			id : "eclipse.orion.git.undoCommit", //$NON-NLS-0$
+			callback: function(data) {
+				resetCallback(data, data.items.parent.remoteBranch.IndexLocation, "HEAD^", "SOFT", messages["UndoConfirm"]);
+			},
+			visibleWhen : function(item) {
+				return item.Type === "Commit" && item.parent && item.parent.Type === "Outgoing" && item.parent.children && item.parent.children[0].Name === item.Name; //$NON-NLS-0$
+			}
+		});
+		commandService.addCommand(undoCommand);
+		
 		var tagNameParameters = new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('name', 'text', messages['Name:'])]); //$NON-NLS-1$ //$NON-NLS-0$
 
 		var addTagCommand = new mCommands.Command({

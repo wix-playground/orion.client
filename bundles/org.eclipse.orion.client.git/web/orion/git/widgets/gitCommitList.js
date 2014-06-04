@@ -160,7 +160,7 @@ define([
 								onComplete([]);
 							} else {
 								section.setTitle(messages["NoBranch"]);
-								onComplete(that.checkEmptyList([]));
+								onComplete(that.processChildren(parentItem, []));
 							}
 							progress.done();
 							return;
@@ -177,10 +177,14 @@ define([
 						progress.done();
 						onComplete([
 							{
-								Type: "Outgoing" //$NON-NLS-0$
+								Type: "Outgoing", //$NON-NLS-0$
+								localBranch: localBranch,
+								remoteBranch: remoteBranch
 							},
 							{
-								Type: "Incoming" //$NON-NLS-0$
+								Type: "Incoming", //$NON-NLS-0$
+								localBranch: localBranch,
+								remoteBranch: remoteBranch
 							},
 							{
 								Type: "Sync" //$NON-NLS-0$
@@ -197,7 +201,7 @@ define([
 			} else if (parentItem.Type === "Incoming") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					Deferred.when(that.incomingCommits || that._getIncoming(), function(incomingCommits) {
-						onComplete(that.checkEmptyList(incomingCommits));
+						onComplete(that.processChildren(parentItem, incomingCommits));
 					}, function(error) {
 						that.handleError(error);
 					});
@@ -207,7 +211,7 @@ define([
 						if (log.toRef.Type === "RemoteTrackingBranch") { //$NON-NLS-0$
 							children = log.Children;
 						}
-						onComplete(that.checkEmptyList(children));
+						onComplete(that.processChildren(parentItem, children));
 					}, function(error){
 						that.handleError(error);
 					});
@@ -215,7 +219,7 @@ define([
 			} else if (parentItem.Type === "Outgoing") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					Deferred.when(that.outgoingCommits || that._getOutgoing(), function(outgoingCommits) {
-						onComplete(that.checkEmptyList(outgoingCommits));
+						onComplete(that.processChildren(parentItem, outgoingCommits));
 					}, function(error){
 						that.handleError(error);
 					});
@@ -225,7 +229,7 @@ define([
 						if (log.toRef.Type === "Branch") { //$NON-NLS-0$
 							children = log.Children;
 						} 
-						onComplete(that.checkEmptyList(children));
+						onComplete(that.processChildren(parentItem, children));
 					}, function(error){
 						that.handleError(error);
 					});
@@ -243,7 +247,7 @@ define([
 									children.push(commit);
 								}
 							});
-							onComplete(that.checkEmptyList(children));
+							onComplete(that.processChildren(parentItem, children));
 						}, function(error){
 							that.handleError(error);
 						});
@@ -251,7 +255,7 @@ define([
 						that.handleError(error);
 					});
 				} else {
-					onComplete(that.checkEmptyList([]));
+					onComplete(that.processChildren(parentItem, []));
 				}
 			} else {
 				onComplete([]);
@@ -260,10 +264,14 @@ define([
 		getId: function(/* item */ item){
 			return item.Name || item.Type;
 		},
-		checkEmptyList: function(items) {
+		processChildren: function(parentItem, items) {
 			if (items.length === 0) {
-				return [{Type: "NoCommits"}]; //$NON-NLS-0$
+				items = [{Type: "NoCommits"}]; //$NON-NLS-0$
 			}
+			items.forEach(function(item) {
+				item.parent = parentItem;
+			});
+			parentItem.children = items;
 			return items;
 		}
 	});
