@@ -108,7 +108,7 @@ define([
 			if (ref.Type === "RemoteTrackingBranch") { //$NON-NLS-0$
 				return ref;
 			} else {
-				return ref.RemoteLocation[0].Children[0];
+				return ref.RemoteLocation[0].Children[ref.RemoteLocation[0].Children.length - 1];
 			}
 		},
 		tracksRemoteBranch: function(){
@@ -377,7 +377,12 @@ define([
 					});
 				},
 				visibleWhen: function(item) {
-					chooseBranchCommand.name = that.model.getRemoteBranch().Name;
+					var branch = that.model.getRemoteBranch();
+					var name = branch.Name;
+					if (branch.Type === "RemoteTrackingBranch" && !branch.Id) { //$NON-NLS-0$
+						name += messages[" [New branch]"];
+					}
+					chooseBranchCommand.name = name;
 					return true;
 				}
 			});
