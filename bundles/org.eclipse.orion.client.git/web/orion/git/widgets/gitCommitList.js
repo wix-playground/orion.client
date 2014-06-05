@@ -19,13 +19,14 @@ define([
 	'orion/explorers/explorer',
 	'orion/URITemplate',
 	'orion/git/util',
+	'orion/commonHTMLFragments',
 	'orion/git/logic/gitPush',
 	'orion/i18nUtil',
 	'orion/explorers/navigationUtils',
 	'orion/git/widgets/CommitTooltipDialog',
 	'orion/webui/littlelib',
 	'orion/objects'
-], function(require, messages, mCommands, Deferred, mExplorer, URITemplate, util, gitPush, i18nUtil, mNavUtils, mCommitTooltip, lib, objects) {
+], function(require, messages, mCommands, Deferred, mExplorer, URITemplate, util, mHTMLFragments, gitPush, i18nUtil, mNavUtils, mCommitTooltip, lib, objects) {
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 //	var logTemplate = new URITemplate("git/git-log.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 
@@ -531,6 +532,13 @@ define([
 					actionsArea.className = "layoutRight commandList"; //$NON-NLS-0$
 					actionsArea.id = item.Type + "Actions"; //$NON-NLS-0$
 					horizontalBox.appendChild(actionsArea);
+					
+					horizontalBox.classList.add("toolComposite"); //$NON-NLS-0$
+					var slideoutFragment = mHTMLFragments.slideoutHTMLFragment(actionsArea.id);
+					var range = document.createRange();
+					range.selectNode(horizontalBox);
+					slideoutFragment = range.createContextualFragment(slideoutFragment);
+					horizontalBox.appendChild(slideoutFragment);
 				} else {
 					sectionItem.className = "sectionTableItem"; //$NON-NLS-0$
 					if (commit.AuthorImage) {
