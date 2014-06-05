@@ -25,6 +25,7 @@ define([
 	'javascript/contentAssist/indexFiles/expressIndex',
 	'javascript/contentAssist/indexFiles/amqpIndex',
 	'javascript/contentAssist/contentAssist',
+	'javascript/jsonValidator',
 	'javascript/validator',
 	'javascript/occurrences',
 	'javascript/outliner',
@@ -36,7 +37,8 @@ define([
 	'orion/editor/stylers/application_schema_json/syntax',
 	'orion/editor/stylers/application_x-ejs/syntax'
 ], function(Esprima, ASTManager, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
-			EslintValidator, Occurrences, Outliner,	PluginProvider, Util, GenerateDocCommand, mJS, mJSON, mJSONSchema, mEJS) {
+			JsonValidator, EslintValidator, Occurrences, Outliner,	PluginProvider, Util, GenerateDocCommand,
+			mJS, mJSON, mJSONSchema, mEJS) {
 
 	/**
 	 * Plug-in headers
@@ -284,6 +286,13 @@ define([
 				}
 			]
 		});
+
+	/**
+	 * Register the JSON validator
+	 */
+	provider.registerService("orion.edit.validator", new JsonValidator(Esprima), {
+		contentType: ["application/json"] //$NON-NLS-0$
+	});
 
 	/**
 	 * Register syntax styling for js, json and json schema content

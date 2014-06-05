@@ -178,26 +178,26 @@ define([
 	};
 
 	var provider = new PluginProvider(headers);
-	provider.registerService(["orion.edit.validator", "orion.cm.managedservice"], validationService, {
-		contentType: ["application/json"],
-		pid: "jslint.config"
-	});
-	provider.registerService("orion.core.setting",
-		{},
-		{	settings: [
-				{	pid: 'jslint.config',
-					name: 'JSLint Validator',
-					tags: 'validation HTML JSON jslint'.split(' '),
-					category: 'validation',
-					properties: [
-						{	id: 'options',
-							name: 'Options to pass to JSLint (/*jslint ..*/)',
-							type: 'string'
-						}
-					]
-				}
-			]
-		});
+//	provider.registerService(["orion.edit.validator", "orion.cm.managedservice"], validationService, {
+//		contentType: ["application/json"],
+//		pid: "jslint.config"
+//	});
+//	provider.registerService("orion.core.setting",
+//		{},
+//		{	settings: [
+//				{	pid: 'jslint.config',
+//					name: 'JSLint Validator',
+//					tags: 'validation HTML JSON jslint'.split(' '),
+//					category: 'validation',
+//					properties: [
+//						{	id: 'options',
+//							name: 'Options to pass to JSLint (/*jslint ..*/)',
+//							type: 'string'
+//						}
+//					]
+//				}
+//			]
+//		});
 	provider.connect();
 
 });
