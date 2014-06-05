@@ -446,9 +446,9 @@ define([
 	
 				var tracksRemoteBranch = model.tracksRemoteBranch();
 				if (tracksRemoteBranch) {
-					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.fetch", 100); //$NON-NLS-0$
-					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.merge", 100); //$NON-NLS-0$
-					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.rebase", 100); //$NON-NLS-0$
+					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.fetch", 400); //$NON-NLS-0$
+					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.merge", 300); //$NON-NLS-0$
+					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.rebase", 200); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
 					commandService.renderCommands(incomingActionScope, incomingActionScope, model.getRemoteBranch(), this, "button"); //$NON-NLS-0$
 
