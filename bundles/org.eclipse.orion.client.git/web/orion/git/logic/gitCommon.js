@@ -138,7 +138,7 @@ define(['orion/git/util','orion/i18nUtil','orion/git/gitPreferenceStorage','orio
 				}
 			default:
 				var display = [];
-				display.Severity = "Error"; //$NON-NLS-0$
+				display.Severity = jsonData.Severity || "Error"; //$NON-NLS-0$
 				display.HTML = false;
 				display.Message = translateGitStatusMessages(jsonData.DetailedMessage ? jsonData.DetailedMessage : jsonData.Message);
 				serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
