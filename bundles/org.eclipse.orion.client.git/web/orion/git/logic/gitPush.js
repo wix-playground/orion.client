@@ -9,6 +9,8 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 
+/*globals define confirm */
+
 define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/ConfirmPushDialog','orion/git/gitPreferenceStorage','orion/git/logic/gitCommon','orion/Deferred'
         ,'orion/git/widgets/RemotePrompterDialog'], 
 		function(messages,mCommandRegistry,mConfirmPush,GitPreferenceStorage, mGitCommon, Deferred,mRemotePrompter) {
@@ -26,6 +28,8 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 		var serviceRegistry = dependencies.serviceRegistry;
 		var commandService = dependencies.commandService;
 		var tags = dependencies.tags;
+		var force = dependencies.force;
+		var gerrit = dependencies.gerrit;
 		
 		//Callbacks
 		var confirmCallback = dependencies.confirmDialogCloseCallback;
@@ -130,6 +134,16 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 			function command(data) {
 				//previously saved target branch
 				var itemTargetBranch = data.targetBranch;
+				
+				var confirmedWarnings = data.confirmedWarnings;
+				if(force && !confirmedWarnings){
+					if(!confirm(messages["You're going to override content of the remote branch. This can cause the remote repository to lose commits."]+"\n\n"+messages['Are you sure?'])){ //$NON-NLS-0$
+						return;	
+					} else {
+						data.confirmedWarnings = true;
+						confirmedWarnings = true;
+					}
+				}
 			
 				var item = data.items;
 				if (item.LocalBranch && item.RemoteBranch) {
@@ -225,18 +239,30 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 						gatherSshCredentials(serviceRegistry, commandInvocation,null,sshCredentialsDialogCallback).then(
 							function(options) {
 								if(itemTargetBranch){
-									handlePush(options, itemTargetBranch.Location, "HEAD", itemTargetBranch.Name, false); //$NON-NLS-0$
+									handlePush(options, itemTargetBranch.Location, "HEAD", itemTargetBranch.Name, force); //$NON-NLS-0$
 									return;
 								}
 								var choosingRemote = function() {
 									chooseRemote(repository, item).then(function(target) {
 										commandInvocation.targetBranch = target;
-										handlePush(options, target.Location, "HEAD",target.Name, false); //$NON-NLS-0$
+										handlePush(options, target.Location, "HEAD",target.Name, force); //$NON-NLS-0$
 									}, function() {
 										remotePrompterDialogCallback();
 									});
 								};
 								if (item.RemoteLocation.length === 1 && item.RemoteLocation[0].Children.length === 1) { //when we push next time - chance to switch saved remote
+									var targetBranch = item.RemoteLocation[0].Children[0];
+									var destination = item.Name;
+									if (gerrit) {
+										var branchLocation = item.RemoteLocation[0].Children[0].Location;
+										var arr = branchLocation.split("/"); //$NON-NLS-0$
+										destination = "refs/for/master"; //$NON-NLS-0$ // for now we hardcode it 
+										arr[4] = encodeURIComponent(encodeURIComponent(destination));
+										var remoteLocation = arr.join("/"); //$NON-NLS-0$
+										targetBranch.Location = remoteLocation;
+										targetBranch.Name = destination;
+									}
+
 									var dialog = new mConfirmPush.ConfirmPushDialog({
 										title: messages["Choose Branch"],
 										serviceRegistry: serviceRegistry,
@@ -244,10 +270,10 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 										moreCallback: function() {
 											choosingRemote();
 										},
-										location: item.RemoteLocation[0].Children[0].Name,
+										location: targetBranch.Name,
 										func: function(){
-											commandInvocation.targetBranch = item.RemoteLocation[0].Children[0];
-											handlePush(options,item.RemoteLocation[0].Children[0].Location, "HEAD", item.Name, false); //$NON-NLS-0$
+											commandInvocation.targetBranch = targetBranch;
+											handlePush(options, targetBranch.Location, "HEAD", destination, force); //$NON-NLS-0$
 										},
 										closeCallback : confirmDialogCallback
 									});
