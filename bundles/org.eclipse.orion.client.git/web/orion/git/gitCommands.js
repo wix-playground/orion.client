@@ -858,6 +858,9 @@ var exports = {};
 			}
 
 			var item = data.items;
+			if (item.LocalBranch && item.RemoteBranch) {
+				item = item.RemoteBranch;
+			}
 			var path = item.Location;
 			var name = item.Name;
 			var commandInvocation = data;
@@ -1160,6 +1163,9 @@ var exports = {};
 		var rebaseCallback = function(data) {
 			var d = new Deferred();
 			var item = data.items;
+			if (item.LocalBranch && item.RemoteBranch) {
+				item = item.RemoteBranch;
+			}
 			var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
 			var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
 			var deferred = progress.progress(serviceRegistry.getService("orion.git.provider").doRebase(item.HeadLocation, item.Name, "BEGIN"), item.Name ? messages["Rebase on top of "] + item.Name: messages['Rebase']); //$NON-NLS-1$ //$NON-NLS-0$
@@ -1219,7 +1225,7 @@ var exports = {};
 					} 
 
 					serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
-					d.resolve();
+					d.resolve(jsonData);
 				}, function(error) {
 					displayErrorOnStatus(error);
 					d.reject();
@@ -1281,10 +1287,12 @@ var exports = {};
 			id : "eclipse.orion.git.sync", //$NON-NLS-0$
 			callback: function(data) {
 				return fetchCallback(data).then(function() {
-					return rebaseCallback(data).then(function() {
-						return pushCallbackTags(data).then(function() {
-							refresh();
-						});
+					return rebaseCallback(data).then(function(jsonData) {
+						if (jsonData.Result === "OK" || jsonData.Result === "FAST_FORWARD" || jsonData.Result === "UP_TO_DATE") { //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							return pushCallbackTags(data).then(function() {
+								refresh();
+							});
+						}
 					});
 				});
 			},
