@@ -138,7 +138,8 @@ define(['i18n!git/nls/gitmessages','orion/commandRegistry','orion/git/widgets/Co
 				var confirmedWarnings = data.confirmedWarnings;
 				if(force && !confirmedWarnings){
 					if(!confirm(messages["You're going to override content of the remote branch. This can cause the remote repository to lose commits."]+"\n\n"+messages['Are you sure?'])){ //$NON-NLS-0$
-						return;	
+						d.reject();
+						return;
 					} else {
 						data.confirmedWarnings = true;
 						confirmedWarnings = true;

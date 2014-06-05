@@ -851,8 +851,11 @@ var exports = {};
 		commandService.addCommand(openGitCommit);
 		
 		var fetchCallback = function(data, force, confirm) {
-			if (confirm && !confirm(confirm))
-				return;
+			var d = new Deferred();
+			if (confirm && !confirm(confirm)) {
+				d.reject();
+				return d;
+			}
 
 			var item = data.items;
 			var path = item.Location;
@@ -923,7 +926,7 @@ var exports = {};
 							function(jsonData) {
 								exports.handleGitServiceResponse(jsonData, serviceRegistry, 
 									function() {
-										explorer.changedItem(item);
+										d.resolve();
 									}, function (jsonData) {
 										handleResponse(jsonData, commandInvocation);
 									}
@@ -931,7 +934,7 @@ var exports = {};
 							}, function(jsonData) {
 								exports.handleGitServiceResponse(jsonData, serviceRegistry, 
 									function() {
-										explorer.changedItem(item);
+										d.resolve();
 									}, function (jsonData) {
 										handleResponse(jsonData, commandInvocation);
 									}
@@ -957,7 +960,10 @@ var exports = {};
 						);
 					}, displayErrorOnStatus
 				);
-			} else { fetchLogic(); }
+			} else {
+				fetchLogic();
+			}
+			return d;
 		};
 		var fetchVisibleWhen = function(item) {
 			if (item.Type === "RemoteTrackingBranch") //$NON-NLS-0$
@@ -976,7 +982,9 @@ var exports = {};
 			spriteClass: "gitCommandSprite", //$NON-NLS-0$
 			id: "eclipse.orion.git.fetch", //$NON-NLS-0$
 			callback: function(data) {
-				fetchCallback(data, false);
+				fetchCallback(data, false).then(function() {
+					refresh();
+				});
 			},
 			visibleWhen: fetchVisibleWhen
 		});
@@ -989,7 +997,10 @@ var exports = {};
 			tooltip: messages["Fetch from the remote branch into your remote tracking branch overriding its current content"],
 			id : "eclipse.orion.git.fetchForce", //$NON-NLS-0$
 			callback: function(data) {
-				fetchCallback(data, true, messages["You're going to override content of the remote tracking branch. This can cause the branch to lose commits."]+"\n\n"+messages['Are you sure?']); //$NON-NLS-0$
+				var confirm = messages["You're going to override content of the remote tracking branch. This can cause the branch to lose commits."]+"\n\n"+messages['Are you sure?']; //$NON-NLS-0$
+				fetchCallback(data, true, confirm).then(function() {
+					refresh();
+				});
 			},
 			visibleWhen : fetchVisibleWhen
 		});
@@ -1145,6 +1156,77 @@ var exports = {};
 			}
 		});
 		commandService.addCommand(mergeSquashCommand);
+		
+		var rebaseCallback = function(data) {
+			var d = new Deferred();
+			var item = data.items;
+			var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
+			var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+			var deferred = progress.progress(serviceRegistry.getService("orion.git.provider").doRebase(item.HeadLocation, item.Name, "BEGIN"), item.Name ? messages["Rebase on top of "] + item.Name: messages['Rebase']); //$NON-NLS-1$ //$NON-NLS-0$
+			progressService.createProgressMonitor(deferred, 
+			item.Name ? messages["Rebase on top of "] + item.Name: messages['Rebase']);
+			deferred.then(
+				function(jsonData){
+					var display = [];
+					var statusLocation = item.HeadLocation.replace("commit/HEAD", "status"); //$NON-NLS-1$ //$NON-NLS-0$
+
+					if (jsonData.Result === "OK" || jsonData.Result === "FAST_FORWARD" || jsonData.Result === "UP_TO_DATE" ) { //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						// operation succeeded
+						display.Severity = "Ok"; //$NON-NLS-0$
+						display.HTML = false;
+						display.Message = jsonData.Result;
+					}
+					// handle special cases
+					else if (jsonData.Result === "STOPPED") { //$NON-NLS-0$
+						display.Severity = "Warning"; //$NON-NLS-0$
+						display.HTML = true;
+						display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
+							+ messages[". Some conflicts occurred. Please resolve them and continue, skip patch or abort rebasing"]
+							+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
+					}
+					else if (jsonData.Result === "FAILED_WRONG_REPOSITORY_STATE") { //$NON-NLS-0$
+						display.Severity = "Error"; //$NON-NLS-0$
+						display.HTML = true;
+						display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
+							+ messages[". Repository state is invalid (i.e. already during rebasing)"]
+							+ i18nUtil.formatMessage(". Go to ${0}.", "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
+					}
+					else if (jsonData.Result === "FAILED_UNMERGED_PATHS") { //$NON-NLS-0$
+						display.Severity = "Error"; //$NON-NLS-0$
+						display.HTML = true;
+						display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
+							+ messages[". Repository contains unmerged paths"]
+							+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$
+   							+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
+					}
+					else if (jsonData.Result === "FAILED_PENDING_CHANGES") { //$NON-NLS-0$
+						display.Severity = "Error"; //$NON-NLS-0$
+						display.HTML = true;
+						display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
+							+ messages[". Repository contains pending changes. Please commit or stash them"]
+							+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							+"\">"+"Git Status page"+"</a>")+".</span>"; //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+					}
+					// handle other cases
+					else {
+						display.Severity = "Warning"; //$NON-NLS-0$
+						display.HTML = true;
+						display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
+						+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
+					} 
+
+					serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
+					d.resolve();
+				}, function(error) {
+					displayErrorOnStatus(error);
+					d.reject();
+				}
+			);
+			return d;
+		};
 
 		var rebaseCommand = new mCommands.Command({
 			name : messages["Rebase"],
@@ -1154,70 +1236,9 @@ var exports = {};
 			imageClass: "git-sprite-rebase", //$NON-NLS-0$
 			spriteClass: "gitCommandSprite", //$NON-NLS-0$
 			callback: function(data) {
-				var item = data.items;
-				var progressService = serviceRegistry.getService("orion.page.message"); //$NON-NLS-0$
-				var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
-				var deferred = progress.progress(serviceRegistry.getService("orion.git.provider").doRebase(item.HeadLocation, item.Name, "BEGIN"), item.Name ? messages["Rebase on top of "] + item.Name: messages['Rebase']); //$NON-NLS-1$ //$NON-NLS-0$
-				progressService.createProgressMonitor(deferred, 
-				item.Name ? messages["Rebase on top of "] + item.Name: messages['Rebase']);
-				deferred.then(
-					function(jsonData){
-						var display = [];
-						var statusLocation = item.HeadLocation.replace("commit/HEAD", "status"); //$NON-NLS-1$ //$NON-NLS-0$
-	
-						if (jsonData.Result === "OK" || jsonData.Result === "FAST_FORWARD" || jsonData.Result === "UP_TO_DATE" ) { //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-							// operation succeeded
-							display.Severity = "Ok"; //$NON-NLS-0$
-							display.HTML = false;
-							display.Message = jsonData.Result;
-						}
-						// handle special cases
-						else if (jsonData.Result === "STOPPED") { //$NON-NLS-0$
-							display.Severity = "Warning"; //$NON-NLS-0$
-							display.HTML = true;
-							display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
-								+ messages[". Some conflicts occurred. Please resolve them and continue, skip patch or abort rebasing"]
-								+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
-						}
-						else if (jsonData.Result === "FAILED_WRONG_REPOSITORY_STATE") { //$NON-NLS-0$
-							display.Severity = "Error"; //$NON-NLS-0$
-							display.HTML = true;
-							display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
-								+ messages[". Repository state is invalid (i.e. already during rebasing)"]
-								+ i18nUtil.formatMessage(". Go to ${0}.", "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
-						}
-						else if (jsonData.Result === "FAILED_UNMERGED_PATHS") { //$NON-NLS-0$
-							display.Severity = "Error"; //$NON-NLS-0$
-							display.HTML = true;
-							display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
-								+ messages[". Repository contains unmerged paths"]
-								+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$
-	   							+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
-						}
-						else if (jsonData.Result === "FAILED_PENDING_CHANGES") { //$NON-NLS-0$
-							display.Severity = "Error"; //$NON-NLS-0$
-							display.HTML = true;
-							display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
-								+ messages[". Repository contains pending changes. Please commit or stash them"]
-								+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-								+"\">"+"Git Status page"+"</a>")+".</span>"; //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						}
-						// handle other cases
-						else {
-							display.Severity = "Warning"; //$NON-NLS-0$
-							display.HTML = true;
-							display.Message = "<span>" + jsonData.Result //$NON-NLS-0$
-							+ i18nUtil.formatMessage(messages['. Go to ${0}.'], "<a href=\"" + statusURL(statusLocation) //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-							+"\">"+messages['Git Status page']+"</a>")+".</span>"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-0$
-						} 
-	
-						serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
-						explorer.changedItem(item);
-					}, 
-					displayErrorOnStatus
-				);
+				rebaseCallback(data).then(function() {
+					refresh();
+				});
 			},
 			visibleWhen : function(item) {
 				this.tooltip = messages["Rebase your commits by removing them from the active branch, "] +
@@ -1251,6 +1272,25 @@ var exports = {};
 				// for action in the repo view
 				return item.Type === "Branch" && item.Current && item.RemoteLocation; //$NON-NLS-0$
 		};
+		
+		var syncCommand = new mCommands.Command({
+			name : messages["Sync"],
+			tooltip: messages["SyncTooltip"],
+//			imageClass: "git-sprite-push", //$NON-NLS-0$
+//			spriteClass: "gitCommandSprite", //$NON-NLS-0$
+			id : "eclipse.orion.git.sync", //$NON-NLS-0$
+			callback: function(data) {
+				return fetchCallback(data).then(function() {
+					return rebaseCallback(data).then(function() {
+						return pushCallbackTags(data).then(function() {
+							refresh();
+						});
+					});
+				});
+			},
+			visibleWhen: pushVisibleWhen
+		});
+		commandService.addCommand(syncCommand);
 		
 		var pushCommand = new mCommands.Command({
 			name : messages["Push All"],

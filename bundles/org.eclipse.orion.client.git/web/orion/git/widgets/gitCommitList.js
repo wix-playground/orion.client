@@ -187,7 +187,7 @@ define([
 								remoteBranch: remoteBranch
 							},
 							{
-								Type: "Sync" //$NON-NLS-0$
+								Type: "Synchronized" //$NON-NLS-0$
 							}
 						]);
 					}, function(error){
@@ -234,7 +234,7 @@ define([
 						that.handleError(error);
 					});
 				}
-			} else if (parentItem.Type === "Sync") { //$NON-NLS-0$
+			} else if (parentItem.Type === "Synchronized") { //$NON-NLS-0$
 				if (tracksRemoteBranch) {
 					return Deferred.when(that.log || that._getLog(), function(log) {
 						parentItem.log = log;
@@ -296,7 +296,7 @@ define([
 		
 		this.incomingActionScope = "IncomingActions"; //$NON-NLS-0$
 		this.outgoingActionScope = "OutgoingActions"; //$NON-NLS-0$
-		this.syncActionScope = "SyncActions"; //$NON-NLS-0$
+		this.syncActionScope = "SynchronizedActions"; //$NON-NLS-0$
 		this.createCommands();
 	}
 	GitCommitListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
@@ -314,7 +314,7 @@ define([
 			progress.begin(messages["Getting git log"]);
 			model.getChildren(item, function(children) {
 				that.myTree.refresh.bind(that.myTree)(item, children, false);
-				if (item.Type === "Sync") { //$NON-NLS-0$
+				if (item.Type === "Synchronized") { //$NON-NLS-0$
 					that.updatePageCommands(item);
 				} else {
 					that.updateCommands();
@@ -442,7 +442,6 @@ define([
 //					"ViewAllLabel" : messages['See Full Log'],
 //					"ViewAllTooltip" : messages["See the full log"]
 //				}, this, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-
 	
 				var tracksRemoteBranch = model.tracksRemoteBranch();
 				if (tracksRemoteBranch) {
@@ -454,7 +453,11 @@ define([
 
 					commandService.registerCommandContribution(titleLeftActionsNodeScope, "eclipse.orion.git.commit.chooseBranch", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 					commandService.renderCommands(titleLeftActionsNodeScope, titleLeftActionsNodeScope, this, this, "button"); //$NON-NLS-0$
+					
+					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.sync", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+					commandService.renderCommands(actionsNodeScope, actionsNodeScope, {LocalBranch: model.getLocalBranch(), RemoteBranch: model.getRemoteBranch()}, this, "button"); //$NON-NLS-0$
 				}
+
 				commandService.addCommandGroup(outgoingActionScope, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
@@ -501,7 +504,7 @@ define([
 						expandContainer.style.styleFloat = "left"; //$NON-NLS-0$
 						expandContainer.style.cssFloat = "left"; //$NON-NLS-0$
 						var expandImage = this.getExpandImage(tableRow, expandContainer);
-						if (item.Type === "Sync") { //$NON-NLS-0$
+						if (item.Type === "Synchronized") { //$NON-NLS-0$
 							expandImage.addEventListener("click",function() { //$NON-NLS-0$
 								explorer.updatePageCommands(item);
 							});
