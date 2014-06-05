@@ -330,6 +330,12 @@ define([
 			var model = new GitCommitListModel({root: this.root, registry: this.registry, progressService: this.progressService, statusService: this.statusService, gitClient: this.gitClient, section: this.section, location: this.location, handleError: this.handleError});
 			this.createTree(this.parentId, model, {onComplete: function() {
 				that.status = model.status;
+				that.model.getRoot(function(root) {
+					that.model.getChildren(root, function(children) {
+						that.myTree.expand(that.model.getId(children[0]));
+						that.myTree.expand(that.model.getId(children[1]));
+					});
+				});
 				that.updateCommands();
 				deferred.resolve(model.log);
 			}});
