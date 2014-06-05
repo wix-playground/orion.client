@@ -153,7 +153,7 @@ define({
 	"No Remote Branches": "No Remote Branches",
 	"Rendering branches": "Rendering branches",
 	"Commits": "Commits",
-	"Getting current branch": "Getting current branch",
+	"GettingCurrentBranch": "Getting current branch for ${0}",
 	"See Full Log": "See Full Log",
 	"See the full log": "See the full log",
 	"Getting commits for \"${0}\" branch": "Getting commits for \"${0}\" branch",

@@ -140,12 +140,15 @@ define([
 			var tracksRemoteBranch = this.tracksRemoteBranch();
 			if (parentItem instanceof Array && parentItem.length > 0) {
 				onComplete(parentItem);
+			} else if (parentItem.children) {
+				onComplete(parentItem.children);
 			} else if (parentItem.Type === "CommitRoot") { //$NON-NLS-0$
 				var section = this.section;
 				var progress = section.createProgressMonitor();
-				progress.begin(messages['Getting current branch']);
 				Deferred.when(parentItem.repository || that._getRepository(), function(repository) {
-					that.progressService.progress(that.gitClient.getGitBranch(repository.BranchLocation), "Getting current branch " + repository.Name).then(function(resp) { //$NON-NLS-0$
+					var currentBranchMsg = i18nUtil.formatMessage(messages['GettingCurrentBranch'], repository.Name);
+					progress.begin(currentBranchMsg);
+					that.progressService.progress(that.gitClient.getGitBranch(repository.BranchLocation + "?commits=1&page=1&pageSize=5"), currentBranchMsg).then(function(resp) { //$NON-NLS-0$
 						var currentBranch;
 						resp.Children.some(function(branch) {
 							if (branch.Current) {
@@ -176,7 +179,7 @@ define([
 							section.setTitle(i18nUtil.formatMessage(messages["Commits for \"${0}\" branch"], remoteBranch.Name));
 						}
 						progress.done();
-						onComplete([
+						onComplete(that.processChildren(parentItem, [
 							{
 								Type: "Outgoing", //$NON-NLS-0$
 								localBranch: localBranch,
@@ -190,7 +193,7 @@ define([
 							{
 								Type: "Synchronized" //$NON-NLS-0$
 							}
-						]);
+						]));
 					}, function(error){
 						progress.done();
 						that.handleError(error);
@@ -309,7 +312,7 @@ define([
 			if (item.Type === "CommitRoot") { //$NON-NLS-0$
 				model.incomingCommits = model.outgoingCommits = null;
 			}
-			model.log = null;
+			item.children = model.log = null;
 			model.logDeferred = new Deferred();
 			var progress = this.section.createProgressMonitor();
 			progress.begin(messages["Getting git log"]);
