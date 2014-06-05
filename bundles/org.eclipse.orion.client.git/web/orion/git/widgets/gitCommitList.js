@@ -346,7 +346,6 @@ define([
 			return deferred;
 		},
 		createCommands: function() {
-			var that = this;
 			var commandService = this.commandService;
 			var nextPageCommand = new mCommands.Command({
 				name: messages['Next Page >'],
@@ -401,7 +400,7 @@ define([
 					});
 				},
 				visibleWhen: function(item) {
-					var branch = that.model.getRemoteBranch();
+					var branch = item;
 					var name = branch.Name;
 					if (branch.Type === "RemoteTrackingBranch" && !branch.Id) { //$NON-NLS-0$
 						name += messages[" [New branch]"];
@@ -448,25 +447,27 @@ define([
 //				}, this, "button"); //$NON-NLS-7$ //$NON-NLS-6$ //$NON-NLS-5$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 	
 				var tracksRemoteBranch = model.tracksRemoteBranch();
+				var localBranch = model.getLocalBranch();
+				var remoteBranch = model.getRemoteBranch();
 				if (tracksRemoteBranch) {
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.fetch", 400); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.merge", 300); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.rebase", 200); //$NON-NLS-0$
 					commandService.registerCommandContribution(incomingActionScope, "eclipse.orion.git.resetIndex", 100); //$NON-NLS-0$
-					commandService.renderCommands(incomingActionScope, incomingActionScope, model.getRemoteBranch(), this, "button"); //$NON-NLS-0$
+					commandService.renderCommands(incomingActionScope, incomingActionScope, remoteBranch, this, "button"); //$NON-NLS-0$
 
 					commandService.registerCommandContribution(titleLeftActionsNodeScope, "eclipse.orion.git.commit.chooseBranch", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-					commandService.renderCommands(titleLeftActionsNodeScope, titleLeftActionsNodeScope, this, this, "button"); //$NON-NLS-0$
+					commandService.renderCommands(titleLeftActionsNodeScope, titleLeftActionsNodeScope, remoteBranch, this, "button"); //$NON-NLS-0$
 					
 					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.sync", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-					commandService.renderCommands(actionsNodeScope, actionsNodeScope, {LocalBranch: model.getLocalBranch(), RemoteBranch: model.getRemoteBranch()}, this, "button"); //$NON-NLS-0$
+					commandService.renderCommands(actionsNodeScope, actionsNodeScope, {LocalBranch: localBranch, RemoteBranch: remoteBranch}, this, "button"); //$NON-NLS-0$
 				}
 
 				commandService.addCommandGroup(outgoingActionScope, "eclipse.gitPushGroup", 1000, "Push", null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.push", 1100, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.pushBranch", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
 				commandService.registerCommandContribution(outgoingActionScope, "eclipse.orion.git.pushToGerrit", 1200, "eclipse.gitPushGroup"); //$NON-NLS-0$ //$NON-NLS-1$
-				commandService.renderCommands(outgoingActionScope, outgoingActionScope, {LocalBranch: model.getLocalBranch(), RemoteBranch: model.getRemoteBranch()}, this, "button"); //$NON-NLS-0$
+				commandService.renderCommands(outgoingActionScope, outgoingActionScope, {LocalBranch: localBranch, RemoteBranch: remoteBranch}, this, "button"); //$NON-NLS-0$
 			}
 		},
 		updatePageCommands: function(item) {
@@ -483,7 +484,7 @@ define([
 		}
 	});
 	
-	function GitCommitListRenderer(options, explorer) {
+	function GitCommitListRenderer() {
 		mExplorer.SelectionRenderer.apply(this, arguments);
 	}
 	GitCommitListRenderer.prototype = Object.create(mExplorer.SelectionRenderer.prototype);
