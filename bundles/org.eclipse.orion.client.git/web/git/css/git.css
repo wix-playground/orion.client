@@ -18,6 +18,18 @@
 	background-position: left top; 
 }
 
+.sectionWrapper {
+	margin-left: 10px;
+	margin-right: 10px;
+	background-color: #ccc;
+}
+
+
+.sectionTable {
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
 .gitCommitMessage .orionButton {
 	margin: 15px;
 	padding: 15px;
@@ -101,7 +113,7 @@
 }
 
 .gitCommitListSection {
-	background-color: #eee;
+	background-color: #ddd;
 }
 
 .gitCommitListSectionTitle {

@@ -103,7 +103,7 @@ define([
 		while(splitted.length > 0 && /^\s*$/.test(splitted[iterator])) {
 			iterator++;
 		}
-		var maxMessageLength = 100;
+		var maxMessageLength = 50;
 		if (splitted[iterator].length > maxMessageLength) return splitted[iterator].substring(0,maxMessageLength)+'...'; //$NON-NLS-0$
 		return splitted[iterator];
 	}

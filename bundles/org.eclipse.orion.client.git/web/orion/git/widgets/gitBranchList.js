@@ -16,9 +16,10 @@ define([
 	'orion/explorers/explorer',
 	'orion/URITemplate',
 	'orion/i18nUtil',
+	'orion/selection',
 	'orion/Deferred',
 	'orion/objects'
-], function(messages, mExplorer, URITemplate, i18nUtil, Deferred, objects) {
+], function(messages, mExplorer, URITemplate, i18nUtil, Selection, Deferred, objects) {
 
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 
@@ -45,7 +46,7 @@ define([
 				var repository = parentItem.repository || parentItem.parent.repository;
 				msg = i18nUtil.formatMessage(messages["Getting remote branches"], repository.Name);
 				progress.begin(msg);
-				Deferred.when(repository.Branches || this.progressService.progress(this.gitClient.getGitBranch(repository.BranchLocation + (parentItem.mode === "full" ? "?commits=1" : "?commits=1&page=1&pageSize=5")), msg), function(resp) { //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				Deferred.when(repository.Branches || this.progressService.progress(this.gitClient.getGitBranch(repository.BranchLocation + (parentItem.mode === "full" ? "?commits=1&page=1&pageSize=5" : "?commits=1&page=1&pageSize=5")), msg), function(resp) { //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 					progress.done();
 					onComplete(that.processChildren(parentItem, resp.Children || resp));
 				}, function(error){
@@ -103,8 +104,10 @@ define([
 	 * @extends orion.explorers.Explorer
 	 */
 	function GitBranchListExplorer(options) {
-		var renderer = new GitBranchListRenderer({registry: options.serviceRegistry, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: false}, this); //$NON-NLS-0$
-		mExplorer.Explorer.call(this, options.serviceRegistry, options.selection, renderer, options.commandRegistry);	
+		
+		this.selection = options.selection = new Selection.Selection(options.serviceRegistry, "branchesSelection"); //$NON-NLS-0$
+		var renderer = new GitBranchListRenderer({registry: options.serviceRegistry, selectionPolicy: null, singleSelection: true, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: false}, this); //$NON-NLS-0$
+		mExplorer.Explorer.call(this, options.serviceRegistry, this.selection, renderer, options.commandRegistry);	
 		this.checkbox = false;
 		this.parentId = options.parentId;
 		this.actionScopeId = options.actionScopeId;
@@ -121,7 +124,7 @@ define([
 			this.updateCommands();
 		},
 		isRowSelectable: function(modelItem) {
-			return false;
+			return true;
 		},
 //		getItemCount: function() {
 //			return this.branches.length;
@@ -159,19 +162,21 @@ define([
 					var horizontalBox = document.createElement("div"); //$NON-NLS-0$
 					horizontalBox.style.overflow = "hidden"; //$NON-NLS-0$
 					div.appendChild(horizontalBox);	
-					var actionsID, title, description, titleClass = "";
+					var actionsID, title, description, description2, titleClass = "";
 					if (item.parent.Type === "LocalRoot") { //$NON-NLS-0$
 						var branch = item;
 						if (branch.Current){
-							var span = document.createElement("span"); //$NON-NLS-0$
-							span.className = "sectionIcon gitImageSprite git-sprite-branch-active"; //$NON-NLS-0$
-							horizontalBox.appendChild(span);
+//							var span = document.createElement("span"); //$NON-NLS-0$
+//							span.className = "sectionIcon gitImageSprite git-sprite-branch-active"; //$NON-NLS-0$
+//							horizontalBox.appendChild(span);
 							titleClass = "activeBranch"; //$NON-NLS-0$
+							title = item.Name + " (ACTIVE)";
 						}
 						var commit = branch.Commit.Children[0];
 						var tracksMessage = ((branch.RemoteLocation.length && branch.RemoteLocation.length === 1 && branch.RemoteLocation[0].Children.length && branch.RemoteLocation[0].Children.length === 1) ? 
 								i18nUtil.formatMessage(messages["tracks ${0}, "], branch.RemoteLocation[0].Children[0].Name) : messages["tracks no branch, "]);
-						description = tracksMessage + i18nUtil.formatMessage(messages["last modified ${0} by ${1}"], new Date(commit.Time).toLocaleString(), commit.AuthorName); //$NON-NLS-0$
+						description = tracksMessage;
+						description2 = i18nUtil.formatMessage(messages["last modified ${0} by ${1}"], new Date(commit.Time).toLocaleString(), commit.AuthorName); //$NON-NLS-0$
 						actionsID = "branchActionsArea"; //$NON-NLS-0$
 					} else if (item.parent.Type === "RemoteRoot") { //$NON-NLS-0$
 						var expandContainer = document.createElement("div"); //$NON-NLS-0$
@@ -201,6 +206,12 @@ define([
 						descriptionDiv.textContent = description;
 					}
 					detailsView.appendChild(descriptionDiv);
+					
+					var descriptionDiv2 = document.createElement("div"); //$NON-NLS-0$
+					if (description2) {
+						descriptionDiv2.textContent = description2;
+					}
+					detailsView.appendChild(descriptionDiv2);
 						
 					var actionsArea = document.createElement("div"); //$NON-NLS-0$
 					actionsArea.className = "sectionTableItemActions"; //$NON-NLS-0$

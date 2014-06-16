@@ -129,6 +129,8 @@ define([
 			div.style.overflow = "hidden"; //$NON-NLS-0$
 //			div.className = "sectionTableItem"; //$NON-NLS-0$
 			td.appendChild(div);
+			td.style.maxWidth = "150px";
+			td.style.wordWrap = "break-word";
 			switch (col_no) {
 				case 0:
 					var keySpan = document.createElement("span"); //$NON-NLS-0$

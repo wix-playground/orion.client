@@ -157,7 +157,7 @@ define([
 				Deferred.when(parentItem.repository || that._getRepository(), function(repository) {
 					var currentBranchMsg = i18nUtil.formatMessage(messages['GettingCurrentBranch'], repository.Name);
 					progress.worked(currentBranchMsg);
-					Deferred.when(repository.Branches || that.progressService.progress(that.gitClient.getGitBranch(repository.BranchLocation + "?commits=1"), currentBranchMsg), function(resp) { //$NON-NLS-0$
+					Deferred.when(repository.Branches || that.progressService.progress(that.gitClient.getGitBranch(repository.BranchLocation + "?commits=1&page=1&pageSize=5"), currentBranchMsg), function(resp) { //$NON-NLS-0$
 						var currentBranch, branches = resp.Children || resp;
 						branches.some(function(branch) {
 							if (branch.Current) {
@@ -592,7 +592,7 @@ define([
 					detailsView.appendChild(d);
 	
 					description = document.createElement("div"); //$NON-NLS-0$
-					description.textContent = messages[" (SHA "] + commit.Name + messages[") by "] + commit.AuthorName + messages[" on "]
+					description.textContent = /*messages[" (SHA "] + commit.Name + messages[") by "] +*/ commit.AuthorName + messages[" on "]
 							+ new Date(commit.Time).toLocaleString();
 					detailsView.appendChild(description);
 					
@@ -617,7 +617,7 @@ define([
 					else {
 						var tagsNone = document.createElement("span"); //$NON-NLS-0$
 						tagsNone.textContent = messages["None"];
-						tags.className = "gitCommitListNoTag"; //$NON-NLS-0$
+						tagsNone.className = "gitCommitListNoTag"; //$NON-NLS-0$
 						tags.appendChild(tagsNone);
 					}
 					detailsView.appendChild(tags);

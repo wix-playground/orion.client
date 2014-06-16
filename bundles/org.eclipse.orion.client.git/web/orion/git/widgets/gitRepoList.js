@@ -235,48 +235,48 @@ define([
 					}
 					
 					// Content area
-					var repoSectionContent = document.createElement("div");
-					repoSectionContent.className = "sectionTable sectionTableItem";
-					lib.node("repositoryNode").appendChild(repoSectionContent);
-											
-					var detailsView = document.createElement("div");
-					detailsView.className = "stretch";
-					repoSectionContent.appendChild(detailsView);
-					
-					var div = document.createElement("div");
-					detailsView.appendChild(div);
-					
-					var span = document.createElement("span");
-					span.textContent = (repositories[i].GitUrl !== null ? messages["git url:"] + repositories[i].GitUrl : messages["(no remote)"]);
-					detailsView.appendChild(span);
-					
-					div = document.createElement("div");
-					detailsView.appendChild(div);
-					
-					span = document.createElement("span");
-					span.id = "location"+i;
-					detailsView.appendChild(span);
-	
-					if (mode === "full"){
-						div = document.createElement("div");
-						div.style.paddingTop = "10px";
-						detailsView.appendChild(div);
-						
-						span = document.createElement("span");
-						span.id = "repositoryState"+i;
-						span.style.paddingLeft = "10px";
-						detailsView.appendChild(span);
-						
-						span = document.createElement("span");
-						span.id = "workspaceState"+i;
-						span.style.paddingLeft = "10px";
-						detailsView.appendChild(span);
-						
-						span = document.createElement("span");
-						span.id = "commitsState"+i;
-						span.style.paddingLeft = "10px";
-						detailsView.appendChild(span);
-					}
+//					var repoSectionContent = document.createElement("div");
+//					repoSectionContent.className = "sectionTable sectionTableItem";
+//					lib.node("repositoryNode").appendChild(repoSectionContent);
+//											
+//					var detailsView = document.createElement("div");
+//					detailsView.className = "stretch";
+//					repoSectionContent.appendChild(detailsView);
+//					
+//					var div = document.createElement("div");
+//					detailsView.appendChild(div);
+//					
+//					var span = document.createElement("span");
+//					span.textContent = (repositories[i].GitUrl !== null ? messages["git url:"] + repositories[i].GitUrl : messages["(no remote)"]);
+//					detailsView.appendChild(span);
+//					
+//					div = document.createElement("div");
+//					detailsView.appendChild(div);
+//					
+//					span = document.createElement("span");
+//					span.id = "location"+i;
+//					detailsView.appendChild(span);
+//	
+//					if (mode === "full"){
+//						div = document.createElement("div");
+//						div.style.paddingTop = "10px";
+//						detailsView.appendChild(div);
+//						
+//						span = document.createElement("span");
+//						span.id = "repositoryState"+i;
+//						span.style.paddingLeft = "10px";
+//						detailsView.appendChild(span);
+//						
+//						span = document.createElement("span");
+//						span.id = "workspaceState"+i;
+//						span.style.paddingLeft = "10px";
+//						detailsView.appendChild(span);
+//						
+//						span = document.createElement("span");
+//						span.id = "commitsState"+i;
+//						span.style.paddingLeft = "10px";
+//						detailsView.appendChild(span);
+//					}
 				},
 				
 				renderAfterItemPopulation : function(i){

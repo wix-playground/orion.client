@@ -16,7 +16,6 @@ define([
 	'orion/git/widgets/gitCommitList',
 	'orion/git/widgets/gitBranchList',
 	'orion/git/widgets/gitConfigList',
-	'orion/git/widgets/gitTagList',
 	'orion/git/widgets/gitRepoList',
 	'orion/section',
 	'orion/webui/littlelib',
@@ -25,7 +24,7 @@ define([
 	'orion/fileUtils',
 	'orion/globalCommands',
 	'orion/Deferred'
-], function(require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitTagList, mGitRepoList, mSection, lib, URITemplate, PageUtil, mFileUtils, mGlobalCommands, Deferred) {
+], function(require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitRepoList, mSection, lib, URITemplate, PageUtil, mFileUtils, mGlobalCommands, Deferred) {
 var exports = {};
 	
 var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
@@ -167,10 +166,11 @@ exports.GitRepositoryExplorer = (function() {
 					
 					that.initTitleBar(repositories[0]);
 					that.displayRepositories(repositories, "mini"); //$NON-NLS-0$
+					that.displayBranches(repositories[0], "full"); //$NON-NLS-0$
 					that.statusDeferred = that.displayStatus(repositories[0]);
 					that.displayCommits(repositories[0]);
-					that.displayBranches(repositories[0], "full"); //$NON-NLS-0$
 					that.displayConfig(repositories[0], "full"); //$NON-NLS-0$
+					that.updateSelection();
 				} else if (resp.Children[0].Type === "Clone"){ //$NON-NLS-0$
 					repositories = resp.Children;
 					
@@ -275,7 +275,7 @@ exports.GitRepositoryExplorer = (function() {
 	// Git repo
 	
 	GitRepositoryExplorer.prototype.displayRepositories = function(repositories, mode, links){
-		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
+		var tableNode = lib.node( 'outlineContainer' ); //$NON-NLS-0$
 		lib.empty(tableNode);
 		var contentParent = document.createElement("div");
 		tableNode.appendChild(contentParent);
@@ -302,7 +302,7 @@ exports.GitRepositoryExplorer = (function() {
 	
 	GitRepositoryExplorer.prototype.displayBranches = function(repository, mode){
 		
-		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
+		var tableNode = lib.node( 'outlineContainer' ); //$NON-NLS-0$
 		
 		var titleWrapper = new mSection.Section(tableNode, {
 			id: "branchSection", //$NON-NLS-0$
@@ -368,7 +368,7 @@ exports.GitRepositoryExplorer = (function() {
 	// Git commits
 		
 	GitRepositoryExplorer.prototype.displayCommits = function(repository){	
-		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
+		var tableNode = lib.node( 'outlineContainer' ); //$NON-NLS-0$
 
 		var titleWrapper = new mSection.Section(tableNode, {
 			id: "commitSection", //$NON-NLS-0$
@@ -405,7 +405,7 @@ exports.GitRepositoryExplorer = (function() {
 	
 	GitRepositoryExplorer.prototype.displayConfig = function(repository, mode){
 		
-		var tableNode = lib.node( 'table' ); //$NON-NLS-0$
+		var tableNode = lib.node( 'outlineContainer' ); //$NON-NLS-0$
 		
 		var titleWrapper = new mSection.Section(tableNode, {
 			id: "configSection", //$NON-NLS-0$
@@ -436,6 +436,10 @@ exports.GitRepositoryExplorer = (function() {
 		configNavigator.display();
 	};
 	
+	
+	GitRepositoryExplorer.prototype.updateSelection = function() {
+	
+	};
 	
 	return GitRepositoryExplorer;
 }());
