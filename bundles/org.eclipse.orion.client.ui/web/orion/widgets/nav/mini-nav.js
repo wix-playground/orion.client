@@ -15,12 +15,11 @@ define([
 	'orion/objects',
 	'orion/webui/littlelib',
 	'orion/widgets/nav/common-nav',
-	'orion/fileCommands',
 	'orion/PageUtil',
-	'orion/Deferred',
 	'orion/widgets/filesystem/filesystemSwitcher',
+	'orion/keyBinding',
 	'orion/URL-shim'
-], function(messages, objects, lib, mCommonNav, FileCommands, PageUtil, Deferred, mFilesystemSwitcher, _) {
+], function(messages, objects, lib, mCommonNav, PageUtil, mFilesystemSwitcher, KeyBinding, _) {
 	var CommonNavExplorer = mCommonNav.CommonNavExplorer;
 	var CommonNavRenderer = mCommonNav.CommonNavRenderer;
 
@@ -117,6 +116,19 @@ define([
 				toolbarNode: this.toolbarNode
 			});
 
+			// filter button
+			var domNodeWrapperList = [];		
+			this.commandRegistry.registerCommandContribution(this.toolbarNode.id, "orion.openResource", 100, null, false, new KeyBinding.KeyBinding('f', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
+			this.commandRegistry.renderCommands(this.toolbarNode.id, this.toolbarNode, [], this, "button", null, domNodeWrapperList);  //$NON-NLS-0$
+			var filterButton = domNodeWrapperList[0].domNode; //$NON-NLS-0$
+			lib.empty(filterButton);
+			filterButton.classList.add("filterButton"); //$NON-NLS-0$
+			
+			var filterSpan = document.createElement("span"); //$NON-NLS-0$
+			filterSpan.classList.add("core-sprite-outline"); //$NON-NLS-0$
+			filterSpan.classList.add("filterButtonSpan"); //$NON-NLS-0$
+			filterButton.appendChild(filterSpan);
+
 			// Create switcher here
 			this.fsSwitcher = new mFilesystemSwitcher.FilesystemSwitcher({
 				commandRegistry: this.commandRegistry,
@@ -126,7 +138,7 @@ define([
 				node: this.toolbarNode,
 				serviceRegistry: this.serviceRegistry
 			});
-
+			
 			var params = PageUtil.matchResourceParameters();
 			var navigate = params.navigate, resource = params.resource;
 			var root = navigate || this.lastRoot || this.fileClient.fileServiceRootURL(resource || ""); //$NON-NLS-0$

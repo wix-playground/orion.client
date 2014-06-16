@@ -1215,3 +1215,13 @@ textarea.parameterInput {
 	font-size: 12px;
 	color: #222;
 }
+
+.commandButton.filterButton {
+	float: right;
+	margin: 5px 2px 2px 2px;
+}
+
+.filterButton > .filterButtonSpan {
+	font-size: 12px;
+}
+
