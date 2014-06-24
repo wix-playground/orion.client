@@ -25,11 +25,12 @@ define([
 	'orion/selection',
 	'orion/URITemplate',
 	'orion/PageUtil',
-	'orion/Deferred',
-	'orion/webui/contextmenu'
+	'orion/webui/contextmenu',
+	'orion/search/InlineSearchPane'
 ], function(
 	messages, objects, lib, mExplorer, mNavigatorRenderer, mExplorerNavHandler, mKeyBinding,
-	FileCommands, ProjectCommands, ExtensionCommands, mGlobalCommands, Selection, URITemplate, PageUtil, Deferred, mContextMenu
+	FileCommands, ProjectCommands, ExtensionCommands, mGlobalCommands, Selection, URITemplate, PageUtil, 
+	mContextMenu, InlineSearchPane
 ) {
 	var FileExplorer = mExplorer.FileExplorer;
 	var KeyBinding = mKeyBinding.KeyBinding;
@@ -49,6 +50,7 @@ define([
 		FileExplorer.apply(this, arguments);
 		this.preferences = params.preferences;
 		this.commandRegistry = params.commandRegistry;
+		this.serviceRegistry = params.serviceRegistry;
 		this.editorInputManager = params.editorInputManager;
 		this.progressService = params.progressService;
 		this.sidebar = params.sidebar;
@@ -101,6 +103,7 @@ define([
 		this.commandsRegistered = this.registerCommands();
 		
 		this._createContextMenu();
+		this._createInlineSearchPane();
 	}
 	CommonNavExplorer.prototype = Object.create(FileExplorer.prototype);
 	objects.mixin(CommonNavExplorer.prototype, /** @lends orion.sidebar.CommonNavExplorer.prototype */ {
@@ -448,6 +451,26 @@ define([
 			contextMenu.addEventListener("triggered", contextMenuTriggered); //$NON-NLS-0$
 			
 			this._contextMenu = contextMenu;
+		},
+		
+		_createInlineSearchPane: function() {
+			this._inlineSearchPane = new InlineSearchPane({
+				parentNode: this.toolbarNode,
+				serviceRegistry: this.serviceRegistry,
+				commandRegistry: this.commandRegistry,
+				fileClient: this.fileClient
+			});
+			
+			this.addEventListener("rootChanged", function(event) { //$NON-NLS-0$
+				//TODO change scope in search builder
+//				_self.sidebarNavInputManager.dispatchEvent({type: "InputChanged", input: event.root.ChildrenLocation}); //$NON-NLS-0$
+			}.bind(this));
+			
+			this.toolbarNode.parentNode.addEventListener("scroll", function(){
+				if (this._inlineSearchPane.isVisible()) {
+					this.toolbarNode.parentNode.scrollTop = 0;
+				}
+			}.bind(this));
 		}
 	});
 
