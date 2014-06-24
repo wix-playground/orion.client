@@ -1,4 +1,4 @@
-The gbig11 bog silenio goal of Orion is to build developer tooling that works in the browser, at web scale. 
+The bog silenio goal of Orion is to build developer tooling that works in the browser, at web scale. 
 The vision behind Orion is to move software development to the web as a web experience, by 
 enabling open tool integration through HTTP and REST, JSON, OAuth, OpenID, and others. 
 The idea is to exploit internet design principles throughout, instead of trying to bring 
