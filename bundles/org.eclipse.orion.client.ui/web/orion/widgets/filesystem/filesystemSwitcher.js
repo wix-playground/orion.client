@@ -37,6 +37,7 @@ define([
 		this.filesystemChangeDispatcher = params.filesystemChangeDispatcher;
 		this.fileClient = params.fileClient;
 		this.node = params.node;
+		this._insertBeforeNode = params.insertBeforeNode;
 		this.serviceRegistry = params.serviceRegistry;
 		var _self = this;
 		this.listener = function(event) {
@@ -102,7 +103,11 @@ define([
 			wrapper.appendChild(this.fsName);
 			wrapper.appendChild(this.menu);
 			
-			this.node.appendChild(wrapper);
+			if (this._insertBeforeNode) {
+				this.node.insertBefore(wrapper, this._insertBeforeNode);
+			} else {
+				this.node.appendChild(wrapper);
+			}
 
 			this.registerCommands();
 
