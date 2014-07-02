@@ -313,6 +313,7 @@ exports.GitRepositoryExplorer = (function() {
 			slideout: true,
 			content: '<div id="branchNode"></div>', //$NON-NLS-0$
 			canHide: true,
+			hidden: true,
 			preferenceService: this.preferencesService
 		});
 		var branchNavigator = new mGitBranchList.GitBranchListExplorer({
@@ -345,7 +346,7 @@ exports.GitRepositoryExplorer = (function() {
 			title: messages["ChangedFiles"],
 			slideout: true,
 			content: '<div id="statusNode"></div>', //$NON-NLS-0$
-			canHide: true,
+			canHide: false,
 			preferenceService: this.preferencesService
 		}); 
 		

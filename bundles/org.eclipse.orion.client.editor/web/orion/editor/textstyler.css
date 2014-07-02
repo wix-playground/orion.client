@@ -16,6 +16,7 @@
 
 .entity.name.function, .entity.name.type, .entity-name-function, .entity-name-type {
 	font-weight: bold;
+	color: #3f7f7f;
 }
 
 .entity.name, .entity-name-tag {

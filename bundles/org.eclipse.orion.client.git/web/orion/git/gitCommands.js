@@ -1240,6 +1240,7 @@ var exports = {};
 		var syncCommand = new mCommands.Command({
 			name : messages["Sync"],
 			tooltip: messages["SyncTooltip"],
+			extraClass: "primaryButton",  //$NON-NLS-0$
 //			imageClass: "git-sprite-push", //$NON-NLS-0$
 //			spriteClass: "gitCommandSprite", //$NON-NLS-0$
 			id : "eclipse.orion.git.sync", //$NON-NLS-0$
@@ -2369,8 +2370,6 @@ var exports = {};
 		
 		var logic = mGitCommitLogic(commitOptions);
 		var commitCallback = logic.perform;
-		var commitMessageParameters = logic.createParameters(newLook);
-		var amendEventListener = logic.amendEventListener;
 		var displayErrorOnStatus = logic.displayErrorOnStatus;
 		
 		function forceArray(item) {
@@ -2491,7 +2490,6 @@ var exports = {};
 			name: newLook ? messages["SmartCommit"] : messages["Commit"], //$NON-NLS-0$
 			tooltip: newLook ? "" : messages["Commit"], //$NON-NLS-0$
 			id: "eclipse.orion.git.commitCommand", //$NON-NLS-0$
-			parameters: commitMessageParameters,
 			callback: function(data) {
 				commitCallback(data).then(function() {
 					refresh();
@@ -2686,7 +2684,8 @@ var exports = {};
 				return url;
 			},
 			visibleWhen: function(item) {
-				return true;
+				var items = forceArray(item);
+				return items.length !== 0;
 			}
 		});
 		
