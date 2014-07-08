@@ -33,3 +33,8 @@
 .gitPanel .sectionWrapper {
 	margin-top: 40px;
 }
+
+.gitPanel table .sectionWrapper {
+	margin-top: 20px;
+}
+

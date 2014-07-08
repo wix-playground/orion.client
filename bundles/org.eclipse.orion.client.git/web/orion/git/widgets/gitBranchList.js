@@ -13,14 +13,17 @@
 
 define([
 	'i18n!git/nls/gitmessages',
+	'orion/git/widgets/gitCommitList',
+	'orion/section',
 	'orion/explorers/explorer',
 	'orion/URITemplate',
 	'orion/i18nUtil',
 	'orion/Deferred',
 	'orion/objects'
-], function(messages, mExplorer, URITemplate, i18nUtil, Deferred, objects) {
+], function(messages, mGitCommitList, mSection, mExplorer, URITemplate, i18nUtil, Deferred, objects) {
 
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
+	var pageSizeQuery = "?page=1&pageSize=10"; //$NON-NLS-0$
 
 	function GitBranchListModel(options) {
 		this.root = options.root;
@@ -78,6 +81,8 @@ define([
 					progress.done();
 					that.handleError(error);
 				});
+			} else if (parentItem.Type === "Branch" || parentItem.Type === "RemoteTrackingBranch") { //$NON-NLS-1$ //$NON-NLS-0$
+				onComplete(that.processChildren(parentItem, [{Type: "BranchContent"}])); //$NON-NLS-0$
 			} else {
 				onComplete([]);
 			}
@@ -154,11 +159,53 @@ define([
 				case 0:
 					td = document.createElement("td"); //$NON-NLS-0$
 					div = document.createElement("div"); //$NON-NLS-0$
-					div.className = "sectionTableItem lightTreeTableRow"; //$NON-NLS-0$
+					div.className = "sectionTableItem"; //$NON-NLS-0$
 					td.appendChild(div);
 					var horizontalBox = document.createElement("div"); //$NON-NLS-0$
 					horizontalBox.style.overflow = "hidden"; //$NON-NLS-0$
 					div.appendChild(horizontalBox);	
+
+					if (item.Type !== "BranchContent") { //$NON-NLS-0$
+						var expandContainer = document.createElement("div"); //$NON-NLS-0$
+						expandContainer.style.display = "inline-block"; //$NON-NLS-0$
+						expandContainer.style.styleFloat = expandContainer.style.cssFloat = "left"; //$NON-NLS-0$
+						this.getExpandImage(tableRow, expandContainer);
+						horizontalBox.appendChild(expandContainer);
+					} else {
+						tableRow.classList.remove("selectableNavRow"); //$NON-NLS-0$
+				
+						var titleWrapper = new mSection.Section(horizontalBox, {
+							id: "commitSection" + item.parent.CommitLocation, //$NON-NLS-0$
+							title: messages["Commits"],
+							slideout: true,
+							canHide: true,
+							preferenceService: this.explorer.preferencesService
+						}); 
+						
+						var explorer = this.commitNavigator = new mGitCommitList.GitCommitListExplorer({
+							serviceRegistry: this.explorer.registry,
+							commandRegistry: this.explorer.commandService,
+							fileClient: this.explorer.fileClient,
+							gitClient: this.explorer.gitClient,
+							progressService: this.explorer.progressService,
+							statusService: this.explorer.statusService,
+							parentId: titleWrapper.getContentElement(),
+							location: item.parent.CommitLocation + pageSizeQuery,
+							pageActionsScopeId: titleWrapper.actionsNode.id,
+							section: titleWrapper,
+							legacyLog: true,
+							handleError: this.handleError,
+							root: {
+								Type: "CommitRoot" //$NON-NLS-0$
+							}
+						});
+						
+						setTimeout(function() {
+							explorer.display();
+						}, 10);
+						return td;
+					}
+
 					var actionsID, title, description, titleClass = "";
 					if (item.parent.Type === "LocalRoot") { //$NON-NLS-0$
 						var branch = item;
@@ -174,11 +221,6 @@ define([
 						description = tracksMessage + i18nUtil.formatMessage(messages["last modified ${0} by ${1}"], new Date(commit.Time).toLocaleString(), commit.AuthorName); //$NON-NLS-0$
 						actionsID = "branchActionsArea"; //$NON-NLS-0$
 					} else if (item.parent.Type === "RemoteRoot") { //$NON-NLS-0$
-						var expandContainer = document.createElement("div"); //$NON-NLS-0$
-						expandContainer.style.display = "inline-block"; //$NON-NLS-0$
-						expandContainer.style.styleFloat = expandContainer.style.cssFloat = "left"; //$NON-NLS-0$
-						this.getExpandImage(tableRow, expandContainer);
-						horizontalBox.appendChild(expandContainer);
 						
 						description = item.GitUrl || item.Description || item.parent.repository.ContentLocation;
 						actionsID = "remoteActionsArea"; //$NON-NLS-0$
