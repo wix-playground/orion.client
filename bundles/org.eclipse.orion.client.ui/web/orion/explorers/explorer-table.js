@@ -1056,6 +1056,7 @@ define([
 			if(!progress){
 				progress = document.createElement("div"); //$NON-NLS-0$
 				progress.id = "progress"; //$NON-NLS-0$
+				progress.classList.add("fileExplorerProgressDiv"); //$NON-NLS-0$
 				lib.empty(parent);
 				parent.appendChild(progress);
 			}
