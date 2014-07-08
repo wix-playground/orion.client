@@ -85,9 +85,19 @@ define([
 			} else if (parentItem.Type === "Branch" || parentItem.Type === "RemoteTrackingBranch") { //$NON-NLS-1$ //$NON-NLS-0$
 				progress = this.section.createProgressMonitor();
 				msg = i18nUtil.formatMessage(messages['Getting commits for \"${0}\" branch'], parentItem.Name);
-				this.progressService.progress(that.gitClient.doGitLog(parentItem.CommitLocation + "?page=1&pageSize=20"), msg).then(function(resp) { //$NON-NLS-0$
+				this.progressService.progress(that.gitClient.doGitLog(parentItem.location ? parentItem.location : parentItem.CommitLocation + "?page=1&pageSize=20"), msg).then(function(resp) { //$NON-NLS-0$
 					progress.done();
-					onComplete(that.processChildren(parentItem, resp.Children));
+					var children = parentItem.children;
+					if (children) {
+						var args = [children.length - 1, 1].concat(resp.Children);
+						Array.prototype.splice.apply(children, args);
+					} else {
+						children = resp.Children;
+					}
+					if (resp.NextLocation) {
+						children.push({Type: "MoreCommits", NextLocation: resp.NextLocation}); //$NON-NLS-0$
+					}
+					onComplete(that.processChildren(parentItem, children));
 				}, function(error){
 					that.handleError(error);
 				});
@@ -116,7 +126,14 @@ define([
 	 * @extends orion.explorers.Explorer
 	 */
 	function GitBranchListExplorer(options) {
-		var renderer = new GitBranchListRenderer({registry: options.serviceRegistry, commandService: options.commandRegistry, actionScopeId: options.actionScopeId, cachePrefix: options.prefix + "Navigator", checkbox: false}, this); //$NON-NLS-0$
+		var renderer = new GitBranchListRenderer({
+			registry: options.serviceRegistry,
+			commandService: options.commandRegistry,
+			actionScopeId: options.actionScopeId,
+			cachePrefix: options.prefix + "Navigator", //$NON-NLS-0$
+//			noRowHighlighting: true,
+			checkbox: false
+		}, this);
 		mExplorer.Explorer.call(this, options.serviceRegistry, options.selection, renderer, options.commandRegistry);	
 		this.checkbox = false;
 		this.parentId = options.parentId;
@@ -129,6 +146,16 @@ define([
 	}
 	GitBranchListExplorer.prototype = Object.create(mExplorer.Explorer.prototype);
 	objects.mixin(GitBranchListExplorer.prototype, /** @lends orion.git.GitBranchListExplorer.prototype */ {
+		changedItem: function(item) {
+			var deferred = new Deferred();
+			var model = this.model;
+			var that = this;
+			model.getChildren(item, function(children) {
+				that.myTree.refresh.bind(that.myTree)(item, children, false);
+				deferred.resolve(children);
+			});
+			return deferred;
+		},
 		display: function() {
 			this.createTree(this.parentId, new GitBranchListModel({root: this.root, registry: this.registry, progressService: this.progressService, gitClient: this.gitClient, section: this.section, handleError: this.handleError}));
 			this.updateCommands();
@@ -175,7 +202,7 @@ define([
 					horizontalBox.style.overflow = "hidden"; //$NON-NLS-0$
 					div.appendChild(horizontalBox);	
 					
-					if (item.Type !== "Commit") { //$NON-NLS-0$
+					if (item.Type !== "Commit" && item.Type !== "MoreCommits") { //$NON-NLS-1$ //$NON-NLS-0$
 						var expandContainer = document.createElement("div"); //$NON-NLS-0$
 						expandContainer.style.display = "inline-block"; //$NON-NLS-0$
 						expandContainer.style.styleFloat = expandContainer.style.cssFloat = "left"; //$NON-NLS-0$
@@ -221,6 +248,17 @@ define([
 						description = commit.AuthorName + messages[" on "] + new Date(commit.Time).toLocaleString();
 						titleLink = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
 						titleClass = "navlinkonpage"; //$NON-NLS-0$
+					} else if (item.Type === "MoreCommits") { //$NON-NLS-0$
+						td.classList.add("gitCommitListMore"); //$NON-NLS-0$
+						td.textContent = i18nUtil.formatMessage(messages["MoreCommits"], item.parent.Name);
+						var listener;
+						td.addEventListener("click", listener = function() { //$NON-NLS-0$
+							td.removeEventListener("click", listener); //$NON-NLS-0$
+							td.textContent = i18nUtil.formatMessage(messages["MoreCommitsProgress"], item.parent.Name);
+							item.parent.location = item.NextLocation;
+							explorer.changedItem(item.parent);
+						});
+						return td;
 					}
 					
 					var detailsView = document.createElement("div"); //$NON-NLS-0$
