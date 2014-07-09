@@ -32,6 +32,7 @@ define({
 	"parent: 0": "parent: ${0}",
 	"authored by 0 (1) on 2": "authored by ${0} (${1}) on ${2}",
 	"committed by 0 (1)": "committed by ${0} (${1})",
+	"committedby": "committed by ",
 	"Tags:": "Tags:",
 	"No Tags": "No Tags",
 	"Diffs": "Changes",

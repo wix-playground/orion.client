@@ -14,14 +14,16 @@
 define([
 	'require',
 	'i18n!git/nls/gitmessages',
+	'orion/git/widgets/gitChangeList',
+	'orion/git/widgets/gitCommitInfo',
+	'orion/section',
 	'orion/explorers/explorer',
 	'orion/URITemplate',
-	'orion/git/widgets/CommitTooltipDialog',
 	'orion/git/util',
 	'orion/i18nUtil',
 	'orion/Deferred',
 	'orion/objects'
-], function(require, messages, mExplorer, URITemplate, mCommitTooltip, util, i18nUtil, Deferred, objects) {
+], function(require, messages, mGitChangeList, mGitCommitInfo, mSection, mExplorer, URITemplate, util, i18nUtil, Deferred, objects) {
 
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 
@@ -110,6 +112,8 @@ define([
 				}, function(error){
 					that.handleError(error);
 				});
+			} else if (parentItem.Type === "Commit") {  //$NON-NLS-0$
+				onComplete(that.processChildren(parentItem, [{Type: "CommitChanges"}]));  //$NON-NLS-0$
 			} else {
 				onComplete([]);
 			}
@@ -251,6 +255,7 @@ define([
 						actionsID = "branchActionsArea"; //$NON-NLS-0$
 						description = "";
 					} else if (item.Type === "Commit") { //$NON-NLS-0$
+						createExpand();
 						commit = item;
 						if (commit.AuthorImage) {
 							var authorImage = document.createElement("div"); //$NON-NLS-0$
@@ -264,9 +269,66 @@ define([
 						}
 						
 						title = util.trimCommitMessage(commit.Message);
-						description = commit.AuthorName + messages[" on "] + new Date(commit.Time).toLocaleString();
-						titleLink = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
-						titleClass = "navlinkonpage"; //$NON-NLS-0$
+						description = "authored by " + commit.AuthorName + messages[" on "] + new Date(commit.Time).toLocaleString();
+						if (explorer.showCommitLinks) {
+							titleLink = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
+							titleClass = "navlinkonpage"; //$NON-NLS-0$
+						} else {
+							titleClass = "gitCommitTitle"; //$NON-NLS-0$
+						}
+					} else if (item.Type === "CommitChanges") {
+						tableRow.classList.remove("selectableNavRow"); //$NON-NLS-0$
+						commit = item.parent;
+						var commitDetails = document.createElement("div"); //$NON-NLS-0$
+						var info = new mGitCommitInfo.GitCommitInfo({
+							parent: commitDetails,
+							commit: commit,
+							showTags: false,
+							commitLink: false,
+							showMessage: false,
+							showImage: false,
+							showAuthor: false,
+							showParentLink: false
+						});
+						info.display();
+						horizontalBox.appendChild(commitDetails);
+						
+						var diffs = commit.Diffs;
+
+						diffs.forEach(function(item) {
+							var path = item.OldPath;
+							if (item.ChangeType === "ADD") { //$NON-NLS-0$
+								path = item.NewPath;
+							} 
+							item.name = path;
+							item.type = item.ChangeType;
+						});
+						
+						var titleWrapper = new mSection.Section(horizontalBox, {
+							id: "diffSection" + commit.Name, //$NON-NLS-0$
+							title: messages["ChangedFiles"],
+							slideout: true,
+							canHide: false,
+							preferenceService: explorer.preferencesService
+						}); 
+
+						var repository = explorer.model.root.repository;
+						setTimeout(function() {
+							var explorer2  = new mGitChangeList.GitChangeListExplorer({
+								serviceRegistry: explorer.registry,
+								commandRegistry: explorer.commandService,
+								selection: null,
+								parentId: titleWrapper.getContentElement(), 
+								actionScopeId: "diffSectionItemActionArea",
+								prefix: "diff",
+								changes: diffs,
+								location: repository.StatusLocation,
+								repository: repository,
+								section: titleWrapper
+							});
+							explorer2.display();
+						}, 10);
+						return td;
 					}
 					
 					var detailsView = document.createElement("div"); //$NON-NLS-0$
@@ -288,7 +350,6 @@ define([
 					detailsView.appendChild(descriptionDiv);
 					
 					if (item.Type === "Commit") { //$NON-NLS-0$
-						new mCommitTooltip.CommitTooltipDialog({commit: commit, triggerNode: titleDiv});
 						if (commit.Tags && commit.Tags.length) {
 							var tags = document.createElement("div"); //$NON-NLS-0$
 							tags.textContent = messages["Tags:"];
