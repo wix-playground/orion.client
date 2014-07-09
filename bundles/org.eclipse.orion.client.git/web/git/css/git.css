@@ -49,6 +49,10 @@ table .sectionTable {
 	color: black;
 }
 
+.tooltip .gitCommitInfoValue {
+	color: white;
+}
+
 .gitCommitMessage .gitCommitMessageTopRow {
 	width: calc(100% - 6px);
 	background-color: white;
