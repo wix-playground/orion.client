@@ -169,7 +169,7 @@ define([
 				Deferred.when(parentItem.repository || that._getRepository(), function(repository) {
 					var currentBranchMsg = i18nUtil.formatMessage(messages['GettingCurrentBranch'], repository.Name);
 					progress.worked(currentBranchMsg);
-					Deferred.when(that.Branches || that.progressService.progress(that.gitClient.getGitBranch(repository.BranchLocation + "?commits=0"), currentBranchMsg), function(resp) { //$NON-NLS-0$
+					Deferred.when(that.Branches || that.progressService.progress(that.gitClient.getGitBranch(repository.BranchLocation + "?commits=0&page=1&pageSize=10"), currentBranchMsg), function(resp) { //$NON-NLS-0$
 						var currentBranch, branches = resp.Children || resp;
 						branches.some(function(branch) {
 							if (branch.Current) {
