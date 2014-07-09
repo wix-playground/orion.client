@@ -15,15 +15,13 @@ define([
 	'require',
 	'i18n!git/nls/gitmessages',
 	'orion/URITemplate',
-	'orion/PageUtil',
 	'orion/Deferred',
 	'orion/dynamicContent',
 	'orion/webui/littlelib',
 	'orion/git/widgets/CommitTooltipDialog',
 	'orion/objects'
-], function(require, messages, URITemplate, PageUtil, Deferred, mDynamicContent, lib, mCommitTooltip, objects) {
+], function(require, messages, URITemplate, Deferred, mDynamicContent, lib, mCommitTooltip, objects) {
 		
-	var repoPageTemplate = new URITemplate("git/git-repository.html#{,resource,params*}?page=1&pageSize=20"); //$NON-NLS-0$
 	var commitTemplate = new URITemplate("git/git-commit.html#{,resource,params*}?page=1&pageSize=1"); //$NON-NLS-0$
 	
 	/**
@@ -150,7 +148,6 @@ define([
 								
 								var div = document.createElement("div");
 								div.id = "tagDetailsView"+i;
-								div.textContent = "...";
 								detailsView.appendChild(div);
 		
 								var actionsArea = document.createElement("div");
