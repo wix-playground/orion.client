@@ -131,7 +131,7 @@ define([
 			} else if (item.Type === "MoreCommits" || item.Type === "MoreBranches") { //$NON-NLS-1$ //$NON-NLS-0$
 				return item.Type + item.parent.Name;
 			} else {
-				return item.Name;
+				return "branchList" + item.Name;
 			}
 		}
 	});
