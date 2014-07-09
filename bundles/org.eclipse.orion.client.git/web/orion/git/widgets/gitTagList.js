@@ -150,6 +150,7 @@ define([
 								
 								var div = document.createElement("div");
 								div.id = "tagDetailsView"+i;
+								div.textContent = "...";
 								detailsView.appendChild(div);
 		
 								var actionsArea = document.createElement("div");
