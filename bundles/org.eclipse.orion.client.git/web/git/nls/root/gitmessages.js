@@ -40,6 +40,8 @@ define({
 	"MoreCommitsProgress": "Loading more commits for \"${0}\"...",
 	"MoreBranches": "More branches for \"${0}\"",
 	"MoreBranchesProgress": "Loading more branches for \"${0}\"...",
+	"MoreTags": "More tags",
+	"MoreTagsProgress": "Loading more tags...",
 	"Loading git log...": "Loading git log...",
 	"local": "local",
 	"remote": "remote",

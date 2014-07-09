@@ -70,6 +70,14 @@
 	padding: 10px;
 }
 
+.gitTagListMore {
+	text-align: center;
+	font-size: 10pt;
+	font-weight: bold;
+	color: gray;
+	padding: 6px;
+}
+
 .gitCommitMessage .gitCommitMessageExplorerRow {
 	width: calc(100% - 6px);
 	padding: 0px;
