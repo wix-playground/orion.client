@@ -291,14 +291,13 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 					break;
 				}
 				if (foundParent) {
-					if (row._depth > parentDepth) {
-						toRemove.push(row);
-					}
-					else if (parentRow && row.parentNode !== parentRow.parentNode) {
-						//do nothing
-					}
-					else {
-						stop = true;  // we reached a sibling to our parent
+					if (!parentRow || row.parentNode === parentRow.parentNode) {
+						if (row._depth > parentDepth) {
+							toRemove.push(row);
+						}
+						else {
+							stop = true;  // we reached a sibling to our parent
+						}
 					}
 				} else {
 					if (row.id === parentId) {
