@@ -280,6 +280,7 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 		_removeChildRows: function(parentId) {
 			// true if we are removing directly from table
 			var foundParent = parentId === this._id;
+			var parentRow;
 			var stop = false;
 			var parentDepth = -1;
 			var toRemove = [];
@@ -293,6 +294,9 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 					if (row._depth > parentDepth) {
 						toRemove.push(row);
 					}
+					else if (parentRow && row.parentNode !== parentRow.parentNode) {
+						//do nothing
+					}
 					else {
 						stop = true;  // we reached a sibling to our parent
 					}
@@ -300,6 +304,7 @@ define(['i18n!orion/nls/messages', 'orion/webui/littlelib'], function(messages, 
 					if (row.id === parentId) {
 						foundParent = true;
 						parentDepth = row._depth;
+						parentRow = row;
 					}
 				}
 			}
