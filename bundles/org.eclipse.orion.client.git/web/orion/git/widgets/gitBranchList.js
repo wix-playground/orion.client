@@ -269,7 +269,8 @@ define([
 						}
 						
 						title = util.trimCommitMessage(commit.Message);
-						description = "authored by " + commit.AuthorName + messages[" on "] + new Date(commit.Time).toLocaleString();
+						description = i18nUtil.formatMessage(messages["authored by 0 (1) on 2"], //$NON-NLS-0$
+									commit.AuthorName, commit.AuthorEmail, new Date(commit.Time).toLocaleString()); 
 						if (explorer.showCommitLinks) {
 							titleLink = require.toUrl(commitTemplate.expand({resource: commit.Location})); //$NON-NLS-0$
 							titleClass = "navlinkonpage"; //$NON-NLS-0$

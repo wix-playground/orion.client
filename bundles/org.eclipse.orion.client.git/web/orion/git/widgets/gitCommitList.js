@@ -684,7 +684,8 @@ define([
 					detailsView.appendChild(d);
 	
 					description = document.createElement("div"); //$NON-NLS-0$
-					description.textContent = commit.AuthorName + messages[" on "] + new Date(commit.Time).toLocaleString();
+					description.textContent = i18nUtil.formatMessage(messages["authored by 0 (1) on 2"], //$NON-NLS-0$
+									commit.AuthorName, commit.AuthorEmail, new Date(commit.Time).toLocaleString()); 
 					detailsView.appendChild(description);
 					
 					if (commit.Tags && commit.Tags.length) {
