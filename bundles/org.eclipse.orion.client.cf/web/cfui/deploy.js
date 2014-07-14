@@ -13,7 +13,6 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var deployResource = decodeURIComponent(pageParams.resource);
 			
 			var serviceRegistry = core.serviceRegistry;
-//			var preferences = core.preferences;
 			var cFService = new CFClient.CFService(serviceRegistry);
 			
 			// initial message
@@ -25,6 +24,17 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var spacesTree = document.getElementById('spacesTree'); //$NON-NLS-0$
 			var okButton = document.getElementById('okbutton'); //$NON-NLS-0$
 			var explorer;
+			
+			/* uses the last segment as application name */
+			function extractApplicationName(contentLocation){
+				
+				if(/\/$/.test(contentLocation)){
+					contentLocation = contentLocation.substring(0, contentLocation.length - 1);
+				}
+				
+				var segments = contentLocation.split('/');
+				return (segments.length > 0) ? segments[segments.length - 1] : null;
+			}
 			
 			function showMessage(message){
 				msgNode = msgLabel.appendChild(document.createTextNode(message)); //$NON-NLS-0$
@@ -55,7 +65,7 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 					return;					
 				}
 				selection.getSelection(function(selection) {
-					if(selection===null || selection.length===0){
+					if(selection === null || selection.length === 0){
 						setValid(false);
 						return;
 					}
@@ -127,21 +137,22 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 					 source: "org.eclipse.orion.client.cf.deploy.uritemplate", cancelled: true}), "*");
 			};
 			
-			var doAction = function() {
+			var doAction = function(event, nonManifest, persist) {
 				showMessage("Deploying...");
 				setValid(false);
 				selection.getSelection(
 					function(selection) {
-						if(selection===null || selection.length===0){
+						if(selection === null || selection.length === 0){
 							closeFrame();
 							return;
 						}
 						
 						explorer.getNavHandler().setSelectionPolicy("readonlySelection");
-						
 						var deployResourceJSON = JSON.parse(deployResource);
 						
-						cFService.pushApp(selection, null, decodeURIComponent(deployResourceJSON.ContentLocation + deployResourceJSON.AppPath)).then(
+						var applicationName = (nonManifest) ? extractApplicationName(deployResourceJSON.ContentLocation) : null;
+						
+						cFService.pushApp(selection, applicationName, decodeURIComponent(deployResourceJSON.ContentLocation + deployResourceJSON.AppPath), nonManifest, persist).then(
 							function(result){
 								var appName = result.App.name || result.App.entity.name;
 								var host = (result.Route !== undefined ? (result.Route.host || result.Route.entity.host) : undefined);
@@ -166,29 +177,97 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 									}
 								});
 							}, function(error){
-//								if (error.HttpCode === 404){
-//									postError({
-//										State: "NOT_DEPLOYED",
-//										Message: error.Message
-//									});
-//								} else if (error.JsonData && error.JsonData.error_code) {
-//									var err = error.JsonData;
-//									if (err.error_code === "CF-InvalidAuthToken"){
-//										error.Retry = {
-//											parameters: [{id: "user", type: "text", name: "User:"}, {id: "password", type: "password", name: "Password:"}]
-//										};
-//									} else if (err.error_code === "CF-TargetNotSet"){
-//										var cloudSettingsPageUrl = new URITemplate("{+OrionHome}/settings/settings.html#,category=Cloud").expand({OrionHome : PageLinks.getOrionHome()});
-//										error.Message = "Set up your Cloud. Go to [Settings](" + cloudSettingsPageUrl + ")."; 
-//									}
-//									postError(error);
-//								} else {
+								
+								if (error.JsonData && error.JsonData.error_code) {
+									var err = error.JsonData;
+									if (err.error_code === "CF-MissingManifest"){
+										handleNonManifest(err);
+									}
+								} else {
 									postError(error);
-//								}
+								}
 							}
 						);
 					}
 				);
+			};
+			
+			var handleNonManifest = function(resp){
+				
+				/* gather the application type */
+				var applicationType = resp.applicationType;
+				var description = "Your application contents indicate a well-known application type. " +
+					"Do you wish to continue deploying your application with a default deployment description?";
+				
+				/* craft UI */
+				var titleNode = document.getElementById('title');
+				lib.empty(titleNode);
+				
+				titleNode.appendChild(document.createTextNode("Missing application manifest"));
+				msgLabel.appendChild(document.createTextNode("Could not find the application manifest."));
+				
+				var container = orgsDropdownNode.parentNode;
+				lib.empty(container);
+				hideMessage();
+				
+				var message = document.createElement("div");
+				message.appendChild(document.createTextNode(description));
+				container.appendChild(message);
+				
+				var table = document.createElement("div");
+				table.style = "display: table; margin: 10px auto 0 auto; border-spacing: 14px; ";
+				
+				var row2 = document.createElement("div");
+				row2.style = "display: table-row;";
+				
+				var appTypeCell = document.createElement("div");
+				appTypeCell.style = "display: table-cell;";
+				
+				var appType = document.createElement("label");
+				appType.appendChild(document.createTextNode("Deteted type:"));
+				appTypeCell.appendChild(appType);
+				
+				var appType2Cell = document.createElement("div");
+				appType2Cell.style = "display: table-cell; font-weight: bold;";
+				
+				var appType2 = document.createTextNode(applicationType);
+				appType2Cell.appendChild(appType2);
+				
+				row2.appendChild(appTypeCell);
+				row2.appendChild(appType2Cell);
+				
+				var row = document.createElement("div");
+				row.style = "display: table-row;";
+				
+				var labelCell = document.createElement("div");
+				labelCell.style = "display: table-cell;";
+				
+				var label = document.createElement("label");
+				label.title = "Persist the deployment description as a manifest.yml file.";
+				label.appendChild(document.createTextNode("Persist the manifest?"));
+				labelCell.appendChild(label);
+				
+				var checkboxCell = document.createElement("div");
+				checkboxCell.style = "display: table-cell;";
+				
+				var checkbox = document.createElement("input");
+				checkbox.id = "nonManifest-Persist";
+				checkbox.type = "checkbox";
+				checkboxCell.appendChild(checkbox);
+				
+				row.appendChild(labelCell);
+				row.appendChild(checkboxCell);
+				
+				table.appendChild(row2);
+				table.appendChild(row);
+				container.appendChild(table);
+				setValid(true);
+				
+				document.getElementById('okbutton').onclick = function(event){
+					lib.empty(msgLabel);
+					var persist = document.getElementById("nonManifest-Persist").checked;
+					return doAction(event, true, persist);
+				};
 			};
 
 			document.getElementById('okbutton').onclick = doAction;
