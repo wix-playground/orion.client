@@ -8,24 +8,17 @@
  * 
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
-/*global define */
+/*global define document window */
 /*jslint sub:true browser:true*/
 define([
 	'i18n!orion/nls/messages',
 	'orion/Deferred',
 	'orion/webui/littlelib',
-	'orion/uiUtils',
-	'orion/section',
 	'orion/explorers/explorer',
 	'orion/commands',
-	'orion/URITemplate',
-	'orion/EventTarget',
-	'orion/i18nUtil',
-	'orion/edit/editorContext',
 	'orion/keyBinding',
-	'orion/globalCommands',
-	'orion/editor/contentAssist'
-], function(messages, Deferred, lib, mUIUtils, mSection, mExplorer, mCommands, URITemplate, EventTarget, i18nUtil, EditorContext, KeyBinding, mGlobalCommands, mContentAssist) {
+	'orion/globalCommands'
+], function(messages, Deferred, lib, mExplorer, mCommands, KeyBinding, mGlobalCommands) {
 
 	function TemplateRenderer (options, explorer, title, selectionService, inputManager) {
 		this.explorer = explorer;
@@ -45,7 +38,19 @@ define([
 		editor.focus();
 	}
 	
-	TemplateRenderer.prototype = new mExplorer.SnippetRenderer();
+	// Toggles explorer CSS classes
+	function snippetToggle (node) {
+		if(node.className.match('templateExplorerItemShown')) { //$NON-NLS-0$
+			node.classList.remove('templateExplorerItemShown'); //$NON-NLS-0$
+			node.classList.add('templateExplorerItemHidden'); //$NON-NLS-0$
+		}
+		else {
+			node.classList.remove('templateExplorerItemHidden'); //$NON-NLS-0$
+			node.classList.add('templateExplorerItemShown'); //$NON-NLS-0$
+		}
+	}
+	
+	TemplateRenderer.prototype = new mExplorer.SelectionRenderer();
 	TemplateRenderer.prototype.constructor = TemplateRenderer;
 	TemplateRenderer.prototype.getLabelColumnIndex = function() {
 		return 0;
@@ -70,12 +75,12 @@ define([
 		elementNode.style.padding = '1px';
 		
 		function htmlEscape(str) {
-		    return String(str)
-		            .replace(/&/g, '&amp;')
-		            .replace(/"/g, '&quot;')
-		            .replace(/'/g, '&#39;')
-		            .replace(/</g, '&lt;')
-		            .replace(/>/g, '&gt;');
+			return String(str)
+					.replace(/&/g, '&amp;')
+					.replace(/"/g, '&quot;')
+					.replace(/'/g, '&#39;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;');
 		}
 		
 		if (!(item.children)) {
@@ -136,10 +141,10 @@ define([
  	};
 	
 	//This is an optional function for explorerNavHandler. It performs an action when Enter is pressed on a table row.
-    //The explorerNavHandler hooked up by the explorer will check if this function exists and call it on Enter key press.
-    TemplateRenderer.prototype.performRowAction = function(event, item) {
+	//The explorerNavHandler hooked up by the explorer will check if this function exists and call it on Enter key press.
+	TemplateRenderer.prototype.performRowAction = function(event, item) {
 		// Invoke templates here?
-    };
+	};
 	
 	function TemplateExplorerWidget(serviceRegistry, selection, title, inputManager) {
 		/*	we intentionally do not do this:
@@ -296,7 +301,7 @@ define([
 		// this name.  Check for this case and use a timestamp in lieu of the generated id.
 		while ((this.idItemMap[id] && this.idItemMap[id]!== item) ||
 			lib.node(id)) {// see https://bugs.eclipse.org/bugs/show_bug.cgi?id=389760
-			id = originalId + "[" + number + "]";
+			id = originalId + "[" + number + "]"; //$NON-NLS-1$ //$NON-NLS-0$
 			number = number + 1;
 		}
 		
@@ -352,6 +357,7 @@ define([
 		this._init(options);
 	}
 	TemplateExplorer.prototype = /** @lends orion.templates.TemplateExplorer.prototype */ {
+		id: "templateExplorer", //$NON-NLS-0$
 		_init: function(options) {
 			var parent = lib.node(options.parent), toolbar = lib.node(options.toolbar);
 			if (!parent) { throw new Error("no parent"); } //$NON-NLS-0$
@@ -366,25 +372,13 @@ define([
 			this._inputManager = options.inputManager;
 			this._sidebar = options.sidebar;
 			var _self = this;
-			//Add templateCollector
-			
-			_self._sidebar.addViewMode("templateExplorer", { //$NON-NLS-0$
+			_self._sidebar.addViewMode(this.id, {
 				label: "Templates", //$NON-NLS-0$
 				create: _self.createViewMode.bind(_self),
 				destroy: _self.destroyViewMode.bind(_self)
 			});
-
-			this._inputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
-				_self._templateCollector.setContentType(event.contentType, event.location);
-				if (_self._editor !== event.editor) {
-					if (_self._editor) {
-						_self._editor.removeEventListener("InputChanged", _self._editorListener); //$NON-NLS-0$
-					}
-					_self._editor = event.editor;
-					if (_self._editor) {
-						_self._editor.addEventListener("InputChanged", _self._editorListener = _self.generateTemplateExplorer.bind(_self)); //$NON-NLS-0$
-					}
-				}
+			this._inputManager.addEventListener("InputChanged", function() { //$NON-NLS-0$
+				_self.generateTemplateExplorer();
 			});
 		},
 		/** Produce a templateExplorer */
@@ -399,8 +393,8 @@ define([
 					if (mainSplitter.splitter.isClosed()) {
 						mainSplitter.splitter.toggleSidePanel();
 					}
-					if (sidebar.getActiveViewModeId() !== "templateExplorer") {
-						sidebar.setViewMode("templateExplorer");
+					if (sidebar.getActiveViewModeId() !== _self.id) {
+						sidebar.setViewMode(_self.id);
 					}
 					if (_self._filterInput) {
 						_self._previousActiveElement = document.activeElement;
@@ -412,12 +406,10 @@ define([
 			this._commandService.registerCommandContribution(this._toolbar.id, "orion.openTemplateExplorer", 1, null, true, new KeyBinding.KeyBinding("O", true, false, false, true)); //$NON-NLS-1$ //$NON-NLS-0$
 			this._commandService.renderCommands(this._toolbar.id, this._toolbar, {}, {}, "tool"); //$NON-NLS-0$
 			
-			sidebar.renderViewModeMenu();
-			
 			if (!this._isActive()) {
 				return;
 			}
-			this.emitTemplateExplorer(this._inputManager);
+			this.emitTemplateExplorer();
 		},
 		_renderTemplateExplorer: function(templateExplorerModel, title) {
 			var contentNode = this._parent;
@@ -435,7 +427,7 @@ define([
 			if (!viewModeId) {
 				return false;
 			}
-			return viewModeId === "templateExplorer";
+			return viewModeId === this.id;
 		},
 		createViewMode: function(provider) {
 			this._createFilterInput();
@@ -454,7 +446,7 @@ define([
 			input.classList.add("outlineFilter"); //$NON-NLS-0$
 			input.placeholder = messages["Filter"]; //$NON-NLS-0$
 			input.type="text"; //$NON-NLS-0$
-			input.addEventListener("input", function (e) { //$NON-NLS-0$
+			input.addEventListener("input", function () { //$NON-NLS-0$
 				if (this._filterInputTimeout) {
 					window.clearTimeout(this._filterInputTimeout);
 				}
@@ -496,87 +488,38 @@ define([
 			this._filterInput = input;
 		},
 		
-		/**
-		 * Called when the inputManager's contentType has changed, so we need to look up the capable templateExplorer providers.
-		 * @param {String} fileContentType
-		 * @param {String} title TODO this is deprecated, should be removed along with "pattern" property of template explorers.
-		 */
-		setContentType: function(fileContentType, title) {
-			//use templateCollector to set the proper templates for the file
-			var allTemplateExplorerProviders = this._serviceRegistry.getServiceReferences("orion.edit.templateExplorer"); //$NON-NLS-0$
-			var _self = this;
-			// Filter to capable providers
-			var filteredProviders = this.filteredProviders = allTemplateExplorerProviders.filter(function(serviceReference) {
-				var contentTypeIds = serviceReference.getProperty("contentType"), //$NON-NLS-0$
-				    pattern = serviceReference.getProperty("pattern"); // for backwards compatibility //$NON-NLS-0$
-				if (contentTypeIds) {
-					return contentTypeIds.some(function(contentTypeId) {
-						return _self._contentTypeRegistry.isExtensionOf(fileContentType, contentTypeId);
-					});
-				} else if (pattern && new RegExp(pattern).test(title)) {
-					return true;
-				}
-				return false;
-			});
-			// Load resource bundles
-			this._providerLookup = true;
-			var deferreds = filteredProviders.map(function(provider) {
-				if(provider.getProperty("nameKey") && provider.getProperty("nls")){ //$NON-NLS-1$ //$NON-NLS-0$
-					var deferred = new Deferred();
-					var getDisplayName = function(provider, deferred, commandMessages) { //$NON-NLS-0$
-						provider.displayName = commandMessages[provider.getProperty("nameKey")]; //$NON-NLS-0$
-						deferred.resolve();
-					};
-					i18nUtil.getMessageBundle(provider.getProperty("nls")).then(getDisplayName.bind(null, provider, deferred), deferred.reject); //$NON-NLS-0$
-					return deferred;
-				} else {
-					provider.displayName = provider.getProperty("name"); //$NON-NLS-0$
-					return new Deferred().resolve();
-				}
-			});
-			Deferred.all(deferreds, function(error) { return error; }).then(function(){
-				_self._providerLookup = false;
-				_self.generateTemplateExplorer();
-			});
+		emitTemplateExplorer: function() {
+			this.computeTemplateExplorer().then(this._renderTemplateExplorer.bind(this));
 		},
 		
-		emitTemplateExplorer: function(inputManager) {
-			var editor = inputManager.getEditor();
-			var title = editor.getTitle();
-			var contentType = inputManager.getContentType();
-			var editorContext = EditorContext.getEditorContext(this._serviceRegistry);
-			var templateExplorer = this.computeTemplateExplorer(editorContext, {contentType: contentType});
-			templateExplorer.then(this._renderTemplateExplorer.bind(this));
-		},
-		
-		computeTemplateExplorer : function(editorContext, options) {
-	    	var promisedTemplates = this._templateCollector.getTemplates();
-	    	return promisedTemplates.then(function(templates) {
+		computeTemplateExplorer : function() {
+			var promisedTemplates = this._templateCollector.getTemplates();
+			return promisedTemplates.then(function(templates) {
 				var templateItems = [];
-		    	templates.forEach(function(template){
-		    		var pre = template.prefix || 'Undefined';
-		    		var index = -1;
-		    		templateItems.forEach(function(item, i){
-		    			if(item.label === pre){
-		    				index = i;
-		    			}
-		    		});
-		    		
-		    		var obj;
-		    		if(index === -1){
-		    			obj = {label: pre};
-		    			templateItems.push(obj);
-		    		} else{
-		    			obj = templateItems[index];
-		    		}
-		    		
-		    		if (obj.children)
-		    			obj.children.push({label: template.name, labelPost: template.description, template: template});
-		    		else
-		    			obj.children = [{label: template.name, labelPost: template.description, template: template}];
-		    	});
-		    	return new Deferred().resolve(templateItems);
-	    	});
+				templates.forEach(function(template){
+					var pre = template.prefix || 'Undefined';
+					var index = -1;
+					templateItems.forEach(function(item, i){
+						if(item.label === pre){
+							index = i;
+						}
+					});
+					
+					var obj;
+					if(index === -1){
+						obj = {label: pre};
+						templateItems.push(obj);
+					} else{
+						obj = templateItems[index];
+					}
+					
+					if (obj.children)
+						obj.children.push({label: template.name, labelPost: template.description, template: template});
+					else
+						obj.children = [{label: template.name, labelPost: template.description, template: template}];
+				});
+				return new Deferred().resolve(templateItems);
+			});
 		},
 	};
 	TemplateExplorer.prototype.constructor = TemplateExplorer;
@@ -586,16 +529,4 @@ define([
 		TemplateExplorer: TemplateExplorer,
 	};
 });
-
-// Toggles explorer CSS classes
-function snippetToggle (node) {
-	if(node.className.match('templateExplorerItemShown')) {
-    	node.classList.remove('templateExplorerItemShown');
-    	node.classList.add('templateExplorerItemHidden');
-    }
-    else {
-    	node.classList.remove('templateExplorerItemHidden');
-        node.classList.add('templateExplorerItemShown');
-    }
-}
 

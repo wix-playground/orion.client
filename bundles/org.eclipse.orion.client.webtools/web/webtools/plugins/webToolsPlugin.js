@@ -104,8 +104,8 @@ define(['orion/plugin',
 			name: "CSS rule outline",
 			contentType: ["text/css"]
 		});
-	provider.registerService("orion.editor.templates", cssTemplateProvider, {});
-	provider.registerService("orion.editor.templates", htmlTemplateProvider, {});
+	provider.registerService("orion.edit.templates", cssTemplateProvider, {});
+	provider.registerService("orion.edit.templates", htmlTemplateProvider, {});
 		
 	/**
 	 * Register syntax styling

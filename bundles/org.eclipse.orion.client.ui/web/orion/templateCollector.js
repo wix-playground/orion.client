@@ -21,21 +21,22 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 		var self = this;
 		this.serviceRegistry = serviceRegistry;
 		
-		inputManager.addEventListener("InputChanged", function() {
+		inputManager.addEventListener("InputChanged", function() { //$NON-NLS-0$
 			//workarounds
 			var contentType = inputManager.getContentType();
-			if ("text/plain" === contentType.id || "image" === contentType.id.substring(0,5)){
+			if ("text/plain" === contentType.id || "image" === contentType.id.substring(0,5)){ //$NON-NLS-1$ //$NON-NLS-0$
 				return;
 			}
+			self.setContentType(contentType);
 
 			// Avoid registering the same service multiple times
 			var id = "orion.templates." + contentType.id;  //$NON-NLS-0$
-			var registered = serviceRegistry.getServiceReferences("orion.edit.contentassist").some(function(service) {
-				return service.getProperty("id") === id;
+			var registered = serviceRegistry.getServiceReferences("orion.edit.contentassist").some(function(service) { //$NON-NLS-0$
+				return service.getProperty("id") === id; //$NON-NLS-0$
 			});
 			if (registered) return;
 
-			serviceRegistry.registerService("orion.edit.contentassist", self, {
+			serviceRegistry.registerService("orion.edit.contentassist", self, { //$NON-NLS-0$
 				contentType: [contentType.id],  //$NON-NLS-0$
 				name: 'templateCollector',  //$NON-NLS-0$
 				id: id,
@@ -75,7 +76,7 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 		getTemplates: function() {
 			var self = this;
 			var collectedProposals = [];
-			var templateProviders = this.serviceRegistry.getServiceReferences("orion.editor.templates");
+			var templateProviders = this.serviceRegistry.getServiceReferences("orion.edit.templates"); //$NON-NLS-0$
 			var deferredTemplates = templateProviders.map(function(templateProviderRef){
 				var templateProvider = this.serviceRegistry.getService(templateProviderRef);
 				return templateProvider.getTemplates();
@@ -113,7 +114,7 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 			if (completionKind !== 'top') {
 				return [];
 			}
-			var templateProviders = this.serviceRegistry.getServiceReferences("orion.editor.templates");
+			var templateProviders = this.serviceRegistry.getServiceReferences("orion.edit.templates"); //$NON-NLS-0$
 			var deferredTemplates = templateProviders.map(function(templateProviderRef){
 				var templateProvider = this.serviceRegistry.getService(templateProviderRef);
 				return templateProvider.getTemplates();
@@ -194,9 +195,9 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 		 * @param {Object} context The assist context
 		 */
 		_createTemplateProposals: function(buffer, context) {
-			if((typeof context.template === 'undefined' || context.template) && 
+			if((typeof context.template === 'undefined' || context.template) &&  //$NON-NLS-0$
 					this.isValid(context.prefix, buffer, context.offset, context)) {
-				return this.getTemplateProposals(context.prefix, context.offset, context, 'top');
+				return this.getTemplateProposals(context.prefix, context.offset, context, 'top'); //$NON-NLS-0$
 			}
 			return [];
 		},

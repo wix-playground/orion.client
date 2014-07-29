@@ -132,18 +132,17 @@ define([
 	
 	//wrap the templates in a simple templateProvider object
 	function SimpleTemplateProvider(){}
-
 	SimpleTemplateProvider.prototype.getTemplates = function(){
-	  var templates = {
-	    title: "Javascript Templates",
-	    templates: Templates.templates
-	  };
-	  return templates;
+		var templates = {
+			title: "Javascript Templates",
+			templates: Templates.templates
+		};
+		return templates;
 	};
 	
 	var simpleTemplateProvider = new SimpleTemplateProvider();
 	
-	provider.registerService("orion.editor.templates", simpleTemplateProvider, {});
+	provider.registerService("orion.edit.templates", simpleTemplateProvider, {});
 
 	/**
 	 * Register the ESLint validator
