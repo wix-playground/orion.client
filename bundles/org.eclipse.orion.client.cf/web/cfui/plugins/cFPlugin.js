@@ -602,7 +602,42 @@ define(['i18n!cfui/nls/messages', 'orion/xhr', 'orion/plugin', 'orion/cfui/cFCli
 			parameters: []
 		}
 	);
-	
+
+	/* Debug commands */
+	provider.registerService(
+		"orion.shell.command",
+		{}, {
+			name: "cfo debug",
+			description: "Commands to instrument an app for debugging."
+		}
+	);
+
+	/* Add cf debug add command */
+	provider.registerService(
+		"orion.shell.command", {
+			callback: function(args, context) {
+				return cFService.addDebug(decodeURIComponent(args.cwd), args.password, args.urlPrefix).then(function(result) {
+					if (result.App)
+						return "Debugging enabled for app " + result.Name; //whatever
+					return result;
+				});
+			}
+		}, {
+			name: "cfo debug add",
+			description: "Add CF debugging support to a Node.js application",
+			parameters: [{
+				name: "password",
+				type: "string",
+				description: "A password that will restrict access to the debugger.",
+			},{
+				name: "urlPrefix",
+				type: "string",
+				description: "Optional URL prefix reserved for the debugger.",
+				defaultValue: "" // optional
+			}]
+		}
+	);
+
 	/** Add cf map-route command **/
 //	var mapRouteImpl = {
 //		callback: function(args, context) {

@@ -295,6 +295,33 @@ define(['require', 'orion/xhr', 'orion/Deferred', 'orion/operation'], function(r
 				
 				return this._xhrV1("DELETE", url);
 			},
+			
+			// Debug API calls
+			
+			addDebug: function(target, contentLocation, password, urlprefix) {
+				var url = require.toUrl("cfapi/debug");
+				var req = {
+					ContentLocation: contentLocation,
+					Password: password
+				};
+				if (urlprefix)
+					req.UrlPrefix = urlprefix;
+				return this._xhrV1("PUT", url, req);
+			},
+			
+			removeDebug: function(target, contentLocation) {
+				var url = require.toUrl("cfapi/debug");
+				var req = {
+					ContentLocation: contentLocation,
+				};
+				return this._xhrV1("DELETE", url, req);
+			},
+			
+			getDebug: function(target, contentLocation) {
+				var url = require.toUrl("cfapi/debug");
+				url += "?ContentLocation=" + contentLocation;
+				return this._xhrV1("GET", url);
+			}
 		};
 		
 		return CFService;
