@@ -134,7 +134,7 @@ define([
 	function SimpleTemplateProvider(){}
 	SimpleTemplateProvider.prototype.getTemplates = function(){
 		var templates = {
-			title: "Javascript Templates",
+			title: "Javascript Templates", //$NON-NLS-0$
 			templates: Templates.templates
 		};
 		return templates;
@@ -342,7 +342,7 @@ define([
 	});
 	for (var current in newGrammars) {
 	    if (newGrammars.hasOwnProperty(current)) {
-   			provider.registerService("orion.edit.highlighter", {}, newGrammars[current]);
+   			provider.registerService("orion.edit.highlighter", {}, newGrammars[current]); //$NON-NLS-0$
   		}
     }
 

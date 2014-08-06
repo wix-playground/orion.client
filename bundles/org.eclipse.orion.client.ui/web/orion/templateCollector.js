@@ -83,9 +83,9 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 			}, this);
 			
 			return Deferred.all(deferredTemplates, function(error) {
-				console.error("error collecting the templates2: " + error.message);})
+				console.error("error collecting the templates2: " + error.message);}) //$NON-NLS-0$
 			.then(function(templateObjectsArray) {
-				if (!self.contentType) return new Deferred().reject("Error collecting the templates. ContentType has not been set.");
+				if (!self.contentType) return new Deferred().reject("Error collecting the templates. ContentType has not been set."); //$NON-NLS-0$
 				templateObjectsArray.forEach(function(templateObjects){
 					if (!templateObjects) {
 						return;
@@ -93,8 +93,8 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 					var templates = [];
 					templateObjects.templates.forEach(function(template) {
 						if (template.contentType === self.contentType.id) {
-							var div = (template.description && template.name) ? " - " : "";
-							var name = (template.name) ? template.name : "";
+							var div = (template.description && template.name) ? " - " : ""; //$NON-NLS-1$ //$NON-NLS-0$
+							var name = (template.name) ? template.name : ""; //$NON-NLS-0$
 							var temp = new mTemplates.Template(template.prefix, div + template.description, template.template, name);
 							templates.push(temp);
 						}
@@ -121,10 +121,10 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 			}, this);
 			
 			return Deferred.all(deferredTemplates, function(error) {
-				console.error("error collecting the templates: " + error.message);
+				console.error("error collecting the templates: " + error.message); //$NON-NLS-0$
 			})
 			.then( function(templateObjectsArray) {
-				if (!self.contentType) return new Deferred().reject("Error collecting the templates. ContentType has not been set.");
+				if (!self.contentType) return new Deferred().reject("Error collecting the templates. ContentType has not been set."); //$NON-NLS-0$
 				var collectedProposals = [];
 				templateObjectsArray.forEach(function(templateObjects) {
 					if (!templateObjects) {
@@ -133,7 +133,7 @@ define(["orion/editor/templates","orion/objects","orion/Deferred"], function(mTe
 					var templates = [];
 					templateObjects.templates.forEach(function(template){
 						if (template.contentType === self.contentType.id) {
-							var div = (template.description && template.name) ? " - " : "";
+							var div = (template.description && template.name) ? " - " : ""; //$NON-NLS-1$ //$NON-NLS-0$
 							var name = (template.name) ? template.name : "";
 							var temp = new mTemplates.Template(template.prefix, div + template.description, template.template, name);
 							templates.push(temp);

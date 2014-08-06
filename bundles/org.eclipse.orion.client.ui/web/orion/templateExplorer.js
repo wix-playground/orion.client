@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  * @license
  * Copyright (c) 2010, 2013 IBM Corporation and others.
@@ -70,28 +71,33 @@ define([
 		elementNode.appendChild(contentsNode);
 		
 		/*------------------------------------------------------------*/
-		elementNode.onmouseover = function() { elementNode.style.color = 'whitesmoke';elementNode.parentNode.style.backgroundColor = "darksalmon";};
-		elementNode.onmouseout = function() { elementNode.style.color = "#222";elementNode.parentNode.style.backgroundColor = "";};
-		elementNode.style.padding = '1px';
+		elementNode.onmouseover = function() { elementNode.style.color = 'whitesmoke';elementNode.parentNode.style.backgroundColor = "darksalmon";}; //$NON-NLS-0$
+		elementNode.onmouseout = function() { elementNode.style.color = "#222";elementNode.parentNode.style.backgroundColor = "";}; //$NON-NLS-0$
+		elementNode.style.padding = '1px'; //$NON-NLS-0$
 		
 		function htmlEscape(str) {
 			return String(str)
-					.replace(/&/g, '&amp;')
-					.replace(/"/g, '&quot;')
-					.replace(/'/g, '&#39;')
-					.replace(/</g, '&lt;')
-					.replace(/>/g, '&gt;');
+					.replace(/&/g, '&amp;') //$NON-NLS-0$
+					.replace(/"/g, '&quot;') //$NON-NLS-0$
+					.replace(/'/g, '&#39;') //$NON-NLS-0$
+					.replace(/</g, '&lt;') //$NON-NLS-0$
+					.replace(/>/g, '&gt;'); //$NON-NLS-0$
 		}
 		
 		if (!(item.children)) {
 			var previewNode = document.createElement("div"); //$NON-NLS-0$
 			var escapedString = htmlEscape(item.template.template);
-			previewNode.innerHTML = "<pre draggable='true'>"+ escapedString +"</pre>";
-			previewNode.classList.add('templateExplorerItemHidden');
+			previewNode.innerHTML = "<pre draggable='true'>"+ escapedString +"</pre>"; //$NON-NLS-1$ //$NON-NLS-0$
+			previewNode.classList.add('templateExplorerItemHidden'); //$NON-NLS-0$
 			elementNode.appendChild(previewNode);
-			elementNode.parentNode.onmouseover = function() { elementNode.style.color = 'whitesmoke';elementNode.parentNode.style.backgroundColor = "darksalmon";};
-			elementNode.parentNode.onmouseout = function() { elementNode.style.color = "#222"; if(previewNode.className.match('templateExplorerItemShown')) {elementNode.parentNode.style.backgroundColor = "gray";}else{elementNode.parentNode.style.backgroundColor = "";}};
-			elementNode.parentNode.onclick = function() {snippetToggle(previewNode);elementNode.style.color = "whitesmoke";};
+			elementNode.parentNode.onmouseover = function() { elementNode.style.color = 'whitesmoke';elementNode.parentNode.style.backgroundColor = "darksalmon";}; //$NON-NLS-1$ //$NON-NLS-0$
+			elementNode.parentNode.onmouseout = function() {
+				elementNode.style.color = "#222";  //$NON-NLS-0$
+				if(previewNode.className.match('templateExplorerItemShown')) { //$NON-NLS-0$
+					elementNode.parentNode.style.backgroundColor = "gray";} //$NON-NLS-0$
+				else{elementNode.parentNode.style.backgroundColor = "";} //$NON-NLS-0$
+			};
+			elementNode.parentNode.onclick = function() {snippetToggle(previewNode);elementNode.style.color = "whitesmoke";}; //$NON-NLS-0$
 			previewNode.onclick = function(event) {
 				event.cancelBubble=true;
 				var editor = _self.inputManager.getEditor();
@@ -164,7 +170,7 @@ define([
 		
 		if (filter) {
 			var filterFlags = "i"; // case insensitive by default //$NON-NLS-0$
-			modifiedFilter = filter.replace(/([.+^=!:${}()|\[\]\/\\])/g, "\\$1"); //add start of line character and escape all special characters except * and ? //$NON-NLS-1$ //$NON-NLS-0$
+			modifiedFilter = filter.replace(/([.+^=!:${}()|\[\]\/\\])/g, "\\$1"); //add start of line character and escape all special characters except * and ? //$NON-NLS-0$
 			modifiedFilter = modifiedFilter.replace(/([*?])/g, ".$1");	//convert user input * and ? to .* and .? //$NON-NLS-0$
 			
 			if (/[A-Z]/.test(modifiedFilter)) {
@@ -294,7 +300,7 @@ define([
 			return item.templateExplorerId;
 		}
 		// Generate an id.  Since these id's are used in the DOM, we strip out characters that shouldn't be in a DOM id.
-		var originalId = item.label.replace(/[\\\/\.\:\-\_\s]/g, "");
+		var originalId = item.label.replace(/[\\\/\.\:\-\_\s]/g, ""); //$NON-NLS-0$
 		var id = originalId;
 		var number = 0;
 		// We might have duplicate id's if the template explorer items are duplicated, or if we happen to have another dom id using
@@ -403,7 +409,7 @@ define([
 				}
 			});
 			this._commandService.addCommand(openTemplateExplorerCommand);
-			this._commandService.registerCommandContribution(this._toolbar.id, "orion.openTemplateExplorer", 1, null, true, new KeyBinding.KeyBinding("O", true, false, false, true)); //$NON-NLS-1$ //$NON-NLS-0$
+			this._commandService.registerCommandContribution(this._toolbar.id, "orion.openTemplateExplorer", 1, null, true, new KeyBinding.KeyBinding("O", true, false, true, false)); //$NON-NLS-1$ //$NON-NLS-0$
 			this._commandService.renderCommands(this._toolbar.id, this._toolbar, {}, {}, "tool"); //$NON-NLS-0$
 			
 			if (!this._isActive()) {
@@ -497,7 +503,7 @@ define([
 			return promisedTemplates.then(function(templates) {
 				var templateItems = [];
 				templates.forEach(function(template){
-					var pre = template.prefix || 'Undefined';
+					var pre = template.prefix || 'Undefined'; //$NON-NLS-0$
 					var index = -1;
 					templateItems.forEach(function(item, i){
 						if(item.label === pre){

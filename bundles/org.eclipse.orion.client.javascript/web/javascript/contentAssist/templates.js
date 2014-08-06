@@ -723,6 +723,13 @@ define([
 	
 	return {
 		getTemplatesForKind: getTemplatesForKind,
-		templates: templates
+		templates: templates.filter(function(template) {
+			if (template.nodes) {
+				return template.nodes.top;
+			} else {
+				return false;
+			}
+			
+		})
 	};
 });
