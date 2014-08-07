@@ -11,8 +11,8 @@
 
 /*eslint-env browser,amd*/
 
-define(['i18n!cfui/nls/messages', 'orion/xhr', 'orion/plugin', 'orion/cfui/cFClient', 'orion/serviceregistry', 'domReady!'],
-		function(messages, xhr, PluginProvider, CFClient, ServiceRegistry) {
+define(['i18n!cfui/nls/messages', 'orion/Deferred', 'orion/xhr', 'orion/plugin', 'orion/cfui/cFClient', 'orion/serviceregistry', 'domReady!'],
+		function(messages, Deferred, xhr, PluginProvider, CFClient, ServiceRegistry) {
 
 	var temp = document.createElement('a');
 	var login = temp.href;
@@ -603,7 +603,10 @@ define(['i18n!cfui/nls/messages', 'orion/xhr', 'orion/plugin', 'orion/cfui/cFCli
 		}
 	);
 
-	/* Debug commands */
+	/* ================================================================
+	 * Debug commands
+	 * ================================================================
+	 */
 	provider.registerService(
 		"orion.shell.command",
 		{}, {
@@ -635,6 +638,42 @@ define(['i18n!cfui/nls/messages', 'orion/xhr', 'orion/plugin', 'orion/cfui/cFCli
 				description: "Optional URL prefix reserved for the debugger.",
 				defaultValue: "" // optional
 			}]
+		}
+	);
+
+	/* Add cf debug remove command */
+	provider.registerService(
+		"orion.shell.command", {
+			callback: function(args, context) {
+				return cFService.removeDebug(decodeURIComponent(args.cwd)).then(function(result) {
+					if (result.App)
+						return "Debugging disabled for app " + result.Name; //whatever
+					return result;
+				});
+			}
+		}, {
+			name: "cfo debug remove",
+			description: "Remove CF debugging support from a Node.js application",
+			parameters: [],
+		}
+	);
+
+	/* Add cf debug remove command */
+	provider.registerService(
+		"orion.shell.command", {
+			callback: function(args, context) {
+				return cFService.getDebug(decodeURIComponent(args.cwd)).then(function(result) {
+					return "\u2714 Debug support has been added";
+				}, function(err) {
+					if (err && err.HttpCode === 404)
+						return "\u2716 Debug support has not been added";
+					return new Deferred().reject(err);
+				});
+			}
+		}, {
+			name: "cfo debug ?",
+			description: "Check if debugging support has been added to a Node.js application",
+			parameters: [],
 		}
 	);
 
