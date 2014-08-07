@@ -11,8 +11,8 @@
 /*eslint-env browser, amd*/
 
 define(["orion/plugin", "orion/xhr", "orion/serviceregistry", "orion/git/gitClient", "orion/ssh/sshTools",
- "orion/i18nUtil", "orion/Deferred", "orion/git/util", "orion/URL-shim", "domReady!"], 
-function(PluginProvider, xhr, mServiceregistry, mGitClient, mSshTools, i18nUtil, Deferred, mGitUtil) {
+ "orion/i18nUtil", "orion/Deferred", "orion/git/GitFileImpl", "orion/git/util", "orion/URL-shim", "domReady!"], 
+function(PluginProvider, xhr, mServiceregistry, mGitClient, mSshTools, i18nUtil, Deferred, GitFileImpl, mGitUtil) {
 	var temp = document.createElement('a');
 	temp.href = "../mixloginstatic/LoginWindow.html";
 	var serviceRegistry = new mServiceregistry.ServiceRegistry();
@@ -236,6 +236,33 @@ function(PluginProvider, xhr, mServiceregistry, mGitClient, mSshTools, i18nUtil,
 		{source: "Name", variableName: "commitName"}
 		],
 		uriTemplate: "http://git.eclipse.org/c{+EclipseGitLocation}/commit/?id={+commitName}"
+	});
+	
+	var tryParentRelative = true;
+	function makeParentRelative(location) {
+		if (tryParentRelative) {
+			try {
+				if (window.location.host === parent.location.host && window.location.protocol === parent.location.protocol) {
+					return location.substring(parent.location.href.indexOf(parent.location.host) + parent.location.host.length);
+				} else {
+					tryParentRelative = false;
+				}
+			} catch (e) {
+				tryParentRelative = false;
+			}
+		}
+		return location;
+	}
+	
+	var url = new URL(window.location.href);
+	temp.href = "../../gitapi/";
+	var gitBase = makeParentRelative(temp.href);
+	var service = new GitFileImpl();
+
+	provider.registerService("orion.core.file", service, {
+		Name: 'Git File System',
+		top: gitBase,
+		pattern: gitBase
 	});
 
 	temp.href = "../../gitapi/diff/";
