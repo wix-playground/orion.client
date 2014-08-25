@@ -240,6 +240,15 @@ define(['require', 'orion/xhr', 'orion/Deferred', 'orion/operation'], function(r
 				return this._xhrV1("GET", url);
 			},
 			
+			getServices: function(target) {
+				var url = require.toUrl("cfapi/services");
+				
+				if (target)
+					url += "?Target=" + JSON.stringify(target);
+				
+				return this._xhrV1("GET", url);
+			},
+			
 			createRoute: function(target, domainName, hostName) {
 				var routeObj = {
 					DomainName: domainName,

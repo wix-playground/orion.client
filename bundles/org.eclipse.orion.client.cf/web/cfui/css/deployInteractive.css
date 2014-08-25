@@ -64,6 +64,16 @@ select{
     text-align: left;
 }
 
+.listCell select {
+	height: inherit;
+	width: 160px;
+}
+
+#servicesAddRemoveButtonsCol{
+	text-align: center;
+	vertical-align: middle;
+}
+
 .messageContainer {
 	display: none;
 	padding-top: 2px;

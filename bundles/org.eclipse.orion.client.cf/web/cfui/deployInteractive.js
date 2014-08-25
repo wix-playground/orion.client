@@ -25,12 +25,15 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var okButton = document.getElementById('okbutton'); //$NON-NLS-0$
 			var page1 = document.getElementById('page1'); //$NON-NLS-0$
 			var page2 = document.getElementById('page2'); //$NON-NLS-0$
+			var target;
 			var orgsDropdown;
 			var spacesDropdown;
 			var appsInput;
 			var appsDropdown;
 			var hostInput;
 			var hostDropdown;
+			var servicesList;
+			var servicesDropdown;
 			var saveManifestCheckbox;
 			var deployResourceJSON = JSON.parse(deployResource);
 			var relativeFilePath = new URL(deployResourceJSON.ContentLocation).href;
@@ -154,6 +157,13 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 				if(hostInput && hostInput.value){
 					manifestContents.applications[0].host = hostInput.value;
 				}
+				if(servicesList){
+					var services = [];
+					for(var i=0; i<servicesList.options.length; i++){
+						services.push(servicesList.options[i].value);
+					}
+					manifestContents.applications[0].services = services;
+				}
 				return ret;
 			};
 			
@@ -211,10 +221,17 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 					}
 				);
 			};
+			
+			function nextPage(){
+				if(page1.style.display === "block" && page2.style.display === "none"){
+					displayPage2();
+				}
+			}
 
 			document.getElementById('okbutton').addEventListener('click', doAction); //$NON-NLS-1$ //$NON-NLS-0$
 			document.getElementById('closeDialog').addEventListener('click', closeFrame); //$NON-NLS-1$ //$NON-NLS-0$
 			document.getElementById('cancelButton').addEventListener('click', closeFrame); //$NON-NLS-1$ //$NON-NLS-0$
+			document.getElementById('nextButton').addEventListener('click', nextPage); //$NON-NLS-1$ //$NON-NLS-0$
 			 
 			// allow frame to be dragged by title bar
 			var that=this;
@@ -248,7 +265,7 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 				});
 		    });
 		    
-		    function displayPage1(target){
+		    function displayPage1(){
 		    	page1.style.display = "block";
 		    	page2.style.display = "none";
 				cloudManageUrl = target.ManageUrl;
@@ -420,6 +437,87 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 					}
 				);
 		    }
+		    
+		    function displayPage2(){
+		    	page1.style.display = "none";
+		    	page2.style.display = "block";
+	    		document.getElementById("allServicesLabel").appendChild(document.createTextNode("Add services from the list."));
+	    		document.getElementById("servicesLabel").appendChild(document.createTextNode("All Services:"));
+	    		servicesDropdown = document.createElement("select");
+	    		servicesDropdown.size = 5;
+	    		servicesDropdown.multiple="multiple"
+		    	document.getElementById("servicesDropdown").appendChild(servicesDropdown);
+		    	
+		    	document.getElementById("servicesAdded").appendChild(document.createTextNode("Application Services:"));
+	    		servicesList = document.createElement("select");
+	    		servicesList.multiple="multiple"
+	    		servicesList.size = 5;
+		    	document.getElementById("servicesList").appendChild(servicesList);
+		    	
+		    	var addButton = document.createElement("button");
+		    	addButton.appendChild(document.createTextNode(">"));
+		    	addButton.className = "orionButton commandButton";
+		    	var removeButton = document.createElement("button");
+		    	removeButton.className = "orionButton commandButton";
+		    	removeButton.appendChild(document.createTextNode("<"));
+		    	document.getElementById("servicesAddRemoveButtonsCol").appendChild(removeButton);
+		    	document.getElementById("servicesAddRemoveButtonsCol").appendChild(addButton);
+		    	
+		    	addButton.addEventListener('click', function(){
+		    		for(var i=servicesDropdown.options.length-1; i>=0; i--){
+		    			var option = servicesDropdown.options[i];
+							if(option.selected){
+								servicesDropdown.removeChild(option);
+								servicesList.appendChild(option);
+							}
+						}
+					});
+					
+				removeButton.addEventListener('click', function(){
+		    		for(var i=servicesList.options.length-1; i>=0; i--){
+		    			var option = servicesList.options[i];
+							if(option.selected){
+								servicesList.removeChild(option);
+								servicesDropdown.appendChild(option);
+							}
+						}
+					});
+					
+				if(manifestInfo.services){
+	    			manifestInfo.services.forEach(function(serviceName){
+		    			var serviceOption = document.createElement("option");
+						serviceOption.appendChild(document.createTextNode(serviceName));
+						serviceOption.service = serviceName;
+						serviceOption.id = "service_" + serviceName;
+						servicesList.appendChild(serviceOption);	
+	    			});
+	    		}
+	    		
+	    		showMessage("Loading services...");
+		    	cFService.getServices(target).then(function(services){
+		    		hideMessage();
+		    		var servicesToChooseFrom = [];
+		    		
+					if(services.Children){
+						services.Children.forEach(function(service){
+							if(manifestInfo.services && manifestInfo.services.some(function(manService){return manService === service.Name;})){
+								
+							} else {
+								servicesToChooseFrom.push(service.Name);
+							}
+						});
+					}
+						
+		    		servicesToChooseFrom.forEach(function(serviceName){
+						var serviceOption = document.createElement("option");
+						serviceOption.appendChild(document.createTextNode(serviceName));
+						serviceOption.service = serviceName;
+						serviceOption.id = "service_" + serviceName;
+						servicesDropdown.appendChild(serviceOption);
+		    		});
+		    		
+		    	}, postError);
+		    }
 
 		    //
 		    function loadScreen(){
@@ -428,7 +526,10 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 					function(config) {
 						 // get target and app, then do push and open application
 						getTarget(cFService, config, preferences).then(
-							displayPage1, function(error){
+							function(targetResp){
+								target = targetResp;
+								displayPage1();
+							}, function(error){
 								postError(error);
 							}
 						);
