@@ -37,6 +37,11 @@ select{
     width: 250px;
 }
 
+.selectCell input {
+    height: 24px;
+    width: 250px;
+}
+
 .hintedInput input{
     border: 0 none;
     height: 20px;

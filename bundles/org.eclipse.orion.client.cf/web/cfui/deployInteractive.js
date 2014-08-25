@@ -25,6 +25,12 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var okButton = document.getElementById('okbutton'); //$NON-NLS-0$
 			var page1 = document.getElementById('page1'); //$NON-NLS-0$
 			var page2 = document.getElementById('page2'); //$NON-NLS-0$
+			var page3 = document.getElementById('page3'); //$NON-NLS-0$
+			var nextButton = document.getElementById('nextButton');
+			var backButton = document.getElementById('backButton');
+			var page1shown = false;
+			var page2shown = false;
+			var page3shown = false;
 			var target;
 			var orgsDropdown;
 			var spacesDropdown;
@@ -35,6 +41,12 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var servicesList;
 			var servicesDropdown;
 			var saveManifestCheckbox;
+			var command;
+			var path;
+			var instances;
+			var buildpack;
+			var memory;
+			var timeout;
 			var deployResourceJSON = JSON.parse(deployResource);
 			var relativeFilePath = new URL(deployResourceJSON.ContentLocation).href;
 			var orionHomeUrl = new URL(PageLinks.getOrionHome());
@@ -71,7 +83,7 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var validate = function() {
 				if(!selection){
 					setValid(false);
-					return;					
+					return;
 				}
 				selection.getSelection(function(selection) {
 					if(selection===null || selection.length===0){
@@ -162,7 +174,51 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 					for(var i=0; i<servicesList.options.length; i++){
 						services.push(servicesList.options[i].value);
 					}
-					manifestContents.applications[0].services = services;
+					if(services.length>0){
+						manifestContents.applications[0].services = services;
+					}
+				}
+				if(command){
+					if(command.value){
+						manifestContents.applications[0].command = command.value;
+					} else {
+						delete manifestContents.applications[0].command;
+					}
+				}
+				if(path){
+					if(path.value){
+						manifestContents.applications[0].path = path.value;
+					} else {
+						delete manifestContents.applications[0].path;
+					}
+				}
+				if(buildpack){
+					if(buildpack.value){
+						manifestContents.applications[0].buildpack = buildpack.value;
+					} else {
+						delete manifestContents.applications[0].buildpack;
+					}
+				}
+				if(memory){
+					if(memory.value){
+						manifestContents.applications[0].memory = memory.value;
+					} else {
+						delete manifestContents.applications[0].memory;
+					}
+				}
+				if(instances){
+					if(instances.value){
+						manifestContents.applications[0].instances = instances.value;
+					} else {
+						delete manifestContents.applications[0].instances;
+					}
+				}
+				if(timeout){
+					if(timeout.value){
+						manifestContents.applications[0].timeout = timeout.value;
+					} else {
+						delete manifestContents.applications[0].timeout;
+					}
 				}
 				return ret;
 			};
@@ -225,13 +281,24 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			function nextPage(){
 				if(page1.style.display === "block" && page2.style.display === "none"){
 					displayPage2();
+				} else if(page1.style.display === "none" && page2.style.display === "block"){
+					displayPage3();
 				}
+			}
+			
+			function backPage(){
+ 				if(page1.style.display === "none" && page2.style.display === "block"){
+ 					displayPage1();
+ 				} else  if(page2.style.display === "none" && page3.style.display === "block"){
+ 					displayPage2();
+ 				}
 			}
 
 			document.getElementById('okbutton').addEventListener('click', doAction); //$NON-NLS-1$ //$NON-NLS-0$
 			document.getElementById('closeDialog').addEventListener('click', closeFrame); //$NON-NLS-1$ //$NON-NLS-0$
 			document.getElementById('cancelButton').addEventListener('click', closeFrame); //$NON-NLS-1$ //$NON-NLS-0$
-			document.getElementById('nextButton').addEventListener('click', nextPage); //$NON-NLS-1$ //$NON-NLS-0$
+			nextButton.addEventListener('click', nextPage); //$NON-NLS-1$ //$NON-NLS-0$
+			backButton.addEventListener('click', backPage); //$NON-NLS-1$ //$NON-NLS-0$
 			 
 			// allow frame to be dragged by title bar
 			var that=this;
@@ -268,6 +335,10 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 		    function displayPage1(){
 		    	page1.style.display = "block";
 		    	page2.style.display = "none";
+		    	page3.style.display = "none";
+		    	backButton.style.display = "none";
+		    	nextButton.style.display = "";
+		    	if(page1shown) return;
 				cloudManageUrl = target.ManageUrl;
 				cFService.getOrgs(target).then(
 					function(result2){
@@ -436,22 +507,27 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 						postError(error);
 					}
 				);
+				page1shown = true;
 		    }
 		    
 		    function displayPage2(){
 		    	page1.style.display = "none";
 		    	page2.style.display = "block";
+		    	page3.style.display = "none";
+		    	backButton.style.display = "";
+		    	nextButton.style.display = "";
+		    	if(page2shown) return;
 	    		document.getElementById("allServicesLabel").appendChild(document.createTextNode("Add services from the list."));
 	    		document.getElementById("servicesLabel").appendChild(document.createTextNode("All Services:"));
 	    		servicesDropdown = document.createElement("select");
-	    		servicesDropdown.size = 5;
+	    		servicesDropdown.size = 8;
 	    		servicesDropdown.multiple="multiple"
 		    	document.getElementById("servicesDropdown").appendChild(servicesDropdown);
 		    	
 		    	document.getElementById("servicesAdded").appendChild(document.createTextNode("Application Services:"));
 	    		servicesList = document.createElement("select");
 	    		servicesList.multiple="multiple"
-	    		servicesList.size = 5;
+	    		servicesList.size = 8;
 		    	document.getElementById("servicesList").appendChild(servicesList);
 		    	
 		    	var addButton = document.createElement("button");
@@ -517,6 +593,53 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 		    		});
 		    		
 		    	}, postError);
+		    	page2shown = true;
+		    }
+		    
+		   function displayPage3(){
+		    	page1.style.display = "none";
+		    	page2.style.display = "none";
+		    	page3.style.display = "block";
+		    	backButton.style.display = "";
+		    	nextButton.style.display = "none";
+		    	if(page3shown) return;
+		    	document.getElementById("commandLabel").appendChild(document.createTextNode("Command:"));
+		    	command = document.createElement("input");
+		    	if(manifestInfo.command){
+		    		command.value = manifestInfo.command;
+		    	}
+		    	document.getElementById("command").appendChild(command);
+		    	document.getElementById("pathLabel").appendChild(document.createTextNode("Path:"));
+		    	path = document.createElement("input");
+		    	if(manifestInfo.path){
+		    		path.value = manifestInfo.path;
+		    	}
+		    	document.getElementById("path").appendChild(path);
+		    	document.getElementById("buildpackLabel").appendChild(document.createTextNode("Buildpack Url:"));
+		    	buildpack = document.createElement("input");
+		    	if(manifestInfo.buildpack){
+		    		buildpack.value = manifestInfo.buildpack;
+		    	}
+		    	document.getElementById("buildpack").appendChild(buildpack);
+		    	document.getElementById("memoryLabel").appendChild(document.createTextNode("Memory:"));
+		    	memory = document.createElement("input");
+		    	if(manifestInfo.memory){
+		    		memory.value = manifestInfo.memory;
+		    	}
+		    	document.getElementById("memory").appendChild(memory);
+		    	document.getElementById("instancesLabel").appendChild(document.createTextNode("Instances:"));
+		    	instances = document.createElement("input");
+		    	if(manifestInfo.instances){
+		    		instances.value = manifestInfo.instances;
+		    	}
+		    	document.getElementById("instances").appendChild(instances);
+		    	document.getElementById("timeoutLabel").appendChild(document.createTextNode("Timeout:"));
+		    	timeout = document.createElement("input");
+		    	if(manifestInfo.timeout){
+		    		timeout.value = manifestInfo.timeout;
+		    	}
+		    	document.getElementById("timeout").appendChild(timeout);
+		    	page3shown = true;
 		    }
 
 		    //

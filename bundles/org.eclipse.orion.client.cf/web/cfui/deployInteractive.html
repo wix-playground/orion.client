@@ -65,12 +65,42 @@
 				</tr>
 			</table>
 		</div>
+		<div id="page3" style="overflow: hidden; padding: 15px; min-height: 140px; display:none">
+			<table class="formTable">
+				<tr>
+					<td id="commandLabel" class="label"></td>
+					<td id="command" class="selectCell"></td>
+				</tr>
+				<tr>
+					<td id="pathLabel" class="label"></td>
+					<td id="path" class="selectCell"></td>
+				</tr>
+				<tr>
+					<td id="buildpackLabel" class="label"></td>
+					<td id="buildpack" class="selectCell"></td>
+				</tr>
+				<tr>
+					<td id="memoryLabel" class="label"></td>
+					<td id="memory" class="selectCell"></td>
+				</tr>
+				<tr>
+					<td id="instancesLabel" class="label"></td>
+					<td id="instances" class="selectCell"></td>
+				</tr>
+				<tr>
+					<td id="timeoutLabel" class="label"></td>
+					<td id="timeout" class="selectCell"></td>
+				</tr>
+
+			</table>
+		</div>
 		<div class="manifest formTable" id="manifest">
 		</div>
 		<div class="buttonRow">
-		    <button class="orionButton commandButton deployButton" id="okbutton" type="button" value="OK">Deploy</button>
+			<button class="orionButton commandButton" id="backButton" type="button" value="BACK" style="display: none">< Back</button>
 		    <button class="orionButton commandButton" id="cancelButton" type="button" value="CANCEL">CANCEL</button>
-			<button class="orionButton commandButton" id="nextButton" type="button" value="NEXT">Next ></button>
+		    <button class="orionButton commandButton deployButton" id="okbutton" type="button" value="OK">Deploy</button>
+			<button class="orionButton commandButton" id="nextButton" type="button" value="NEXT" style="display: none">Next ></button>
 		</div>
 	</div>
 	
