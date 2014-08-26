@@ -685,8 +685,8 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 	function postError(error) {
 		if(error.Message){
 			if (error.Message.indexOf("The host is taken")===0){
-				error.Message = error.Message.replace("The host is taken", "The Bluemix route");
-				error.Message += " is already in use by another application. Please check the host/domain in the manifest file.";
+//				error.Message = error.Message.replace("The host is taken", "The Bluemix route");
+				error.Message = "The host is already in use by another application. Please check the host/domain in the manifest file.";
 			}
 		}
 		
@@ -699,12 +699,12 @@ define(["orion/bootstrap", "orion/xhr", 'orion/webui/littlelib', 'orion/Deferred
 			var err = error.JsonData;
 			if (err.error_code === "CF-InvalidAuthToken" || err.error_code === "CF-NotAuthenticated"){
 				error.Retry = {
-					parameters: [{id: "user", type: "text", name: "IBM ID:"}, {id: "password", type: "password", name: "Password:"}]
+					parameters: [{id: "user", type: "text", name: "ID:"}, {id: "password", type: "password", name: "Password:"}]
 				};
 				
 				error.forceShowMessage = true;
 				error.Severity = "Info";
-				error.Message = "Please enter your IBM id below to authorize deployment to Bluemix. Note that ids are case-sensitive. If you have not registered to use Bluemix, you can do so [here](" + cloudManageUrl + ").";				
+				error.Message = mCfUtil.getLoginMessage(cloudManageUrl);				
 			
 			} else if (err.error_code === "CF-TargetNotSet"){
 				var cloudSettingsPageUrl = new URITemplate("{+OrionHome}/settings/settings.html#,category=Cloud").expand({OrionHome : PageLinks.getOrionHome()});

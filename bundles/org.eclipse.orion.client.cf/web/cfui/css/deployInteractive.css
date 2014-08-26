@@ -85,18 +85,30 @@ select{
 	position: absolute;
 	text-align: center;
 	width: 100%;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+    background-color: #dff0d8;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    margin-left: 10%;
+    margin-right: auto;
+    width: 80%;
+    padding-bottom: 5px;
+    padding-left: 5px;
+    padding-top: 5px;
 }
 
 .messageContainer.showing {
 	display: block;	
+	transition: top 0.7s ease 0s;
 }
 
 .messageLabel {
-	background-color: #DBEB8F;
-	border-radius: 5px;
-	color: black;
-	display: inline-block;
-	padding: 4px 5px;
+    color: #468847;
+    float: left;
+    max-height: 1000px;
+    overflow: hidden;
+    padding-left: 5px;
+    text-align: center;
 }
 
 .manifestInformation {
@@ -114,42 +126,14 @@ select{
     right: 20px;
 }
 
-.buttonRow .orionButton {
-	border: none;
-	border-radius: 5px;
-	background-color: #DFE6EB;
-	color: black;
-	cursor: pointer;
-	font-size: 9pt;
-	padding: 7.5px;
+.buttonRow .deployButton{
+	background-color: #7fa4c0 !important;
+    border: 1px solid #7fa4c0 !important;
+    color: white !important;
 }
 
 .buttonRow button:not(:last-child){
 	margin-right: 12px;	
-}
-
-.buttonRow .orionButton:hover {
-	background-color: #e9eff2;
-	box-shadow: none;
-}
-
-.buttonRow .orionButton.commandButton.disabled {
-	cursor: default;
-	opacity: 0.5;
-	background-color: #DFE6EB;
-}
-
-.buttonRow .orionButton.commandButton.deployButton.disabled {
-	background-color: #00aed1;
-}
-
-.buttonRow .deployButton.orionButton {
-	background-color: #00aed1;
-	color: white;
-}
-
-.buttonRow .deployButton.orionButton:hover {
-	background-color: #00bfe5;
 }
 
 .dialogTitle .closeDialog {
