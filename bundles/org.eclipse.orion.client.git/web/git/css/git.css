@@ -366,6 +366,14 @@ table .sectionTable {
 	padding: 2px;
 }
 
+.sectionTable .gitCommitImageCell {
+	vertical-align: top;
+}
+
+.sectionTable .gitCommitDetailsCell {
+	vertical-align: top;
+}
+
 .gitCommitListNoCommit {
 	background-color: #ffffff;
 }

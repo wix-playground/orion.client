@@ -66,17 +66,24 @@ define([
 						image.src = commit.AuthorImage;
 						image.name = commit.AuthorName;
 						image.className = "git-author-icon"; //$NON-NLS-0$
-						image.style["float"] = "left"; //$NON-NLS-1$ //$NON-NLS-0$
 						parent.appendChild(image);
 					}
 				}
 			}
 			
-			var detailsDiv = document.createElement("div"); //$NON-NLS-0$
-
-			createImage(that.parent);
-
-			this.parent.appendChild(detailsDiv);
+			var table = document.createElement("table"); //$NON-NLS-0$
+			var tableBody = document.createElement("tbody"); //$NON-NLS-0$
+			var row = document.createElement("tr"); //$NON-NLS-0$
+			tableBody.appendChild(row);
+			table.appendChild(tableBody);
+			
+			var imageDiv = document.createElement("td"); //$NON-NLS-0$
+			imageDiv.className = "gitCommitImageCell"; //$NON-NLS-0$
+			row.appendChild(imageDiv);
+			createImage(imageDiv);
+			var detailsDiv = document.createElement("td"); //$NON-NLS-0$
+			detailsDiv.className = "gitCommitDetailsCell"; //$NON-NLS-0$
+			row.appendChild(detailsDiv);
 	
 			var headerMessage = util.trimCommitMessage(commit.Message);
 			var displayMessage = this.showMessage === undefined || this.showMessage;
@@ -209,6 +216,8 @@ define([
 				actions.appendChild(moreButton);
 				detailsDiv.appendChild(actions);
 			}
+			
+			that.parent.appendChild(table);
 		}
 	});
 	
