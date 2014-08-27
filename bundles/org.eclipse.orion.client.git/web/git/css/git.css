@@ -184,6 +184,11 @@
 
 .mainToolbar #configSection {
 	float: right;
+} 
+
+.mainToolbar #configSection:not(:hover):not(.sectionOpened) {
+	border-color: transparent;
+	background: transparent;
 }
 
 .mainpane .sectionWrapper {
