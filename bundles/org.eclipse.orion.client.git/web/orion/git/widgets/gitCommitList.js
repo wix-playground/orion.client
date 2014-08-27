@@ -645,14 +645,17 @@ define([
 				selectionPolicy: this.selectionPolicy,
 				onComplete: function() {
 					that.status = model.status;
-					var fetched = function(){
+					var fetched = function() {
+						var children = [];
 						that.model.getRoot(function(root) {
-							that.model.getChildren(root, function(children) {
-								that.expandSections(children);
+							that.model.getChildren(root, function(c) {
+								children = c;
 							});
 						});
-						that.updateCommands();
-						deferred.resolve(model.log);
+						that.expandSections(children).then(function() {
+							that.updateCommands();
+							deferred.resolve(model.log);
+						});
 					};
 					that.fetch().then(fetched, fetched);
 				}
@@ -660,11 +663,17 @@ define([
 			return deferred;
 		},
 		expandSections: function(children) {
+			var deferreds = [];
 			if (!this.simpleLog && !this.model.isRebasing()) {
 				for (var i = 0; i < children.length; i++) {
-					this.myTree.expand(this.model.getId(children[i]));
+					var deferred = new Deferred();
+					deferreds.push(deferred);
+					this.myTree.expand(this.model.getId(children[i]), function (d) {
+						d.resolve();
+					}, [deferred]);
 				}
 			}
+			return Deferred.all(deferreds);
 		},
 		isRowSelectable: function() {
 			return !!this.selection;

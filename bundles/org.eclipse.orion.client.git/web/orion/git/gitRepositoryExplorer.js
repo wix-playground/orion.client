@@ -566,7 +566,7 @@ define([
 		return this.statusDeferred.then(function() {
 			return explorer.display().then(function() {
 				this.setBranchesTitle();
-				if (this.changes) {
+				if (this.changes && this.changes.length) {
 					this.changes.forEach(function(c) {
 						explorer.select(c);
 					});
