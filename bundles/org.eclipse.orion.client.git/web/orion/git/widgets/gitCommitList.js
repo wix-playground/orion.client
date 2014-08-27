@@ -102,6 +102,9 @@ define([
 			var location = (targetRef.CommitLocation || targetRef.Location) + (that.log ? that.log.RepositoryPath : "");
 			var id = activeBranch.Name;
 			return that.progressService.progress(that.gitClient.getLog(location + that.getQueries(), id), messages['Getting outgoing commits']).then(function(resp) {
+				resp.Children.forEach(function(commit) {
+					commit.outgoing = true;
+				});
 				return that.outgoingCommits = resp.Children;
 			});
 		},
@@ -112,6 +115,9 @@ define([
 			var location = activeBranch.CommitLocation + (that.log ? that.log.RepositoryPath : "");
 			var id = targetRef.Name;
 			return that.progressService.progress(that.gitClient.getLog(location + that.getQueries(), id), messages['Getting git incoming changes...']).then(function(resp) {
+				resp.Children.forEach(function(commit) {
+					commit.incoming = true;
+				});
 				return that.incomingCommits = resp.Children;
 			});
 		},

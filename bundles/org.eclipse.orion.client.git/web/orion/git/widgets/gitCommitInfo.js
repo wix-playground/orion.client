@@ -66,6 +66,8 @@ define([
 						image.src = commit.AuthorImage;
 						image.name = commit.AuthorName;
 						image.className = "git-author-icon"; //$NON-NLS-0$
+						if (commit.incoming) image.classList.add("incoming"); //$NON-NLS-0$
+						if (commit.outgoing) image.classList.add("outgoing"); //$NON-NLS-0$
 						parent.appendChild(image);
 					}
 				}
