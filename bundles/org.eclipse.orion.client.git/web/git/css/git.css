@@ -301,7 +301,7 @@ table .sectionTable {
 }
 
 .gitCommitMore {
-	padding: 1px;
+	padding: 0;
 	margin: 0;
 	opacity: 0.3;
 }

@@ -11,11 +11,11 @@
 
 /*eslint-env browser, amd*/
 
-define(['i18n!git/nls/gitmessages', 'require', 'orion/Deferred', 'orion/i18nUtil', 'orion/webui/littlelib', 'orion/commands', 'orion/commandRegistry', 'orion/git/util', 'orion/compare/compareUtils', 'orion/git/gitPreferenceStorage', 'orion/git/gitConfigPreference',
+define(['i18n!git/nls/gitmessages', 'require', 'orion/EventTarget', 'orion/Deferred', 'orion/i18nUtil', 'orion/webui/littlelib', 'orion/commands', 'orion/commandRegistry', 'orion/git/util', 'orion/compare/compareUtils', 'orion/git/gitPreferenceStorage', 'orion/git/gitConfigPreference',
         'orion/git/widgets/ReviewRequestDialog', 'orion/git/widgets/CloneGitRepositoryDialog', 
         'orion/git/widgets/GitCredentialsDialog', 'orion/git/widgets/OpenCommitDialog', 'orion/git/widgets/ApplyPatchDialog', 'orion/URL-shim', 'orion/PageLinks',
         'orion/URITemplate','orion/git/logic/gitPush', 'orion/git/logic/gitStash', 'orion/git/logic/gitCommit', 'orion/objects'], 
-        function(messages, require, Deferred, i18nUtil, lib, mCommands, mCommandRegistry, mGitUtil, mCompareUtils, GitPreferenceStorage, GitConfigPreference,
+        function(messages, require, EventTarget, Deferred, i18nUtil, lib, mCommands, mCommandRegistry, mGitUtil, mCompareUtils, GitPreferenceStorage, GitConfigPreference,
         mReviewRequest, mCloneGitRepository, mGitCredentials, mOpenCommit, mApplyPatch, _, PageLinks, URITemplate, mGitPushLogic, mGitStashLogic, mGitCommitLogic, objects) {
 
 /**
@@ -29,6 +29,21 @@ var exports = {};
 	var logTemplate = new URITemplate("git/git-repository.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 	var commitTemplate = new URITemplate("git/git-repository.html#{,resource,params*}?page=1"); //$NON-NLS-0$
 	var editTemplate = new URITemplate("edit/edit.html#{,resource,params*}"); //$NON-NLS-0$
+	
+	var sharedModelEventDispatcher;
+	exports.getModelEventDispatcher = function() {
+		if (!sharedModelEventDispatcher) {
+			sharedModelEventDispatcher = new EventTarget();
+		}
+		return sharedModelEventDispatcher;
+	};
+	
+	function dispatchModelEventOn(event) {
+		var dispatcher = sharedModelEventDispatcher;
+		if (dispatcher && typeof dispatcher.dispatchEvent === "function") { //$NON-NLS-0$
+			dispatcher.dispatchEvent(event);
+		}
+	}
 	
 	exports.updateNavTools = function(registry, commandRegistry, explorer, toolbarId, selectionToolbarId, item, pageNavId) {
 		var toolbar = lib.node(toolbarId);
@@ -469,7 +484,7 @@ var exports = {};
 				
 				progress.showWhile(serviceRegistry.getService("orion.git.provider").checkoutTag( //$NON-NLS-0$
 						repositoryLocation, itemName, name), i18nUtil.formatMessage(messages["Checking out ${0}"], name)).then(function() {
-					explorer.changedItem();
+					dispatchModelEventOn({type: "modelChanged", action: "checkout"}); //$NON-NLS-1$ //$NON-NLS-0$
 				}, displayErrorOnStatus);
 			};
 			var repositoryLocation = item.Repository ? item.Repository.Location : item.CloneLocation;
@@ -527,7 +542,7 @@ var exports = {};
 					progressService.progress(service.checkoutBranch(item.CloneLocation, item.Name), "Checking out branch " + item.Name).then(
 						function(){
 							messageService.setProgressResult(messages["Branch checked out."]);
-							explorer.changedItem(item.parent);
+							dispatchModelEventOn({type: "modelChanged", action: "checkout"}); //$NON-NLS-1$ //$NON-NLS-0$
 						},
 						 function(error){
 							displayErrorOnStatus(error);
@@ -546,7 +561,7 @@ var exports = {};
 							progressService.progress(service.checkoutBranch(branch.CloneLocation, branch.Name), "Checking out branch " + item.Name).then(
 								function(){
 									messageService.setProgressResult(messages['Branch checked out.']);
-									explorer.changedItem(item.Repository ? item.Repository.BranchLocation : item.parent.parent.parent);
+									dispatchModelEventOn({type: "modelChanged", action: "checkout"}); //$NON-NLS-1$ //$NON-NLS-0$
 								},
 								function(error){
 									displayErrorOnStatus(error);
@@ -2195,7 +2210,7 @@ var exports = {};
 									function(jsonData){
 										alreadyDeleted++;
 										if(alreadyDeleted >= item.length){
-											refresh(data);
+											dispatchModelEventOn({type: "modelChanged", action: "deleteClone", items: item}); //$NON-NLS-1$ //$NON-NLS-0$
 										}
 									}, displayErrorOnStatus);
 						}
@@ -2204,7 +2219,7 @@ var exports = {};
 					if(confirm(i18nUtil.formatMessage(messages['Are you sure you want to delete ${0}?'], item.Name)))
 						progress.progress(gitService.removeGitRepository(item.Location), "Removing repository " + item.Name).then(
 							function(jsonData){
-								refresh(data);
+								dispatchModelEventOn({type: "modelChanged", action: "deleteClone", items: [item]}); //$NON-NLS-1$ //$NON-NLS-0$
 							},
 							displayErrorOnStatus);
 				}

@@ -25,8 +25,9 @@ define([
 	'orion/git/util',
 	'orion/fileUtils',
 	'orion/globalCommands',
+	'orion/git/gitCommands',
 	'orion/Deferred'
-], function(require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitRepoList, mSection, mSelection, lib, URITemplate, PageUtil, util, mFileUtils, mGlobalCommands, Deferred) {
+], function(require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitRepoList, mSection, mSelection, lib, URITemplate, PageUtil, util, mFileUtils, mGlobalCommands, mGitCommands, Deferred) {
 	
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 	
@@ -88,6 +89,24 @@ define([
 		this.pageNavId = options.pageNavId;
 		this.actionScopeId = options.actionScopeId;
 		this.checkbox = false;
+		
+		var that = this;
+		mGitCommands.getModelEventDispatcher().addEventListener("modelChanged", function(event) { //$NON-NLS-0$
+			switch (event.action) {
+			case "checkout": //$NON-NLS-0$
+				if (that.repository) {
+					window.location.href = require.toUrl(repoTemplate.expand({resource: that.lastResource = that.repository.Location}));
+				}
+				that.changedItem();
+				break;
+			case "deleteClone": //$NON-NLS-0$
+				if (that.repository && event.items.some(function(repo) { return repo.Location === that.repository.Location; })) {
+					window.location.href = require.toUrl(repoTemplate.expand({resource: that.lastResource = ""}));
+				}
+				that.changedItem();
+				break;
+			}
+		});
 	}
 	
 	GitRepositoryExplorer.prototype.handleError = function(error) {
