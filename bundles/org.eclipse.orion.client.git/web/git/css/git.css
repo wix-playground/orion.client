@@ -111,9 +111,9 @@
 .commitFilterHeader.sectionTable {
 	margin: 0;
 	margin-left: 10px;
-	margin-right: 20px;
+	margin-right: 10px;
 	position: absolute;
-	width: calc(100% - 44px);
+	width: calc(100% - 34px);
 	z-index: 200;
 	margin-top: -1px;
 	background-color: #f4f4f4;
@@ -151,6 +151,9 @@
 .pathFilter.sectionTable.sectionOpened {
 	height: 300px;
 	margin-top: 5px;
+	margin-right: 5px;
+	margin-left: 5px;
+	background-color: white;
 	border-top: 1px solid #ddd;
 }
 
@@ -293,12 +296,12 @@ table .sectionTable {
 }
 
 .gitCommitMore {
-	padding: 2px;
+	padding: 1px;
 	margin: 0;
-	opacity: 0.2;
+	opacity: 0.3;
 }
 
-.gitCommitMore:hover {
+.gitListCell:hover .gitCommitMore {
 	opacity: 1;
 }
 
@@ -368,9 +371,7 @@ table .sectionTable {
 }
 
 .gitCommitFullMessage {
-	margin-top: 5px;
-	margin-bottom: 5px;
-	padding: 2px;
+	margin-bottom: 10px;
 	white-space: pre-wrap;
 }
 

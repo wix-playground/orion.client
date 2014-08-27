@@ -677,6 +677,7 @@ define([
 				},
 				visibleWhen: function() {
 					simpleLogCommand.name = that.model.simpleLog ? messages["ShowActiveBranch"] : messages["ShowReference"];
+					simpleLogCommand.imageClass = that.model.simpleLog ? "git-sprite-branch-active" : "git-sprite-branch";
 					simpleLogCommand.tooltip = that.model.simpleLog ? messages["ShowActiveBranchTooltip"] : messages["ShowReferenceTooltip"];
 					return true;
 				}
@@ -686,6 +687,7 @@ define([
 			var filterCommand = new mCommands.Command({
 				id: "eclipse.orion.git.commit.toggleFilter", //$NON-NLS-0$
 				name: messages["Filter"],
+				imageClass: "core-sprite-search", //$NON-NLS-0$
 				callback: function(data) {
 					if (data) this.filterSection.setHidden(!this.filterSection.hidden);
 				},
@@ -907,6 +909,7 @@ define([
 					}, 0);
 				}  else if (item.Type === "Status") { //$NON-NLS-0$
 					sectionItem.classList.add("sectionTableItem"); //$NON-NLS-0$
+					tableRow.classList.remove("selectableNavRow"); //$NON-NLS-0$
 						
 					detailsView = document.createElement("div"); //$NON-NLS-0$
 					detailsView.className = "stretch"; //$NON-NLS-0$
@@ -962,6 +965,7 @@ define([
 					if (model.showCommitChanges) {
 						createExpand();
 					}
+					tableRow.classList.remove("selectableNavRow"); //$NON-NLS-0$
 					sectionItem.className = "sectionTableItem"; //$NON-NLS-0$
 					detailsView = document.createElement("div"); //$NON-NLS-0$
 //					detailsView.className = "stretch"; //$NON-NLS-0$

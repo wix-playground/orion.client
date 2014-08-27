@@ -73,13 +73,8 @@ define([
 			}
 			
 			var detailsDiv = document.createElement("div"); //$NON-NLS-0$
-			if (this.simple) {
-//				detailsDiv.className = "stretch"; //$NON-NLS-0$
-			}
-			
-			if (this.simple) {
-				createImage(that.parent);
-			}
+
+			createImage(that.parent);
 
 			this.parent.appendChild(detailsDiv);
 	
@@ -121,12 +116,9 @@ define([
 			if (displayAuthor || displayCommitter) {
 				section = createSection(detailsDiv);
 			}
-			if (!this.simple) {
-				createImage(section);
-			}
 			if (displayAuthor) {
 				var authorName = this.showAuthorEmail ? i18nUtil.formatMessage(messages["nameEmail"], commit.AuthorName, commit.AuthorEmail) : commit.AuthorName;
-				createInfo(detailsDiv, [this.simple ? "" : "authoredby", "on"], [authorName, new Date(commit.Time).toLocaleString()]); //$NON-NLS-1$ //$NON-NLS-0$
+				createInfo(detailsDiv, ["", "on"], [authorName, new Date(commit.Time).toLocaleString()]); //$NON-NLS-1$ //$NON-NLS-0$
 			}
 			
 			if (displayCommitter) {
@@ -213,7 +205,7 @@ define([
 				var actions = document.createElement("div"); //$NON-NLS-0$
 				var moreButton = this.moreButton = document.createElement("button"); //$NON-NLS-0$
 				moreButton.className = "gitCommitMore"; //$NON-NLS-0$
-				moreButton.textContent = commit.full ? "less" : "more";
+				moreButton.textContent = commit.full ? messages["less"] : messages["more"];
 				actions.appendChild(moreButton);
 				detailsDiv.appendChild(actions);
 			}

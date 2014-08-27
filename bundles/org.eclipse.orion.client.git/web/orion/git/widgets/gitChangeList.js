@@ -454,7 +454,7 @@ define([
 				commandRegistry.registerCommandContribution(selectionNodeScope, "eclipse.orion.git.precommitCommand", 400); //$NON-NLS-0$
 
 				commandRegistry.renderCommands(selectionNodeScope, selectionNodeScope, [], this, "button", {Clone : this.model.repository}); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.renderCommands(actionsNodeScope, actionsNodeScope, this.model ? this.model.repository : this, this, "button"); //$NON-NLS-0$	
+				commandRegistry.renderCommands(actionsNodeScope, actionsNodeScope, this.model ? this.model.repository : this, this, "tool"); //$NON-NLS-0$	
 			} else if (this.prefix === "diff" && this.commit) { //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.openGitCommit", 1); //$NON-NLS-1$ //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.checkoutCommit", 2); //$NON-NLS-1$ //$NON-NLS-0$
