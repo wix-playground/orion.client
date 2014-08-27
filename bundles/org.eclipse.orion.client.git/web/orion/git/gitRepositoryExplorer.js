@@ -30,8 +30,6 @@ define([
 	
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 	
-	var NO_TWISTIES = false;
-
 	function compare(s1, s2) {
 		if (s1 === s2) { return true; }
 		if (s1 && !s2 || !s1 && s2) { return false; }
@@ -382,7 +380,7 @@ define([
 			canHide: true,
 			hidden: true,
 			dropdown: true,
-			noTwistie: NO_TWISTIES,
+			noTwistie: true,
 			preferenceService: this.preferencesService
 		});
 		
@@ -432,7 +430,7 @@ define([
 			canHide: true,
 			hidden: true,
 			dropdown: true,
-			noTwistie: NO_TWISTIES,
+			noTwistie: true,
 			preferenceService: this.preferencesService
 		});
 
