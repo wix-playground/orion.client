@@ -361,9 +361,9 @@ define([
 			registry: options.serviceRegistry,
 			commandService: options.commandRegistry,
 			actionScopeId: options.actionScopeId,
-			cachePrefix: "LogNavigator",
+			cachePrefix: "LogNavigator", //$NON-NLS-0$
 			checkbox: false
-		}, this); //$NON-NLS-0$
+		}, this);
 		mExplorer.Explorer.call(this, options.serviceRegistry, options.selection, renderer, options.commandRegistry);	
 		this.checkbox = false;
 		this.parentId = options.parentId;
@@ -381,7 +381,7 @@ define([
 		this.simpleLog = options.simpleLog;
 		this.slideout = options.slideout;
 		this.selectionPolicy = options.selectionPolicy;
-		this.repositoryPath = options.repositoryPath;
+		this.repositoryPath = options.repositoryPath || "";
 		
 		this.incomingActionScope = "IncomingActions"; //$NON-NLS-0$
 		this.outgoingActionScope = "OutgoingActions"; //$NON-NLS-0$
@@ -447,6 +447,13 @@ define([
 				mainSection.setHidden(true);
 				this.changedItem();
 			}.bind(this);
+			function doClear() {
+				sections.forEach(function(s) {
+					var field = lib.$(".gitFilterInput", s.domNode); //$NON-NLS-0$
+					field.value = "";
+				});
+				doFilter();
+			}
 			var blurHandler = function(e) {
 				var relatedTarget = e.relatedTarget || e.toElement;
 				function check(focus) {
@@ -589,18 +596,8 @@ define([
 			
 			
 			var filterActions = document.createElement("div"); //$NON-NLS-0$
-			filterActions.style.padding = "5px";
-			filterActions.style.overflow = "hidden";
+			filterActions.className = "commitFilterActions"; //$NON-NLS-0$
 			content.appendChild(filterActions);
-			
-			function doClear() {
-				sections.forEach(function(s) {
-					var field = lib.$(".gitFilterInput", s.domNode); //$NON-NLS-0$
-					field.value = "";
-				});
-				doFilter();
-			}
-			
 			var actionsArea = document.createElement("ul"); //$NON-NLS-0$
 			actionsArea.className = "layoutRight commandList"; //$NON-NLS-0$
 			actionsArea.id = "commitFilterActions"; //$NON-NLS-0$

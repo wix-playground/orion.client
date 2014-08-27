@@ -39,6 +39,8 @@ define({
 	"Tags:": "Tags:",
 	"No Tags": "No Tags",
 	"Diffs": "Changes",
+	"WorkingDirChanges": "Working Directory Changes",
+	"CommitChanges": "Commit Changes",
 	"More": "More",
 	"MoreCommits": "More commits for \"${0}\"",
 	"MoreCommitsProgress": "Loading more commits for \"${0}\"...",
