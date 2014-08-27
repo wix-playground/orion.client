@@ -515,6 +515,7 @@ define([
 				hidden: true,
 				sibling: content.firstChild,
 				dropdown: true,
+				positionNode: this.section.domNode,
 				preferenceService: this.preferencesService
 			});
 			mainSection.domNode.classList.add("commitFilterHeader"); //$NON-NLS-0$
@@ -686,7 +687,7 @@ define([
 				id: "eclipse.orion.git.commit.toggleFilter", //$NON-NLS-0$
 				name: messages["Filter"],
 				callback: function(data) {
-					if (data && this.filterSection.hidden) this.filterSection.setHidden(false);
+					if (data) this.filterSection.setHidden(!this.filterSection.hidden);
 				},
 				visibleWhen: function() {
 					return true;
