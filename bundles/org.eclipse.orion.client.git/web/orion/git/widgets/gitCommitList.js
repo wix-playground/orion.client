@@ -750,7 +750,6 @@ define([
 			var section = this.section;
 			if (!section) return;
 			var actionsNodeScope = section.actionsNode.id;
-			var titleLeftActionsNodeScope = section.titleLeftActionsNode.id;
 			if (!currentBranch && model.isRebasing()) {
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.resetCommand", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseContinueCommand", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -760,21 +759,16 @@ define([
 				return;
 			}
 			
-			if (lib.node(titleLeftActionsNodeScope)) {
-				commandService.destroy(titleLeftActionsNodeScope);
+			if (lib.node(actionsNodeScope)) {
+				commandService.destroy(actionsNodeScope);
 			}
-			
-			commandService.registerCommandContribution(titleLeftActionsNodeScope, "eclipse.orion.git.commit.simpleLog", 50); //$NON-NLS-0$
-			commandService.registerCommandContribution(titleLeftActionsNodeScope, "eclipse.orion.git.commit.toggleFilter", 100); //$NON-NLS-0$
-			commandService.renderCommands(titleLeftActionsNodeScope, titleLeftActionsNodeScope, this, this, "tool"); //$NON-NLS-0$
+			commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.toggleFilter", 20); //$NON-NLS-0$
+			commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.simpleLog", 50); //$NON-NLS-0$
 			
 			if (currentBranch && !this.simpleLog) {
 				var incomingActionScope = this.incomingActionScope;
 				var outgoingActionScope = this.outgoingActionScope;
 				
-				if (lib.node(actionsNodeScope)) {
-					commandService.destroy(actionsNodeScope);
-				}
 				if (lib.node(incomingActionScope)) {
 					commandService.destroy(incomingActionScope);
 				}
@@ -798,7 +792,6 @@ define([
 					commandService.renderCommands(incomingActionScope, incomingActionScope, targetRef, this, "tool"); //$NON-NLS-0$
 
 					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.sync", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-					commandService.renderCommands(actionsNodeScope, actionsNodeScope, {LocalBranch: activeBranch, RemoteBranch: targetRef}, this, "button"); //$NON-NLS-0$
 				}
 
 				commandService.addCommandGroup(outgoingActionScope, "eclipse.gitPushGroup", 1000, messages['pushGroup'], null, null, null, "Push", null, "eclipse.orion.git.push"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -810,6 +803,7 @@ define([
 
 				commandService.renderCommands(outgoingActionScope, outgoingActionScope, {LocalBranch: activeBranch, RemoteBranch: targetRef}, this, "tool"); //$NON-NLS-0$
 			}
+			commandService.renderCommands(actionsNodeScope, actionsNodeScope, {LocalBranch: activeBranch, RemoteBranch: targetRef}, this, "tool"); //$NON-NLS-0$
 		}
 	});
 	
