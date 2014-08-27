@@ -461,37 +461,52 @@ var exports = {};
 			
 			serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
 		}
+		
+		function checkoutCallback(data) {
+			var item = data.items;
+			var checkoutTagFunction = function(repositoryLocation, itemName, name){
+				var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+				
+				progress.showWhile(serviceRegistry.getService("orion.git.provider").checkoutTag( //$NON-NLS-0$
+						repositoryLocation, itemName, name), i18nUtil.formatMessage(messages["Checking out ${0}"], name)).then(function() {
+					explorer.changedItem();
+				}, displayErrorOnStatus);
+			};
+			var repositoryLocation = item.Repository ? item.Repository.Location : item.CloneLocation;
+			if (data.parameters.valueFor("name") && !data.parameters.optionsRequested) { //$NON-NLS-0$
+				checkoutTagFunction(repositoryLocation, item.Name, data.parameters.valueFor("name")); //$NON-NLS-0$
+			}
+		}
 
-		var checkoutTagNameParameters = new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('name', 'text', messages["Local Branch Name:"])]); //$NON-NLS-1$ //$NON-NLS-0$
+		var checkoutNameParameters = new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('name', 'text', messages["Local Branch Name:"])]); //$NON-NLS-1$ //$NON-NLS-0$
+
 		var checkoutTagCommand = new mCommands.Command({
 			name: messages['Checkout'],
-			tooltip: messages["Checkout the current tag, creating a local branch based on its contents."],
+			tooltip: messages["CheckoutTagTooltip"],
 			imageClass: "git-sprite-checkout", //$NON-NLS-0$
 			spriteClass: "gitCommandSprite", //$NON-NLS-0$
 			id: "eclipse.checkoutTag", //$NON-NLS-0$
-			parameters: checkoutTagNameParameters,
-			callback: function(data) {
-				var item = data.items;
-				
-				var checkoutTagFunction = function(repositoryLocation, itemName, name){
-					var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
-					
-					progress.showWhile(serviceRegistry.getService("orion.git.provider").checkoutTag(
-							repositoryLocation, itemName, name), i18nUtil.formatMessage(messages["Checking out tag ${0}"], name)).then(function() {
-						explorer.changedItem();
-					}, displayErrorOnStatus);
-				};
-				
-				var repositoryLocation = item.Repository ? item.Repository.Location : item.CloneLocation;
-				if (data.parameters.valueFor("name") && !data.parameters.optionsRequested) { //$NON-NLS-0$
-					checkoutTagFunction(repositoryLocation, item.Name, data.parameters.valueFor("name")); //$NON-NLS-0$
-				}
-			},
+			parameters: checkoutNameParameters,
+			callback: checkoutCallback,
 			visibleWhen: function(item){
-				return item.Type === "Tag" || item.Type === "Commit"; //$NON-NLS-0$
+				return item.Type === "Tag"; //$NON-NLS-0$
 			}
 		});
 		commandService.addCommand(checkoutTagCommand);
+
+		var checkoutCommitCommand = new mCommands.Command({
+			name: messages['Checkout'],
+			tooltip: messages["CheckoutCommitTooltip"],
+			imageClass: "git-sprite-checkout", //$NON-NLS-0$
+			spriteClass: "gitCommandSprite", //$NON-NLS-0$
+			id: "eclipse.checkoutCommit", //$NON-NLS-0$
+			parameters: checkoutNameParameters,
+			callback: checkoutCallback,
+			visibleWhen: function(item){
+				return item.Type === "Commit"; //$NON-NLS-0$
+			}
+		});
+		commandService.addCommand(checkoutCommitCommand);
 
 		var checkoutBranchCommand = new mCommands.Command({
 			name: messages['Checkout'],
@@ -1437,6 +1452,8 @@ var exports = {};
 		var undoCommand = new mCommands.Command({
 			name : messages['Undo'],
 			tooltip: messages["UndoTooltip"],
+			imageClass: "git-sprite-undo-commit", //$NON-NLS-0$
+			spriteClass: "gitCommandSprite", //$NON-NLS-0$
 			id : "eclipse.orion.git.undoCommit", //$NON-NLS-0$
 			callback: function(data) {
 				resetCallback(data, data.items.parent.targetRef.IndexLocation, "HEAD^", "SOFT", messages["UndoConfirm"]);
@@ -2408,7 +2425,7 @@ var exports = {};
 						"Staging changes");
 					deferred.then( //$NON-NLS-0$
 						function(jsonData){
-							refresh(data. items);
+							refresh(data, items);
 						}, displayErrorOnStatus
 					);
 				}			
@@ -2722,8 +2739,9 @@ var exports = {};
 					
 			},
 			visibleWhen: function(item) {
-				var items = forceArray(item);
-				return items.length !== 0;
+//				var items = forceArray(item);
+//				return items.length !== 0;
+				return true;
 			}
 		});
 		

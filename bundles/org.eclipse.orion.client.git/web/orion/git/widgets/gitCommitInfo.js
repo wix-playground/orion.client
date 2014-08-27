@@ -40,7 +40,9 @@ define([
 				values = Array.isArray(values) ? values : [values];
 				var div = document.createElement("div"); //$NON-NLS-0$
 				for (var i = 0; i < keys.length; i++) {
-					div.appendChild(document.createTextNode(messages[keys[i]]));
+					if (keys[i]) {
+						div.appendChild(document.createTextNode(messages[keys[i]]));
+					}
 					var span = document.createElement("span"); //$NON-NLS-0$
 					span.className = "gitCommitInfoValue"; //$NON-NLS-0$
 					span.appendChild(document.createTextNode(values[i])); //$NON-NLS-0$  //$NON-NLS-1$
@@ -72,7 +74,7 @@ define([
 			
 			var detailsDiv = document.createElement("div"); //$NON-NLS-0$
 			if (this.simple) {
-				detailsDiv.className = "stretch"; //$NON-NLS-0$
+//				detailsDiv.className = "stretch"; //$NON-NLS-0$
 			}
 			
 			if (this.simple) {
@@ -124,7 +126,7 @@ define([
 			}
 			if (displayAuthor) {
 				var authorName = this.showAuthorEmail ? i18nUtil.formatMessage(messages["nameEmail"], commit.AuthorName, commit.AuthorEmail) : commit.AuthorName;
-				createInfo(detailsDiv, ["authoredby", "on"], [authorName, new Date(commit.Time).toLocaleString()]); //$NON-NLS-1$ //$NON-NLS-0$
+				createInfo(detailsDiv, [this.simple ? "" : "authoredby", "on"], [authorName, new Date(commit.Time).toLocaleString()]); //$NON-NLS-1$ //$NON-NLS-0$
 			}
 			
 			if (displayCommitter) {
@@ -205,6 +207,15 @@ define([
 					tagSpan.appendChild(tagSpanAction);
 				});
 				section.appendChild(tags);
+			}
+			
+			if (this.showMore) {
+				var actions = document.createElement("div"); //$NON-NLS-0$
+				var moreButton = this.moreButton = document.createElement("button"); //$NON-NLS-0$
+				moreButton.className = "gitCommitMore"; //$NON-NLS-0$
+				moreButton.textContent = commit.full ? "less" : "more";
+				actions.appendChild(moreButton);
+				detailsDiv.appendChild(actions);
 			}
 		}
 	});

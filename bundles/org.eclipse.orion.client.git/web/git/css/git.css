@@ -23,10 +23,6 @@
 	margin-right: 8%;
 }
 
-.sectionTable td {
-	border-bottom: 0;
-}
-
 .auxpane {
 	overflow: visible;
 }
@@ -105,13 +101,11 @@
 .auxpane .sectionWrapper {
 	margin-left: 5px;
 	margin-right:5px;
-	margin-top: 1px;
+	margin-top: 2px;
 }
 
 .auxpane .sectionWrapper.sectionOpened {
-	background-color: #b7cbdb;
-	color: gray;
-	border-bottom: 0;
+	background-color: #f4f4f4;
 }
 
 .auxpane .sectionTable {
@@ -126,18 +120,42 @@
 	overflow-y: auto;
 }
 
-.auxpane #commitsNode {
-	height: calc(100% - 35px);
+.mainpane .selectionModelContainer {
+	height: 100%;
+	overflow-y: auto;
+}
+
+.commitFilterHeader.sectionWrapper {
+	border-width: 0;
+	padding: 0;
+	margin: 0;
+	height: 0;
+}
+
+.commitFilterHeader.sectionTable {
+	margin: 0;
+	margin-left: 10px;
+	margin-right: 20px;
+	position: absolute;
+	width: calc(100% - 44px);
+	z-index: 200;
+	margin-top: -1px;
+	background-color: #f4f4f4;
+	border-bottom-left-radius: 8px;
+	border-bottom-right-radius: 8px;
+}
+
+.commitFilterHeader.sectionTable.sectionClosed {
+	visibility: hidden;
 }
 
 .commitFilter.sectionWrapper {
 	border-width: 0;
-	margin:0;
+	padding-bottom: 0px;
+	padding-left: 15px;
+	padding-top: 5px;
+	margin: 0;
 	opacity: 1;
-}
-
-.commitFilter.sectionTable.sectionClosed {
-	visibility: hidden;
 }
 
 .commitFilter.sectionWrapper.sectionClosed:hover {
@@ -149,9 +167,23 @@
 	padding-left: 3px;
 }
 
-.gitFilterBox input {
+.pathFilter.sectionTable.sectionOpened {
+	height: 300px;
+	margin-top: 5px;
+	border-top: 1px solid #ddd;
+}
+
+.pathFilter.sectionTable.sectionClosed {
+	height: 0;
+}
+
+.mainToolbar .gitFilterBox input {
 	width: 200px;
 	padding-right: 22px;
+}
+
+.auxpane .gitFilterBox input {
+	width: 60%;
 }
 
 .searchButton {
@@ -166,39 +198,20 @@
 	color: #F58B0F;
 }
 
-.pathFilter.sectionTable.sectionOpened {
-	height: 300px;
-}
-
-.pathFilter.sectionTable.sectionClosed {
-	height: 0;
-}
-
-.commitFilter.sectionTable {
-	border-width: 0;
-	margin: 0;
-	position: absolute;
-	width: 80%;
-	z-index: 200;
-	margin-top: -1px;
-	background-color: #b7cbdb;
-	border-bottom-left-radius: 5px;
-	border-bottom-right-radius: 5px;
-}
-
 .mainToolbar #configSection {
 	float: right;
 }
 
 .mainpane .sectionWrapper {
-	margin-left: 3%;
-	margin-right: 3%;
+	margin-left: 0;
+	margin-right: 0;
+	margin-top: 0;
 }
 
 .mainpane .sectionTable {
-	margin-left: 3%;
-	margin-right: 3%;
-	margin-bottom: 5px;
+	margin-left: 0;
+	margin-right: 0;
+	margin-bottom: 0;
 }
 
 table .sectionWrapper {
@@ -211,6 +224,11 @@ table .sectionTable {
 	margin-right: 0px;
 	margin-bottom: 0px;
 	border-top: 1px solid #dadada;
+}
+
+.workingTarget {
+	box-shadow: none;
+	overflow: visible;
 }
 
 .sidebar {
@@ -227,15 +245,20 @@ table .sectionTable {
 
 .gitChangeListSelectAll {
 	float: left;
-	padding-top: 2px;
+	padding-top: 3px;
 }
 
 .gitChangeListSelectionStatus {
 	overflow: hidden;
 	width: 80%;
-	float: left;
-	padding-top: 2px;
 	text-align: center;
+	float: left;
+	padding-top: 3px;
+}
+
+.gitChangeListChangedStatus {
+	float: left;
+	padding-top: 3px;
 }
 
 .gitCommitInfoValue {
@@ -284,6 +307,20 @@ table .sectionTable {
 	border-bottom: 0 !important;
 }
 
+.gitCommitMore {
+	padding: 2px;
+	margin: 0;
+	opacity: 0.2;
+}
+
+.gitCommitMore:hover {
+	opacity: 1;
+}
+
+.gitCommitMore:focus {
+	opacity: 1;
+}
+
 .gitCommitListMore {
 	text-align: center;
 	font-size: 10pt;
@@ -301,7 +338,7 @@ table .sectionTable {
 
 .gitCommitMessage .gitCommitMessageExplorerRow {
 	width: calc(100% - 6px);
-	padding: 0px;
+	padding: 0;
 	overflow: hidden;
 }
 
@@ -391,7 +428,6 @@ table .sectionTable {
 
 .gitCommitTitle {
 	font-weight: bold;
-	max-width: 300px;
 }
 
 .gitStatusTitle {
@@ -481,7 +517,7 @@ table .sectionTable {
 }
 
 .auxpane .gitFilterBox {
-	background-color: #b7cbdb;
+	background-color: #f4f4f4;
 }
 
 .mainToolbar .gitFilterBox {
