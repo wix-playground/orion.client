@@ -750,7 +750,7 @@ define([
 						} else {
 							var changedLabel = explorer.explorerChangedStatus = document.createElement("div"); //$NON-NLS-0$
 							changedLabel.className = "gitChangeListChangedStatus"; //$NON-NLS-0$
-							var changed = item.parent.children.length;
+							var changed = item.parent.children.length - 1;
 							changedLabel.textContent = i18nUtil.formatMessage(messages[changed === 1 ? 'FileChanged' : "FilesChanged"], changed);
 							div.appendChild(changedLabel);
 						}
