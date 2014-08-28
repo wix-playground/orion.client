@@ -798,6 +798,8 @@ table .sectionTable {
 }
 
 .git-sprite-undo-commit{
+	padding-top: 3px;
+	padding-bottom: 2px;
 	font-size: 16px;
 	line-height: 14px;
 	vertical-align:middle;
