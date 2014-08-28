@@ -105,6 +105,9 @@ define([
 				}
 				that.changedItem();
 				break;
+			case "cherrypick": //$NON-NLS-0$
+				that.changedItem();
+				break;
 			}
 		});
 	}

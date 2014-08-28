@@ -1665,6 +1665,7 @@ var exports = {};
 						display.Message = jsonData.Result;
 					}
 					serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
+					dispatchModelEventOn({type: "modelChanged", action: "cherrypick"}); //$NON-NLS-1$ //$NON-NLS-0$
 				}, displayErrorOnStatus);
 
 			},
