@@ -579,6 +579,32 @@ define([
 	
 	getProjectLaunchConfigurations: function(projectMetadata){
 		var deferred = new Deferred();
+		var pluginDeferred = new Deferred();
+		var readPluginInfoDeferreds = [];
+		this.allProjectDeployReferences.forEach(function(deployServiceRef){
+			var deployService = this._getProjectDeployService(deployServiceRef);
+			if(deployService.getLaunchConfigurations){
+				readPluginInfoDeferreds.push(deployService.getLaunchConfigurations(projectMetadata).then(function(lConfs){
+					lConfs.forEach(function(lConf){
+						lConf.ServiceId = deployService.id;
+					});
+					return lConfs;
+				}));
+			}
+		}.bind(this));
+		
+		Deferred.all(readPluginInfoDeferreds).then(function(result){
+			if(!result || !result.length){
+				pluginDeferred.resolve([]);
+				return;
+			}
+			var results = [];
+			result.forEach(function(lcs){
+				results = results.concat(lcs);
+			});
+			pluginDeferred.resolve(results);
+		});
+		
 		this._getLaunchConfigurationsDir(projectMetadata).then(function(launchConfMeta){
 			if(!launchConfMeta){
 				deferred.resolve([]);
@@ -630,8 +656,27 @@ define([
 				}.bind(this), deferred.reject);
 			}	
 		}.bind(this), deferred.reject);
+		
+		var combinedResult = new Deferred();
+		
+		Deferred.all([deferred, pluginDeferred]).then(function(results){
+			var allRes = [];
+			results[0].forEach(function(res){
+				for(var i=0; i<results[1].length; i++){
+					res1 = results[1][i];
+					if(res1.Name === res.Name && res1.ServiceId === res.ServiceId){
+						res1 = results[1].splice(i, 1);
+						allRes.push(objects.mixin(res, res1));
+						return;
+					}
+				}
+				allRes.push(res);
+			});
+			allRes = allRes.concat(results[1]);
+			combinedResult.resolve(allRes);
+		});
 
-		return deferred;
+		return combinedResult;
 	},
 	
 	saveProjectLaunchConfiguration: function(projectMetadata, configurationName, serviceId, params, url, manageUrl, path, urlTitle, deployType){
