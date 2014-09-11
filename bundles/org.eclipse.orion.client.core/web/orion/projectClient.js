@@ -585,11 +585,12 @@ define([
 			var deployService = this._getProjectDeployService(deployServiceRef);
 			if(deployService.getLaunchConfigurations){
 				readPluginInfoDeferreds.push(deployService.getLaunchConfigurations(projectMetadata).then(function(lConfs){
-					lConfs.forEach(function(lConf){
-						lConf.ServiceId = deployService.id;
-					});
+					for(var i=0; i<lConfs.length; i++){
+						var lConf = lConfs[i];
+						lConfs[i] = this.formLaunchConfiguration(lConf.ConfigurationName, deployService.id, lConf.Parameters, lConf.Url, lConf.ManageUrl, lConf.Path, lConf.UrlTitle, lConf.Type);
+					}
 					return lConfs;
-				}));
+				}.bind(this)));
 			}
 		}.bind(this));
 		
@@ -679,14 +680,7 @@ define([
 		return combinedResult;
 	},
 	
-	saveProjectLaunchConfiguration: function(projectMetadata, configurationName, serviceId, params, url, manageUrl, path, urlTitle, deployType){
-		var deferred = new Deferred();
-		var configurationFile = configurationName;
-		configurationFile = configurationFile.replace(/\ /g,' ');
-		configurationFile = configurationFile.replace(/[^\w\d\s]/g, '');
-		if(configurationFile.indexOf(".launch")<0){
-			configurationFile+=".launch";
-		}
+	formLaunchConfiguration: function(configurationName, serviceId, params, url, manageUrl, path, urlTitle, deployType){
 		var launchConfigurationEnry = {
 			Name: configurationName,
 			ServiceId: serviceId,
@@ -701,6 +695,19 @@ define([
 		if(deployType){
 			launchConfigurationEnry.Type = deployType;
 		}
+		return launchConfigurationEnry;
+	},
+	
+	saveProjectLaunchConfiguration: function(projectMetadata, configurationName, serviceId, params, url, manageUrl, path, urlTitle, deployType){
+		var deferred = new Deferred();
+		var configurationFile = configurationName;
+		configurationFile = configurationFile.replace(/\ /g,' ');
+		configurationFile = configurationFile.replace(/[^\w\d\s]/g, '');
+		if(configurationFile.indexOf(".launch")<0){
+			configurationFile+=".launch";
+		}
+		var launchConfigurationEnry = this.formLaunchConfiguration(configurationName, serviceId, params, url, manageUrl, path, urlTitle, deployType);
+		
 		this._getLaunchConfigurationsDir(projectMetadata, true).then(function(launchConfDir){
 			if(launchConfDir.Children){
 				for(var i=0; i<launchConfDir.Children.length; i++){
