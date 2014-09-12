@@ -259,7 +259,11 @@ define([
 							}
 							_self.selection.getSelections(function(selections){
 								if(event.type === "deleteAll"){
-									_self.treeRoot.Project.launchConfigurations = [];
+									for(var i =_self.treeRoot.Project.launchConfigurations.length-1; i>=0; i--){
+										if(_self.treeRoot.Project.launchConfigurations[i].File){
+											_self.treeRoot.Project.launchConfigurations.splice(i,1);
+										}
+									}
 									doUpdateForLaunchConfigurations.apply(_self, [_self.treeRoot.Project.launchConfigurations]);
 									return;
 								}
