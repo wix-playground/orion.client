@@ -252,6 +252,7 @@ define([
 								var defaultCommand = ProjectCommands.getDefaultLaunchCommand(_self.treeRoot.Project.Name);
 								if (defaultCommand) {
 									_self.defaultDeployCommand = _self.commandRegistry.findCommand(defaultCommand);
+									if(!self.defaultDeployCommand) return;
 									_self.deployCommand.tooltip = _self.defaultDeployCommand.tooltip ? _self.defaultDeployCommand.tooltip : _self.defaultDeployCommand.name;
 									CommonNavExplorer.prototype.updateCommands.apply(_self, selections);
 								}
