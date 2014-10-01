@@ -70,11 +70,11 @@ define(['orion/plugin',
 	/**
 	 * Register validators
 	 */
-	provider.registerService("orion.edit.validator", new mCssValidator.CssValidator(), //$NON-NLS-0$
+	provider.registerService(["orion.edit.validator", "orion.cm.managedservice"], new mCssValidator.CssValidator(), //$NON-NLS-0$  //$NON-NLS-1$
 		{
-			contentType: ["text/css"] //$NON-NLS-0$
+			contentType: ["text/css"], //$NON-NLS-0$
+			pid: 'csslint.config'  //$NON-NLS-0$
 		});
-		
 		
 	/**
 	* Register outliners
@@ -110,6 +110,39 @@ define(['orion/plugin',
    			provider.registerService("orion.edit.highlighter", {}, newGrammars[current]); //$NON-NLS-0$
   		}
     }
+    
+    /**
+	 * CSSLint settings
+	 */
+	var ignore = 0, warning = 1, error = 2, severities = [
+//		{labelKey: 'ignore',  value: ignore},  //$NON-NLS-0$
+//		{labelKey: 'warning', value: warning},  //$NON-NLS-0$
+//		{labelKey: 'error',   value: error}  //$NON-NLS-0$
+		{label: 'Ignore',  value: ignore},  //$NON-NLS-0$
+		{label: 'Warning', value: warning},  //$NON-NLS-0$
+		{label: 'Error',   value: error}  //$NON-NLS-0$
+	];
+	provider.registerService("orion.core.setting",  //$NON-NLS-0$
+		{},
+		{	settings: [
+				{	pid: "csslint.config",  //$NON-NLS-0$
+//					nls: 'javascript/nls/messages',  //$NON-NLS-0$
+//					nameKey: 'eslintValidator',  //$NON-NLS-0$
+					name: 'CSSLint Settings',
+					tags: "validation webtools css csslint".split(" "),  //$NON-NLS-0$  //$NON-NLS-1$
+					category: "validation",  //$NON-NLS-0$
+					properties: [
+						{
+							id: "validate_duplicate_properties", //$NON-NLS-0$
+//							nameKey: "noNewArray", //$NON-NLS-0$
+							name: 'Duplicate properties',
+							type: "number", //$NON-NLS-0$
+							defaultValue: warning, //$NON-NLS-0$
+							options: severities //$NON-NLS-0$
+						}]
+				}]
+		}
+	);
 
 	provider.connect();
 });
