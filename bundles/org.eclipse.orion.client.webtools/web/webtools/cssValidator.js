@@ -16,21 +16,46 @@ define("webtools/cssValidator", [ //$NON-NLS-0$
 	'orion/objects' //$NON-NLS-0$
 ], function(csslint, Objects) {
 
-	/**
-	 * @description Creates a new validator
-	 * @constructor
-	 * @public
-	 * @since 6.0
-	 */
-	function CssValidator() {
-	}
-	
 	// TODO How to keep this list up to date with rules definitions and settings options
 	var config = {
 		// Define the default values for the rules
 		// 0:off, 1:warning, 2:error
 		rules: {
-			"duplicate-properties" : 2 //$NON-NLS-0$
+			"adjoining-classes" : 1, //$NON-NLS-0$
+			"box-model" : 1, //$NON-NLS-0$
+			"box-sizing" : 1, //$NON-NLS-0$
+			"bulletproof-font-face" : 1, //$NON-NLS-0$
+			"compatible-vendor-prefixes" : 1, //$NON-NLS-0$
+			"display-property-grouping" : 1, //$NON-NLS-0$
+			"duplicate-background-images" : 1, //$NON-NLS-0$
+			"duplicate-properties" : 1, //$NON-NLS-0$
+			"empty-rules" : 1, //$NON-NLS-0$
+			"errors" : 2, //$NON-NLS-0$
+			"fallback-colors" : 1, //$NON-NLS-0$
+			"floats" : 1, //$NON-NLS-0$
+			"font-faces" : 1, //$NON-NLS-0$
+			"font-sizes" : 1, //$NON-NLS-0$
+			"gradients" : 1, //$NON-NLS-0$
+			"ids" : 1, //$NON-NLS-0$
+			"import" : 1, //$NON-NLS-0$
+			"important" : 1, //$NON-NLS-0$
+			"known-properties" : 1, //$NON-NLS-0$
+			"outline-none" : 1, //$NON-NLS-0$
+			"overqualified-elements" : 1, //$NON-NLS-0$
+			"qualified-headings" : 1, //$NON-NLS-0$
+			"regex-selectors" : 1, //$NON-NLS-0$
+			"rules-count" : 1, //$NON-NLS-0$
+			"selector-max-approaching" : 1, //$NON-NLS-0$
+			"selector-max" : 1, //$NON-NLS-0$
+			"shorthand" : 1, //$NON-NLS-0$
+			"star-property-hack" : 1, //$NON-NLS-0$
+			"text-indent" : 1, //$NON-NLS-0$
+			"underscore-property-hack" : 1, //$NON-NLS-0$
+			"unique-headings" : 1, //$NON-NLS-0$
+			"universal-selector" : 1, //$NON-NLS-0$
+			"unqualified-attributes" : 1, //$NON-NLS-0$
+			"vendor-prefix" : 1, //$NON-NLS-0$
+			"zero-units" : 1 //$NON-NLS-0$
 		},
 		/**
 		 * @description Sets the given rule to the given enabled value
@@ -57,10 +82,20 @@ define("webtools/cssValidator", [ //$NON-NLS-0$
 			}
 		}
 	};
+	
+	/**
+	 * @description Creates a new validator
+	 * @constructor
+	 * @public
+	 * @since 6.0
+	 */
+	function CssValidator() {
+	}
 
 	/**
 	 * @description Converts the configuration rule for the given csslint problem message 
-	 * 				to an Orion problem severity. One of 'warning', 'error'.
+	 * 				to an Orion problem severity. One of 'warning', 'error'.  Will return null
+	 * 				if the problem should be skipped ('ignore')
 	 * @public
 	 * @param {Object} prob The problem object
 	 * @returns {String} the severity string
@@ -70,6 +105,7 @@ define("webtools/cssValidator", [ //$NON-NLS-0$
 		var ruleConfig = config.rules[message.rule.id];
 		val = ruleConfig;
 		switch (val) {
+			case 0: return null;
 			case 1: return "warning"; //$NON-NLS-0$
 			case 2: return "error"; //$NON-NLS-0$
 		}
@@ -101,20 +137,24 @@ define("webtools/cssValidator", [ //$NON-NLS-0$
 		 * @returns {Array} The problem array
 		 */
 		_computeProblems: function(contents) {
+			// TODO We should build a ruleset to pass into verify to ignore certain rules rather than filtering after the operation
 			var cssResult = csslint.verify(contents),
 			    messages = cssResult.messages,
 			    problems = [];
 			for (var i=0; i < messages.length; i++) {
 				var message = messages[i];
 				if (message.line) {
-					var problem = {
-						description: message.message,
-						line: message.line,
-						start: message.col,
-						end: message.col + message.evidence.length,
-						severity: getSeverity(message)
-					};
-					problems.push(problem);
+					var severity = getSeverity(message);
+					if (severity !== null){
+						var problem = {
+							description: message.message,
+							line: message.line,
+							start: message.col,
+							end: message.col + message.evidence.length,
+							severity: severity
+						};
+						problems.push(problem);
+					}
 				}
 			}
 			return {problems: problems};
@@ -131,12 +171,43 @@ define("webtools/cssValidator", [ //$NON-NLS-0$
 				return;
 			}
 			// TODO these option -> setting mappings are becoming hard to manage
-			// And they must be kept in sync with javascriptPlugin.js
-			config.setOption("duplicate-properties", properties.validate_duplicate_properties); //$NON-NLS-0$
+			// And they must be kept in sync with webToolsPlugin.js
+			config.setOption("adjoining-classes", properties.validate-adjoining-classes); //$NON-NLS-0$
+			config.setOption("box-model", properties.validate-box-model); //$NON-NLS-0$
+			config.setOption("box-sizing", properties.validate-box-sizing); //$NON-NLS-0$
+			config.setOption("compatible-vendor-prefixes", properties.validate-compatible-vendor-prefixes); //$NON-NLS-0$
+			config.setOption("display-property-grouping", properties.validate-display-property-grouping); //$NON-NLS-0$
+			config.setOption("duplicate-background-images", properties.validate-duplicate-background-images); //$NON-NLS-0$
+			config.setOption("duplicate-properties", properties.validate-duplicate-properties); //$NON-NLS-0$
+			config.setOption("empty-rules", properties.validate-empty-rules); //$NON-NLS-0$
+			config.setOption("errors", properties.validate-errors); //$NON-NLS-0$
+			config.setOption("fallback-colors", properties.validate-fallback-colors); //$NON-NLS-0$
+			config.setOption("floats", properties.validate-floats); //$NON-NLS-0$
+			config.setOption("font-faces", properties.validate-font-faces); //$NON-NLS-0$
+			config.setOption("font-sizes", properties.validate-font-sizes); //$NON-NLS-0$
+			config.setOption("gradients", properties.validate-gradients); //$NON-NLS-0$
+			config.setOption("ids", properties.validate-ids); //$NON-NLS-0$
+			config.setOption("import", properties.validate-imports); //$NON-NLS-0$ // import is restricted key word
+			config.setOption("important", properties.validate-important); //$NON-NLS-0$
+			config.setOption("known-properties", properties.validate-known-properties); //$NON-NLS-0$
+			config.setOption("outline-none", properties.validate-outline-none); //$NON-NLS-0$
+			config.setOption("overqualified-elements", properties.validate-overqualified-elements); //$NON-NLS-0$
+			config.setOption("qualified-headings", properties.validate-qualified-headings); //$NON-NLS-0$
+			config.setOption("regex-selectors", properties.validate-regex-selectors); //$NON-NLS-0$
+			config.setOption("rules-count", properties.validate-rules-count); //$NON-NLS-0$
+			config.setOption("selector-max-approaching", properties.validate-selector-max-approaching); //$NON-NLS-0$
+			config.setOption("selector-max", properties.validate-selector-max); //$NON-NLS-0$
+			config.setOption("shorthand", properties.validate-shorthand); //$NON-NLS-0$
+			config.setOption("star-property-hack", properties.validate-star-property-hack); //$NON-NLS-0$
+			config.setOption("text-indent", properties.validate-text-indent); //$NON-NLS-0$
+			config.setOption("underscore-property-hack", properties.validate-underscore-property-hack); //$NON-NLS-0$
+			config.setOption("unique-headings", properties.validate-unique-headings); //$NON-NLS-0$
+			config.setOption("universal-selector", properties.validate-universal-selector); //$NON-NLS-0$
+			config.setOption("unqualified-attributes", properties.validate-unqualified-attributes); //$NON-NLS-0$
+			config.setOption("vendor-prefix", properties.validate-vendor-prefix); //$NON-NLS-0$
+			config.setOption("zero-units", properties.validate-zero-units); //$NON-NLS-0$
 		}
 	});
 	
-	return {
-		CssValidator : CssValidator
-	};
+	return CssValidator;
 });
