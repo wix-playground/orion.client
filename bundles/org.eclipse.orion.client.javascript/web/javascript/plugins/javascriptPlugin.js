@@ -28,7 +28,6 @@ define([
 	'javascript/occurrences',
 	'javascript/hover',
 	'javascript/outliner',
-	'orion/plugin',
 	'orion/util',
 	'javascript/commands/generateDocCommand',
 	'orion/editor/stylers/application_javascript/syntax',
@@ -36,18 +35,15 @@ define([
 	'orion/editor/stylers/application_schema_json/syntax',
 	'orion/editor/stylers/application_x-ejs/syntax'
 ], function(Esprima, ASTManager, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
-			EslintValidator, Occurrences, Hover, Outliner,	PluginProvider, Util, GenerateDocCommand, mJS, mJSON, mJSONSchema, mEJS) {
+			EslintValidator, Occurrences, Hover, Outliner, Util, GenerateDocCommand, mJS, mJSON, mJSONSchema, mEJS) {
 
-	/**
-	 * Plug-in headers
-	 */
-	var headers = {
-		name: "Orion JavaScript Tool Support", //$NON-NLS-0$
-		version: "1.0", //$NON-NLS-0$
-		description: "This plugin provides JavaScript tools support for Orion, like editing, search, navigation, validation, and code completion." //$NON-NLS-0$
-	};
-	var provider = new PluginProvider(headers);
-	
+/**
+ * Registers the JS services against the given <tt>PluginProvider</tt>.
+ * @name javascript.JSPluginFactory
+ * @param {orion.PluginProvider} provider
+ */
+function Factory(provider) {
+
 	/**
 	 * Register the JavaScript content types
 	 */
@@ -395,4 +391,8 @@ define([
 	});
 
 	provider.connect();
+} // Factory()
+
+return Factory;
+
 });

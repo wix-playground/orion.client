@@ -27,12 +27,12 @@ define([
 	}
 
 	if (!useWorker) {
-		// Non-worker case
-		require(["javascript/plugins/javascriptPlugin"]);
+		// Non-worker case.
+		require(["javascript/plugins/javascriptWorker"]);
 		return;
 	}
 
-	// Worker case. Talk directly to the framework message plumbing
+	// Worker case. Talk directly to the framework message plumbing.
 	var framework;
 	if (window !== window.parent) {
 		framework = window.parent;
