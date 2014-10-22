@@ -149,7 +149,7 @@ var exports = {};
 		}
 	});
 
-exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isReadOnly) {
+exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistry, preferences, isReadOnly) {
 	var selection;
 	var commandRegistry;
 	var statusService;
@@ -266,12 +266,24 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isR
 		contextImpl[method] = model[method].bind(model);
 	});
 	serviceRegistry.registerService("orion.edit.model.context", contextImpl, null); //$NON-NLS-0$
+
+    function createEditorView(editorServiceRef, options) {
+        var editorServiceId = editorServiceRef.getProperty("id");
+        var ExtensionCls = extensionRegistry && extensionRegistry.getEditorViewClass(editorServiceId);
+        if(ExtensionCls) {
+            return new ExtensionCls(options);
+        } else {
+            options.editorService = editorServiceRef;
+            return new mPluginEditorView.PluginEditorView(options);
+        }
+    }
+
 	function getEditorView(input, metadata) {
 		var view = null;
 		if (metadata && input) {
 			var options = objects.mixin({
 				input: input,
-				metadata: metadata,
+				metadata: metadata
 			}, defaultOptions);
 			//TODO better way of registering built-in editors
 			if (metadata.Directory) {
@@ -290,8 +302,8 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isR
 					var editors = serviceRegistry.getServiceReferences("orion.edit.editor"); //$NON-NLS-0$
 					for (var i=0; i<editors.length; i++) {
 						if (editors[i].getProperty("id") === id) { //$NON-NLS-0$
-							options.editorService = editors[i];
-							view = new mPluginEditorView.PluginEditorView(options);
+                            options.editorView = editorView;
+                            view = createEditorView(editors[i], options);
 							break;
 						}
 					}
@@ -338,7 +350,7 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isR
 		var view = getEditorView(evt.input, metadata);
 		setEditor(view ? view.editor : null);
 		evt.editor = editor;
-	
+
 		renderToolbars(metadata);
 		var name = evt.name, target = metadata;
 		if (evt.input === null || evt.input === undefined) {

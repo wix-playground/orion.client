@@ -18,3 +18,7 @@ staging
 *.log
 node_modules/
 
+# IntelliJ
+*.iml
+.idea/
+
