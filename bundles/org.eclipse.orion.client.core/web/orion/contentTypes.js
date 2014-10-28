@@ -54,6 +54,22 @@ define([], function() {
 		return best;
 	}
 
+    function getFileContentType(fileMetadata, contentTypes) {
+        var contentType;
+        if(fileMetadata.ContentType) {
+            for(var i=0; i<contentTypes.length; i++) {
+                if(contentTypes[i].id === fileMetadata.ContentType) {
+                    contentType = contentTypes[i];
+                    break;
+                }
+            }
+        }
+        if(!contentType) {
+            contentType = getFilenameContentType(fileMetadata.Name, contentTypes);
+        }
+        return contentType;
+    }
+
 	function array(obj) {
 		if (obj === null || typeof obj === "undefined") { return []; } //$NON-NLS-0$
 			return (Array.isArray(obj)) ? obj : [obj];
@@ -153,7 +169,7 @@ define([], function() {
 		 * @returns {orion.core.ContentType} The ContentType for the file, or <code>null</code> if none could be found.
 		 */
 		getFileContentType: function(fileMetadata) {
-			return getFilenameContentType(fileMetadata.Name, this.getContentTypes());
+            return getFileContentType(fileMetadata, this.getContentTypes());
 		},
 		/**
 		 * Looks up the ContentType, given a filename.
@@ -211,6 +227,7 @@ define([], function() {
 	};
 	return {
 		ContentTypeRegistry: ContentTypeRegistry,
-		getFilenameContentType: getFilenameContentType
+		getFilenameContentType: getFilenameContentType,
+        getFileContentType: getFileContentType
 	};
 });

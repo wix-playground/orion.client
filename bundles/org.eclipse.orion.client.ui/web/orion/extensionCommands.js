@@ -304,7 +304,7 @@ define(["require", "orion/Deferred", "orion/commands", "orion/regex", "orion/con
 			}
 			// now content types
 			var showCommand = true;
-			var contentType = contentTypes ? mContentTypes.getFilenameContentType(item.Name, contentTypes) : null;
+			var contentType = contentTypes ? mContentTypes.getFileContentType(item, contentTypes) : null;
 			contentType = contentType || {
 				id:"application/octet-stream"
 			};
