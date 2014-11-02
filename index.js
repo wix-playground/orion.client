@@ -10,7 +10,9 @@ var rootEndPoints = [
     "bundles/org.eclipse.orion.client.repository/web",
     "bundles/org.eclipse.orion.client.users/web",
     "bundles/org.eclipse.orion.client.webtools/web",
-    "bundles/org.eclipse.orion.client.cf/web"
+    "bundles/org.eclipse.orion.client.cf/web",
+    "bundles/org.eclipse.orion.client.javascript/web/lib/eslint",
+
 ];
 
 exports.rootEndPoints = rootEndPoints.map(function (dir) {
