@@ -393,7 +393,7 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
 		commandRegistry: commandRegistry,
 		serviceRegistry: serviceRegistry
 	});
-	menuBar.createCommands().then(function() {
+	return menuBar.createCommands().then(function() {
 		
 		defaultOptions = {
 			parent: editorDomNode,
@@ -469,7 +469,15 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
 		});
 		inputManager.setInput(PageUtil.hash());
 		sidebarNavInputManager.processHash(PageUtil.hash());
-	});
+	})
+        .then(function () {
+            return {
+                commandRegistry: commandRegistry,
+                fileClient: fileClient,
+                projectClient: projectClient
+            }
+        });
+
 
 	window.onbeforeunload = function() {
 		if (editor && editor.isDirty()) {
