@@ -1,0 +1,2 @@
+* The mechanism of 'openWith' commands and the selection service should be better integrated. 
+The editor with which a resource is opened is specified in the url hash fragment, separately from the selection logic.
