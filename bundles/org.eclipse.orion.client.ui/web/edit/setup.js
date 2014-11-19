@@ -474,7 +474,8 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
             return {
                 commandRegistry: commandRegistry,
                 fileClient: fileClient,
-                projectClient: projectClient
+                projectClient: projectClient,
+				inputManager: inputManager
             }
         });
 
