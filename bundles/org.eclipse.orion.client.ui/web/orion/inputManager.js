@@ -373,6 +373,7 @@ define([
 					self.afterSave();
 				}
 				self._saving = false;
+				self.dispatchEvent({ type: "Saved", inputManager: this});
 			}
 			function errorHandler(error) {
 				self.reportStatus("");
