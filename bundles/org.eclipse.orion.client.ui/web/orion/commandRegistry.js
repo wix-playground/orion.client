@@ -605,7 +605,7 @@ define([
 			if (!command.id) {
 				throw new Error("No command id: " + command);
 			}
-			if (type === "key") { //$NON-NLS-0$
+			if (type === "key" && !(command.id in this._activeBindings)) { //$NON-NLS-0$
 				this._activeBindings[command.id] = {command: command, keyBinding: binding, bindingOnly: bindingOnly};
 			} else if (type === "url") { //$NON-NLS-0$
 				this._urlBindings[command.id] = {command: command, urlBinding: binding, bindingOnly: bindingOnly};
