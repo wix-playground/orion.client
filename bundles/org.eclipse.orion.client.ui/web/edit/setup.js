@@ -475,7 +475,8 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
                 commandRegistry: commandRegistry,
                 fileClient: fileClient,
                 projectClient: projectClient,
-				inputManager: inputManager
+				inputManager: inputManager,
+				sidebarNavInputManager: sidebarNavInputManager
             }
         });
 
