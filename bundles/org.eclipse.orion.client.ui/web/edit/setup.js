@@ -191,7 +191,7 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
 	var collapseSidebar = false; //PageUtil.hash() !== ""
 	mGlobalCommands.generateBanner("orion-editor", serviceRegistry, commandRegistry, preferences, searcher, null, null, collapseSidebar); //$NON-NLS-0$
 
-	var editor, editorDirtyListener, inputManager, sidebarNavInputManager, editorView, lastRoot, menuBar;
+	var editor, editorDirtyListener, inputManager, sidebarNavInputManager, editorView, lastRoot, menuBar, sidebar;
 	function setEditor(newEditor) {
 		if (editor === newEditor) { return; }
 		if (editor) {
@@ -422,7 +422,7 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
 			EventTarget.attach(this);
 		}
 		sidebarNavInputManager = new SidebarNavInputManager();
-		var sidebar = new Sidebar({
+		sidebar = new Sidebar({
 			commandRegistry: commandRegistry,
 			contentTypeRegistry: contentTypeRegistry,
 			editorInputManager: inputManager,
@@ -476,7 +476,11 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, extensionRegistr
                 fileClient: fileClient,
                 projectClient: projectClient,
 				inputManager: inputManager,
-				sidebarNavInputManager: sidebarNavInputManager
+				ui: {
+					sidebar: sidebar,
+					menuBar: menuBar
+				}
+
             }
         });
 
