@@ -5,13 +5,17 @@
 	<script src="../requirejs/require.js"></script>
 	<script>
 		/*eslint-env browser, amd*/
-		require({
-		  baseUrl: '..',
-		  paths: {
-			  domReady: 'requirejs/domReady'
-		  }
-		});
-		require(["plugins/authenticationPlugin"]);
+		try {
+			require({
+			  baseUrl: '..',
+			  paths: {
+				  domReady: 'requirejs/domReady'
+			  }
+			});
+			require(["plugins/authenticationPlugin"]);
+		} catch(e) {
+			window.location = window.location;
+		}
 	</script>
 </head>
 <body>
